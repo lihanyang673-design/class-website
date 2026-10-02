@@ -1,4 +1,5 @@
 // 帖子快照生成器：从 classroom.sqlite 导出帖子 → snapshot/ 静态页（供 GitHub Pages 展示）
+// 直接复用原版 public/style.css + 原版帖子 DOM 结构，外观和完整版一致
 // 用法：& 'D:\node\node.exe' snapshot.js   （在项目根目录运行）
 const initSqlJs = require('sql.js');
 const fs = require('fs');
@@ -7,6 +8,7 @@ const path = require('path');
 const BASE = 'https://lihanyang673-design.github.io/class-website'; // 分享预览用的绝对地址
 const OUT = path.join(__dirname, 'snapshot');
 const IMG_OUT = path.join(OUT, 'img');
+const HALL = '../'; // 返回入口大厅（根 index.html）
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
   .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -19,6 +21,22 @@ const fmtTime = t => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours() + 8)}:${p(d.getMinutes())}`;
 };
 
+// 原版头像配色（app.js AVATAR_COLORS + userColor）
+const AVATAR_COLORS = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f2',
+  '#009688', '#ff9800', '#795548', '#607d8b', '#4caf50', '#ff5722'];
+function userColor(name) {
+  let h = 0;
+  for (const c of String(name)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+// 原版 avatarHtml 的静态版：emoji 头像可显示，图片头像（未导出）回退为首字
+function avatarHtml(name, avatar, cls = '') {
+  const a = avatar || '';
+  const full = ('avatar ' + cls).trim();
+  if (a.startsWith('emoji:')) return `<span class="${full}" style="background:${userColor(name)}">${esc(a.slice(6))}</span>`;
+  return `<span class="${full}" style="background:${userColor(name)}">${esc(String(name || '?')[0] || '?')}</span>`;
+}
+
 (async () => {
   const SQL = await initSqlJs();
   const db = new SQL.Database(fs.readFileSync('classroom.sqlite'));
@@ -28,7 +46,7 @@ const fmtTime = t => {
     return r[0].values.map(row => Object.fromEntries(row.map((v, i) => [r[0].columns[i], v])));
   };
 
-  const users = Object.fromEntries(q('SELECT id, nickname, username FROM users').map(u => [u.id, u.nickname || u.username]));
+  const users = Object.fromEntries(q('SELECT id, nickname, username, avatar FROM users').map(u => [u.id, u]));
   const sections = Object.fromEntries(q('SELECT id, name FROM sections').map(s => [s.id, s.name]));
   const posts = q(`SELECT p.*,
       (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS like_count,
@@ -49,107 +67,116 @@ const fmtTime = t => {
 
   const postsData = [];
   for (const p of posts) {
+    const u = users[p.user_id] || {};
     const imgs = (p.images || '').split(',').filter(Boolean).map(copyImg).filter(Boolean);
-    const cmts = q(`SELECT c.*, u.nickname, u.username FROM comments c
+    const cmts = q(`SELECT c.*, u.nickname, u.username, u.avatar FROM comments c
       LEFT JOIN users u ON u.id = c.user_id WHERE c.post_id = ${p.id} ORDER BY c.id ASC`);
-    for (const c of cmts) { c.imgOk = copyImg(c.image); c.name = c.user_id > 0 ? (c.nickname || c.username || '同学') : (c.guest_name || '游客'); }
+    for (const c of cmts) {
+      c.imgOk = copyImg(c.image);
+      const cu = c.user_id > 0 ? users[c.user_id] : null;
+      c.name = cu ? (cu.nickname || cu.username || '同学') : (c.guest_name || '游客');
+      c.avatar = cu ? cu.avatar : '';
+    }
+    const cidName = Object.fromEntries(cmts.map(c => [c.id, c.name]));
+    for (const c of cmts) c.replyTo = c.parent_id > 0 ? (cidName[c.parent_id] || '同学') : '';
     postsData.push({
-      id: p.id, author: users[p.user_id] || '同学', content: p.content, imgs,
+      id: p.id, author: u.nickname || u.username || '同学', avatar: u.avatar || '',
+      content: p.content, imgs,
       videos: (p.videos || '').split(',').filter(Boolean).length,
       files: (p.files || '').split(',').filter(Boolean).length,
       poll: !!p.poll, pinned: !!p.pinned, section: sections[p.section_id] || '',
       time: fmtTime(p.created_at), views: p.view_count || 0,
-      likes: p.like_count, cmts: cmts.map(c => ({ name: c.name, content: c.content, img: c.imgOk, time: fmtTime(c.created_at) })),
+      likes: p.like_count, cmts,
     });
   }
 
-  const css = `
-  *{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:#eef3f8;color:#1c2b3a}
-  a{color:inherit;text-decoration:none}.wrap{max-width:640px;margin:0 auto;padding:14px}
-  .top{background:linear-gradient(135deg,#1877f2,#3a9bfc);color:#fff;padding:22px 14px 18px;text-align:center}
-  .top h1{font-size:22px}.top p{font-size:12px;opacity:.85;margin-top:6px}
-  .card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-  .head{display:flex;align-items:center;gap:10px}
-  .avatar{width:40px;height:40px;border-radius:50%;background:#3a9bfc;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
-  .meta{flex:1;min-width:0}.name{font-weight:600;font-size:14px}.time{font-size:12px;color:#8a97a5}
-  .badge{font-size:11px;background:#e7f0ff;color:#1877f2;border-radius:8px;padding:2px 8px;margin-left:6px}
-  .badge.pin{background:#fff3d6;color:#b07d00}.content{margin-top:10px;font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
-  .imgs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
-  .imgs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}
-  .imgs.single img{aspect-ratio:auto;max-height:340px;object-fit:contain}
-  .foot{display:flex;gap:18px;margin-top:10px;font-size:13px;color:#8a97a5}
-  .ph{margin-top:10px;background:#f2f5f8;border-radius:8px;padding:10px;font-size:13px;color:#8a97a5;text-align:center}
-  .btn{display:inline-block;background:#1877f2;color:#fff;border-radius:20px;padding:8px 20px;font-size:14px;border:0;cursor:pointer}
-  .btn.plain{background:#fff;color:#1877f2;border:1px solid #cfe0f5}
-  .back{display:inline-block;margin:12px 0;font-size:14px;color:#1877f2}
-  .cmt{display:flex;gap:10px;padding:10px 0;border-top:1px solid #f0f3f6}
-  .cmt .avatar{width:32px;height:32px;font-size:13px}.cmt .name{font-size:13px}.cmt .content{margin-top:4px;font-size:14px;white-space:pre-wrap}
-  .cmt img{max-width:180px;border-radius:8px;margin-top:6px;display:block}
-  .toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;opacity:0;transition:.3s;pointer-events:none}
+  // 额外的静态页补充样式（主体样式来自 ../public/style.css，与原版一致）
+  const extraCss = `
+  .static-wrap{max-width:640px;margin:0 auto;padding:14px}
+  .nav-back{display:inline-flex;align-items:center;gap:4px;color:#fff;background:rgba(255,255,255,.18);
+    border:0;border-radius:18px;padding:5px 13px;font-size:13px;cursor:pointer;text-decoration:none}
+  .post-card-link{cursor:pointer;transition:box-shadow .15s}
+  .post-card-link:hover{box-shadow:0 3px 10px rgba(0,0,0,.12)}
+  .static-tip{text-align:center;font-size:12px;color:var(--text-secondary);margin:2px 0 12px}
+  .comment-reply-tag{color:var(--link);font-size:13px;margin-right:4px}
+  .toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;
+    padding:8px 18px;border-radius:20px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:99}
   .toast.on{opacity:1}`;
 
-  const head = (title, desc, ogImg) => `<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  const pageHead = (title, desc, ogImg) => `<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${esc(title)}</title><meta property="og:title" content="${esc(title)}">
   <meta property="og:description" content="${esc(desc)}">
   ${ogImg ? `<meta property="og:image" content="${BASE}/snapshot/img/${encodeURIComponent(ogImg)}">` : ''}
-  <style>${css}</style></head>`;
+  <link rel="stylesheet" href="../public/style.css"><style>${extraCss}</style></head>`;
 
-  // 列表页
-  let listHtml = postsData.map(p => {
+  const navbar = `<header class="navbar"><h1 style="display:flex;align-items:center;gap:10px">
+    <a class="nav-back" href="${HALL}">⬅ 大厅</a>📚 班级动态</h1></header>`;
+
+  const shareJs = `<div class="toast" id="toast">链接已复制</div><script>
+  function doShare(url){
+    if(navigator.share){navigator.share({title:document.title,url:url}).catch(function(){});return}
+    (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(ok,function(){
+      var i=document.createElement('input');i.value=url;document.body.appendChild(i);i.select();
+      try{document.execCommand('copy');ok()}catch(e){}
+      document.body.removeChild(i)});
+    function ok(){var t=document.getElementById('toast');t.classList.add('on');setTimeout(function(){t.classList.remove('on')},1800)}
+  }
+  function go(p){location.href=p}
+  </script>`;
+
+  // 单条帖子卡片（原版 renderPostCard 的静态版）
+  const cardHtml = (p, linkToList) => {
     const snip = p.content.length > 120 ? p.content.slice(0, 120) + '…' : p.content;
-    return `<a class="card" href="post_${p.id}.html"><div class="head">
-    <div class="avatar">${esc((p.author[0] || '同').toUpperCase())}</div>
-    <div class="meta"><div class="name">${esc(p.author)}${p.section ? `<span class="badge">${esc(p.section)}</span>` : ''}${p.pinned ? '<span class="badge pin">📌 置顶</span>' : ''}</div>
-    <div class="time">${esc(p.time)}</div></div></div>
-    <div class="content">${esc(snip)}</div>
-    ${p.imgs.length ? `<div class="imgs${p.imgs.length === 1 ? ' single' : ''}">${p.imgs.slice(0, 3).map(i => `<img loading="lazy" src="img/${encodeURIComponent(i)}">`).join('')}</div>` : ''}
-    <div class="foot"><span>❤ ${p.likes}</span><span>💬 ${p.cmts.length}</span><span>👁 ${p.views}</span></div></a>`;
-  }).join('\n');
+    return `<div class="card post-card-link" ${linkToList ? `onclick="go('post_${p.id}.html')"` : ''} id="post-card-${p.id}">
+    <div class="post-header"><div class="post-user">
+      ${avatarHtml(p.author, p.avatar)}
+      <div class="post-meta">
+        <span class="post-author">${esc(p.author)}${p.pinned ? '<span class="pin-badge">📌 置顶</span>' : ''}</span>
+        <span class="post-time">· ${esc(p.time)}
+          ${p.section ? `<span class="post-section-badge">📂 ${esc(p.section)}</span>` : ''}
+          <span class="view-badge">� ${p.views}</span></span>
+      </div></div></div>
+    ${p.content ? `<div class="post-content">${esc(snip)}</div>` : ''}
+    ${p.imgs.length ? `<div class="post-images">${p.imgs.map(i => `<img loading="lazy" src="img/${encodeURIComponent(i)}" onclick="event.stopPropagation();window.open(this.src)">`).join('')}</div>` : ''}
+    ${p.videos ? `<div class="static-tip">🎬 含 ${p.videos} 个视频（请在校园网完整版观看）</div>` : ''}
+    ${p.files ? `<div class="static-tip">📎 含 ${p.files} 个附件（请在校园网完整版下载）</div>` : ''}
+    ${p.poll ? '<div class="static-tip">📊 此帖含投票（请在校园网完整版参与）</div>' : ''}
+    <div class="post-actions">
+      <button class="static-like">❤️ <span class="like-count">${p.likes}</span></button>
+      <button ${linkToList ? `onclick="event.stopPropagation();go('post_${p.id}.html')"` : ''}>💬 评论 (${p.cmts.length})</button>
+      <button class="share-btn" onclick="event.stopPropagation();doShare('${BASE}/snapshot/post_${p.id}.html')" title="复制链接 / 分享">🔗 分享</button>
+    </div>
+    ${!linkToList ? `<div class="comments-section" style="display:block"><div class="comments-list">
+      ${p.cmts.map(c => `<div class="comment" style="margin-left:${c.parent_id > 0 ? 24 : 0}px">
+        ${avatarHtml(c.name, c.avatar, 'avatar-sm')}
+        <div class="comment-body">
+          <span class="comment-author">${esc(c.name)}${c.user_id > 0 ? '' : '<span class="guest-badge">游客</span>'}</span>
+          ${c.replyTo ? `<span class="comment-reply-tag">回复 @${esc(c.replyTo)}</span>` : ''}
+          <span class="comment-text">${esc(c.content)}</span>
+          ${c.imgOk ? `<img class="comment-image" loading="lazy" src="img/${encodeURIComponent(c.imgOk)}" onclick="window.open(this.src)">` : ''}
+          <div class="comment-meta"><span class="comment-time">${esc(c.time)}</span></div>
+        </div></div>`).join('') || '<div class="comment-empty">还没有评论，快来抢沙发~</div>'}
+    </div><div class="static-tip">💡 评论、点赞、发帖请使用校园网内的完整版网站</div></div>` : ''}
+    </div>`;
+  };
 
+  // 列表页（原版风格 + 返回大厅按钮）
   fs.writeFileSync(path.join(OUT, 'index.html'), `<!DOCTYPE html><html lang="zh-CN">
-  ${head('班级动态 · 帖子广场', '同学们的精彩动态，共 ' + postsData.length + ' 条帖子', '')}
-  <body><div class="top"><h1>📚 班级动态 · 帖子广场</h1><p>静态快照 · 更新于 ${new Date().toLocaleString('zh-CN')} · 完整功能（登录/发帖/评论）请在校园网内访问</p></div>
-  <div class="wrap">${listHtml || '<div class="card" style="text-align:center;color:#8a97a5">还没有帖子</div>'}</div></body></html>`);
+  ${pageHead('班级动态 · 帖子广场', '同学们的精彩动态，共 ' + postsData.length + ' 条帖子', '')}
+  <body>${navbar}<div class="static-wrap">
+  <div class="static-tip">静态快照 · 更新于 ${new Date().toLocaleString('zh-CN')} · 登录/发帖/评论请在校园网内使用完整版</div>
+  ${postsData.map(p => cardHtml(p, true)).join('\n') || '<div class="card" style="text-align:center;color:var(--text-secondary)">还没有帖子</div>'}
+  </div>${shareJs}</body></html>`);
 
-  // 详情页（带 OG 分享标签 + 分享按钮）
+  // 详情页（评论全展开 + OG 分享标签）
   for (const p of postsData) {
-    const snip = p.content.replace(/\s+/g, ' ').slice(0, 60);
-    const title = `${p.author}：${snip || '班级动态'}`;
+    const snip = (p.content || '').replace(/\s+/g, ' ').slice(0, 60);
     fs.writeFileSync(path.join(OUT, `post_${p.id}.html`), `<!DOCTYPE html><html lang="zh-CN">
-    ${head(title, snip, p.imgs[0])}
-    <body><div class="wrap">
-    <a class="back" href="index.html">← 返回帖子广场</a>
-    <div class="card">
-      <div class="head"><div class="avatar">${esc((p.author[0] || '同').toUpperCase())}</div>
-      <div class="meta"><div class="name">${esc(p.author)}${p.section ? `<span class="badge">${esc(p.section)}</span>` : ''}${p.pinned ? '<span class="badge pin">📌 置顶</span>' : ''}</div>
-      <div class="time">${esc(p.time)}</div></div></div>
-      <div class="content">${esc(p.content)}</div>
-      ${p.imgs.length ? `<div class="imgs${p.imgs.length === 1 ? ' single' : ''}" style="grid-template-columns:${p.imgs.length === 1 ? '1fr' : 'repeat(3,1fr)'}">${p.imgs.map(i => `<img loading="lazy" src="img/${encodeURIComponent(i)}">`).join('')}</div>` : ''}
-      ${p.videos ? `<div class="ph">🎬 含 ${p.videos} 个视频（请在校园网完整版查看）</div>` : ''}
-      ${p.files ? `<div class="ph">📎 含 ${p.files} 个附件（请在校园网完整版查看）</div>` : ''}
-      ${p.poll ? '<div class="ph">📊 此帖含投票（请在校园网完整版参与）</div>' : ''}
-      <div class="foot"><span>❤ ${p.likes}</span><span>💬 ${p.cmts.length}</span><span>👁 ${p.views}</span>
-      <span style="margin-left:auto"><button class="btn" style="padding:4px 14px;font-size:13px" onclick="share()">🔗 分享</button></span></div>
-    </div>
-    <div class="card"><div style="font-weight:600;font-size:15px;margin-bottom:4px">💬 评论 ${p.cmts.length}</div>
-    ${p.cmts.map(c => `<div class="cmt"><div class="avatar">${esc((c.name[0] || '评').toUpperCase())}</div>
-      <div style="flex:1;min-width:0"><div class="name">${esc(c.name)}<span class="time" style="margin-left:8px">${esc(c.time)}</span></div>
-      <div class="content">${esc(c.content)}</div>${c.img ? `<img loading="lazy" src="img/${encodeURIComponent(c.img)}">` : ''}</div></div>`).join('')
-      || '<div style="color:#8a97a5;font-size:14px;padding:10px 0">暂无评论</div>'}
-    </div>
-    <div style="text-align:center;margin:16px 0"><a class="btn plain" href="index.html">📱 看更多帖子</a></div></div>
-    <div class="toast" id="toast">链接已复制</div>
-    <script>
-    function share(){
-      var url=location.href;
-      if(navigator.share){navigator.share({title:document.title,url:url}).catch(function(){});return}
-      (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(ok,function(){
-        var i=document.createElement('input');i.value=url;document.body.appendChild(i);i.select();
-        try{document.execCommand('copy');ok()}catch(e){}
-        document.body.removeChild(i)});
-      function ok(){var t=document.getElementById('toast');t.classList.add('on');setTimeout(function(){t.classList.remove('on')},1800)}
-    }
-    </script></body></html>`);
+    ${pageHead(`${p.author}：${snip || '班级动态'}`, snip, p.imgs[0])}
+    <body>${navbar}<div class="static-wrap">
+    <a class="static-tip" href="index.html" style="display:block;text-align:left;color:var(--link)">← 返回帖子广场</a>
+    ${cardHtml(p, false)}
+    </div>${shareJs}</body></html>`);
   }
 
   console.log(`快照完成：${postsData.length} 条帖子 → snapshot/`);

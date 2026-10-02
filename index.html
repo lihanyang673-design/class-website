@@ -14,22 +14,38 @@ body{font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-se
 h1{color:#fff;text-align:center;font-size:26px;text-shadow:0 2px 8px rgba(0,0,0,.15);margin-bottom:6px}
 .sub{color:rgba(255,255,255,.85);text-align:center;font-size:13px;margin-bottom:22px}
 .card{display:flex;align-items:center;gap:14px;background:#fff;border-radius:16px;padding:18px;margin-bottom:14px;
-  box-shadow:0 4px 14px rgba(0,0,0,.12);color:#1c2b3a;text-decoration:none;transition:transform .15s}
+  box-shadow:0 4px 14px rgba(0,0,0,.12);color:#1c2b3a;text-decoration:none;transition:transform .15s;cursor:pointer;border:0;width:100%;font-family:inherit;text-align:left}
 .card:hover{transform:translateY(-2px)}
 .card .ico{font-size:30px}
 .card b{display:block;font-size:16px}
 .card span{font-size:12.5px;color:#8a97a5}
 .foot{text-align:center;color:rgba(255,255,255,.75);font-size:12px;margin-top:10px}
+.toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;
+  padding:8px 18px;border-radius:20px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:99}
+.toast.on{opacity:1}
 </style>
 </head>
 <body>
 <div class="box">
   <h1>📚 班级动态</h1>
-  <div class="sub">GitHub 展示版 · 完整功能（登录/发帖/评论）请在校园网内访问</div>
+  <div class="sub">GitHub 展示版 · 登录/发帖/评论请在校园网内使用完整版</div>
   <a class="card" href="snapshot/index.html"><div class="ico">📝</div><div><b>帖子广场</b><span>浏览同学们的帖子和评论（无需登录）</span></div></a>
   <a class="card" href="public/tools/新版奶蛙街舞/index.html"><div class="ico">💃</div><div><b>奶蛙街舞</b><span>音乐舞蹈小游戏，打开就能玩</span></div></a>
-  <a class="card" href="public/"><div class="ico">🏫</div><div><b>网站完整版</b><span>需要连接班级服务器（校园网内）</span></div></a>
+  <button class="card" onclick="shareSite()"><div class="ico">📣</div><div><b>分享本站</b><span>把班级网站分享给同学（复制链接 / 发给好友）</span></div></button>
+  <a class="card" href="http://10.198.98.86" target="_blank" rel="noopener"><div class="ico">🏫</div><div><b>网站完整版</b><span>登录发帖全功能（需连接校园网，直接跳转）</span></div></a>
   <div class="foot">制作者：念因 · QQ 1139568835</div>
 </div>
+<div class="toast" id="toast">链接已复制，快去分享吧！</div>
+<script>
+var SITE_URL = location.origin + location.pathname;
+function ok(){var t=document.getElementById('toast');t.classList.add('on');setTimeout(function(){t.classList.remove('on')},1800)}
+function shareSite(){
+  if(navigator.share){navigator.share({title:'📚 班级动态',text:'快来我们班的网站看看！',url:SITE_URL}).catch(function(){});return}
+  (navigator.clipboard?navigator.clipboard.writeText(SITE_URL):Promise.reject()).then(ok,function(){
+    var i=document.createElement('input');i.value=SITE_URL;document.body.appendChild(i);i.select();
+    try{document.execCommand('copy');ok()}catch(e){}
+    document.body.removeChild(i)});
+}
+</script>
 </body>
 </html>
