@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261035';
-import { Game, pauseGame } from './game.js?v=20261035';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261036';
+import { Game, pauseGame } from './game.js?v=20261036';
 
 // ============================================================
 // 存档（localStorage）
@@ -904,6 +904,34 @@ function bindSettings(){
     if(confirm('确定清空全部进度？此操作不可恢复！')){
       Store.reset(); applyVolume(); renderHome(); refreshPlayerId(); toast('存档已清空');
     }
+  };
+
+  // ---- 清理本站缓存：只清本站的缓存文件/Service Worker，不动存档（localStorage）----
+  // 解决"改了代码但浏览器还用旧文件"的问题，同学自己就能点，不用清整个浏览器/QQ
+  $('btnClearCache').onclick=async()=>{
+    const btn=$('btnClearCache');
+    btn.textContent='清理中…'; btn.disabled=true;
+    let cleared=[];
+    try{
+      // ① 清 Cache Storage（本站的缓存文件）
+      if('caches' in window){
+        const keys=await caches.keys();
+        await Promise.all(keys.map(k=>caches.delete(k)));
+        cleared.push(`缓存文件 ${keys.length} 组`);
+      }
+      // ② 注销 Service Worker（它会拦截请求给旧文件，是"更新不生效"的头号元凶）
+      if('serviceWorker' in navigator){
+        const regs=await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r=>r.unregister()));
+        if(regs.length) cleared.push(`Service Worker ${regs.length} 个`);
+      }
+      toast('缓存已清（'+(cleared.join('、')||'本来就没有')+'），2秒后自动刷新');
+    }catch(e){
+      console.error('清缓存失败', e);
+      toast('清理完成，2秒后自动刷新');
+    }
+    // 带随机参数强制刷新，确保拿到全新文件
+    setTimeout(()=>{ location.href=location.pathname+'?v='+Date.now(); }, 2000);
   };
 
   // ---- 管理员认证：调全站统一接口，认证后会话获得管理员模式 ----
