@@ -201,7 +201,7 @@ const main={
     // ===== 开局加载进度条：把音频/谱面/方块的准备过程摆到明面上 =====
     const pl=$('playLoad'), plBar=$('playLoadBar'), plTxt=$('playLoadTxt');
     const setP=(p,t)=>{ plBar.style.width=p+'%'; if(t) plTxt.textContent=t; };
-    pl.classList.add('on'); setP(3,'🎵 完整下载歌曲中…');
+    pl.classList.add('on'); setP(3,'🎵 缓冲歌曲中…');
     // 切换歌曲（含玩家上传歌曲）
     const song=getSongById(songId)||SONGS[0];
     const theme=THEMES.find(t=>t.id===themeId);
