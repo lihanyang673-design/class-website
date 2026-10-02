@@ -276,52 +276,34 @@ export const Music = {
     }
     return src;
   },
-  // ★ 完整下载整首歌为本地 blob 再开播：进度条没满之前一个字节都不少，
-  //   进游戏后是读本地文件，不再边下边播（这是手机卡顿的根因）
-  async preloadFull(file, onProgress){
+  // ★ 预缓冲：不等整首下载（太慢），也不等 canplay（只缓冲1-2秒，易卡）。
+  //   只等缓冲够约 12 秒再开播 —— 文件已压缩到128kbps，12秒≈1.9MB，几秒就好，开局后有缓冲垫就不卡
+  async preloadBuffer(file, wantSec, onProgress){
     const src=this._resolveSrc(file);
     this.currentSong=file; this._src=src;
-    // 已完整下载过同一首 → 直接复用（选歌时预载的也认）
-    if(this._blobSrc && this._blobSrc===src){
-      music.src=this._blobURL;
-      await this._metaReady();
-      return music.duration||95;
-    }
-    try{
-      const res=await fetch(src, {credentials:'same-origin'});
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      const total=+res.headers.get('content-length')||0;
-      let blob;
-      // 边下边报进度（支持 ReadableStream 的浏览器）
-      if(res.body && res.body.getReader && total){
-        const reader=res.body.getReader(); const chunks=[];
-        let got=0;
-        for(;;){
-          const {done,value}=await reader.read();
-          if(done) break;
-          chunks.push(value); got+=value.length;
-          if(onProgress) onProgress(got/total);
-        }
-        blob=new Blob(chunks);
-      }else{
-        blob=await res.blob();
-        if(onProgress) onProgress(1);
-      }
-      // 上一首的本地URL释放掉，避免占手机内存
-      if(this._blobURL) URL.revokeObjectURL(this._blobURL);
-      this._blobURL=URL.createObjectURL(blob);
-      this._blobSrc=src;
-      music.src=this._blobURL;
-      await this._metaReady();
-      if(onProgress) onProgress(1);
-      console.log('%c[音乐] ✅ 整首歌已完整下载 '+file, 'color:#7fffd4;font-weight:bold');
-      return music.duration||95;
-    }catch(e){
-      // 兜底：完整下载失败（如老旧浏览器）→ 退回普通流式加载，至少能玩
-      console.warn('[音乐] 完整下载失败，退回边下边播', e);
-      this.setSong(file);
-      return await this.awaitDuration(3000);
-    }
+    this._blobSrc=null;                 // 不再使用 blob 模式
+    music.src=src; music.load();
+    await this._metaReady();
+    const dur=music.duration||60;
+    const goal=Math.min(wantSec||12, dur*0.35);
+    return await new Promise(res=>{
+      let done=false;
+      const finish=()=>{ if(done)return; done=true; cleanup(); res(dur); };
+      const check=()=>{
+        try{
+          if(music.buffered.length){
+            const end=music.buffered.end(music.buffered.length-1);
+            if(onProgress) onProgress(Math.min(end,goal)/goal, end);
+            // 缓冲区间（通常从0开始）末尾够目标秒数 → 开播
+            if(end>=goal-0.3) finish();
+          }
+        }catch{}
+      };
+      const to=setTimeout(finish, 12000);   // 最多等12秒，兜底（慢网也能玩，边播边缓）
+      const cleanup=()=>{ music.removeEventListener('progress',check); clearTimeout(to); };
+      music.addEventListener('progress',check);
+      check();
+    });
   },
   // 等音频元数据就绪（拿真实时长）
   _metaReady(){

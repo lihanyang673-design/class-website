@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261042';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261042';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261043';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261043';
 import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20260929r';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261042';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261043';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261042';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261043';
 
 const $=id=>document.getElementById(id);
 let stageGateBound=false;    // 「点我开演」闸门按钮只绑定一次
@@ -215,18 +215,18 @@ const main={
     resetBody();               // ★ 开演前复位奶娃（清上局躺地/庆祝残留）
     Game.hooks.onEnd=onShowEnd;
     Game.hooks.onEndlessEnd=onEndlessOver;
-    // ★ 门槛1：整首歌完整下载（进度 3%→78% 是真实下载进度，没下完绝不往下走）
-    const dur = await Music.preloadFull(song.file, p=>{
-      setP(3+Math.round(p*75), `🎵 完整下载歌曲中 ${Math.round(p*100)}%`);
+    // ★ 门槛1：歌曲预缓冲到约12秒（进度 3%→70% 随真实缓冲推进；音频已压缩，几秒就好）
+    const dur = await Music.preloadBuffer(song.file, 12, (ratio, sec)=>{
+      setP(3+Math.round(ratio*67), `🎵 缓冲歌曲中（已缓冲 ${Math.round(sec)} 秒）`);
     });
-    // ★ 门槛2：整首曲谱完整拉取（80%→93%）
-    setP(82,'🎼 完整加载曲谱…');
+    // ★ 门槛2：整首曲谱完整拉取（78%→88%）
+    setP(78,'🎼 完整加载曲谱…');
     let chart=null;
     try{ chart=await ensureChart(song); }
     catch(e){ console.warn('[演出] 谱面加载失败，退回程序生成谱面', e); }
-    // ★ 门槛3：方块全部建好（94%→99%）。先让浏览器把进度条画出来，避免UI冻住像卡死
-    setP(94,'🧱 搭建方块轨道…');
-    await new Promise(r=>setTimeout(r,60));
+    // ★ 门槛3：方块轨道就绪（90%→99%）
+    setP(90,'🧱 准备方块轨道…');
+    await new Promise(r=>setTimeout(r,50));
     startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart}, true);
     setP(100,'✅ 全部就绪！点按钮开演');
     setTimeout(()=>pl.classList.remove('on'), 300);

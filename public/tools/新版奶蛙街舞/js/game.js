@@ -4,7 +4,7 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261042';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261043';
 import { doAction, stumble } from './dancer.js?v=20260929r';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
@@ -207,7 +207,9 @@ export function startGame(cfg, defer){
   // 清空轨道 DOM，建立箭头元素（延迟到接近屏幕才显示）
   const tilt=document.getElementById('noteTilt');
   tilt.querySelectorAll('.note').forEach(n=>n.remove());
-  Game.dom = Game.notes.map(n=>spawnNoteEl(n));
+  // 方块延迟创建：开局不一次性建上千个DOM（手机会卡死/顿一下），
+  // 只在音符进入1.4秒窗口时才建（见 loop），每帧最多一两个，完全平滑
+  Game.dom = [];
 
   updateHud();
   // 无尽模式用 loop 循环播放，onended 永不触发；普通局一曲结束 = 自然结算
@@ -301,6 +303,8 @@ function loop(){
       continue;
     }
     if(dt > 1.4) break;                        // 还没进场（notes 按时间有序）
+    // 延迟创建：进入1.4秒窗口的此刻才建方块DOM（每帧最多几个，开局不再卡）
+    if(!n.el) spawnNoteEl(n);
     // 位置：判定线上方 dt 秒 × 速度（y 为相对轨道顶端的绝对坐标）
     const y = hitY - dt*pps - 26;              // -26 让箭头中心对准判定线
     if(dt > 0.9){ n.el.style.display='none'; continue; }
@@ -473,7 +477,8 @@ function nextRound(wrap){
     let seg;
     if(cfg.chart && cfg.chart.length) seg=chartNotes(cfg.chart,'hard',cfg.duration,cfg.songId||'');
     else seg=genChart('hard',cfg.bpm,cfg.duration,cfg.offset/1000,cfg.songId||'');
-    for(const n of seg){ n.t += E.base; spawnNoteEl(n); Game.notes.push(n); }
+    // 只追加音符数据，不建DOM（延迟创建会在它们进场前逐个建，避免一圈结束时顿卡）
+    for(const n of seg){ n.t += E.base; Game.notes.push(n); }
   }else{
     E.nextBoundary += E.segLen;   // 下一道段界
   }
