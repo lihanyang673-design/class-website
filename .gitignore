@@ -14,6 +14,8 @@ secrets.js
 naiwa-release/
 # 临时导出文件
 charts.json
+# 但内置游戏打包用的谱面需随仓库发布（GitHub Pages 上才能玩全部歌曲）
+!public/tools/新版奶蛙街舞/charts.json
 
 # ===== 按用户要求排除的大目录 =====
 # 同学照片和录音（隐私）
