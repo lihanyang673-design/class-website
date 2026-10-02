@@ -87,7 +87,13 @@ app.get('/', (req, res, next) => {
   }
   res.type('text/html').send(html);
 });
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, filePath){
+    // HTML 不缓存（每次访问都向服务器确认有没有新版），JS/CSS 靠 ?v= 版本号破缓存
+    // 解决：浏览器缓存旧 HTML → 引用旧 JS → 更新不生效的问题
+    if(filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+  }
+}));
 
 let db;
 
