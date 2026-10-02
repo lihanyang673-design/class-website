@@ -1,0 +1,25 @@
+node_modules/
+class-website.zip
+.DS_Store
+
+# ===== 隐私文件：绝不上传 =====
+# 数据库（账号、私信、成绩）及备份
+classroom.sqlite
+backups/
+# 用户上传的私人文件（照片、附件等）
+uploads/
+# 本地密码文件
+secrets.js
+# 独立发布的奶蛙街舞 git 仓库（嵌套）
+naiwa-release/
+# 临时导出文件
+charts.json
+
+# ===== 按用户要求排除的大目录 =====
+# 同学照片和录音（隐私）
+public/tools/班级相册/
+# 第三方软件二进制（版权）
+public/tools/Yixin/
+
+# 杂项工具二进制
+handle.exe

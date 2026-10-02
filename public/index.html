@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>班级动态</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#1877f2">
+<!-- iOS 全屏样式 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="班级动态">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="navbar">
+    <h1 onclick="goHome()" title="返回首页">📚 班级动态</h1>
+    <div class="nav-right">
+      <button id="theme-toggle" class="icon-btn" onclick="toggleTheme()" title="切换深色/浅色模式">🌙</button>
+      <button id="desktop-notif-btn" class="icon-btn hidden" onclick="toggleDesktopNotif()" title="桌面通知开关（评论/私信/@来时电脑响铃）">
+        🔇
+      </button>
+      <button id="add-home-btn" class="icon-btn" onclick="showAddHome()" title="添加到手机桌面，像 App 一样使用">📱</button>
+      <button id="notif-bell" class="icon-btn hidden" onclick="showNotifications()" title="消息通知">
+        🔔<span id="notif-badge" class="notif-badge hidden">0</span>
+      </button>
+      <button id="msg-bell" class="icon-btn hidden" onclick="showConversations()" title="私信">
+        💬<span id="msg-badge" class="notif-badge hidden">0</span>
+      </button>
+      <button id="users-bell" class="icon-btn hidden" onclick="showUsers()" title="同学列表">
+        👥
+      </button>
+      <button id="checkin-btn" class="icon-btn hidden" onclick="doCheckin()" title="每日签到">
+        📅
+      </button>
+      <div id="user-area">
+        <button onclick="showLogin()">登录</button>
+        <button onclick="showRegister()">注册</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- 主页面切换栏：动态 / 信息通讯 / 网站分享 -->
+    <nav class="main-tabs">
+      <button id="tab-feed" class="main-tab active" onclick="switchMainPage('feed')">📢 动态</button>
+      <button id="tab-msg" class="main-tab hidden" onclick="openMsgTab()">
+        💬 信息通讯<span id="tab-msg-badge" class="notif-badge hidden">0</span>
+      </button>
+      <button id="tab-tools" class="main-tab" onclick="openToolsTab()">🌐 网站分享</button>
+      <button id="tab-study" class="main-tab" onclick="openStudyTab()">📚 学习</button>
+    </nav>
+
+    <!-- ===== 主页面一：班级动态 ===== -->
+    <div id="page-feed">
+      <div id="new-posts-bar" class="new-posts-bar hidden" onclick="loadPosts()">⬆ 有新动态，点击查看</div>
+
+      <!-- 班级公告板：最新公告常驻顶部 -->
+      <div id="announcement-bar" class="announcement-bar hidden"></div>
+
+      <!-- 生日墙：今天有同学过生日时显示庆祝横幅，平时显示近期生日 -->
+      <div id="birthday-banner" class="birthday-banner hidden"></div>
+
+      <!-- 每周热门榜（首页全部视图才显示） -->
+      <div id="hot-week-bar" class="hot-week-bar hidden"></div>
+
+      <!-- 搜索框 -->
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input id="search-input" placeholder="搜索帖子内容、昵称..."
+          onkeydown="if(event.key==='Enter')doSearch()">
+        <button id="search-clear" class="search-clear hidden" onclick="clearSearch()">✕</button>
+      </div>
+
+      <!-- 分区标签栏（末尾带单列/双列切换按钮） -->
+      <div id="section-tabs" class="section-tabs"></div>
+
+      <!-- 热门 #话题# 栏 -->
+      <div id="topics-bar" class="topics-bar hidden"></div>
+
+      <!-- 个人主页视图 -->
+      <div id="profile-view" class="hidden"></div>
+
+    <!-- 发布区域 -->
+    <div id="post-editor" class="card hidden">
+      <div id="draft-bar" class="draft-bar hidden">
+        <span>📝 检测到未完成的草稿</span>
+        <button type="button" onclick="restoreDraft()">恢复</button>
+        <button type="button" class="modal-cancel" onclick="discardDraft()">丢弃</button>
+      </div>
+      <textarea id="post-content" placeholder="分享点什么吧...（输入 @昵称 可以提醒TA）" rows="3"></textarea>
+      <div id="post-section-picker" class="post-section-picker"></div>
+      <!-- 投票构建器 -->
+      <div id="poll-builder" class="poll-builder hidden">
+        <div class="poll-builder-head">
+          <span>🗳️ 投票选项</span>
+          <button type="button" onclick="removePollBuilder()">移除投票</button>
+        </div>
+        <div id="poll-options"></div>
+        <button type="button" class="poll-add-btn" onclick="addPollOption()">＋ 添加选项</button>
+      </div>
+      <button type="button" class="poll-toggle-btn" onclick="showPollBuilder()">🗳️ 发起投票</button>
+      <div class="upload-area">
+        <label>📷 图片 (最多9张)
+          <input type="file" id="image-input" accept="image/*" multiple>
+        </label>
+        <label>🎬 视频 (1个，最大200MB)
+          <input type="file" id="video-input" accept="video/*">
+        </label>
+        <label>📎 文件 (最多5个，单个最大200MB)
+          <input type="file" id="file-input" multiple>
+        </label>
+      </div>
+      <div id="image-preview" class="upload-preview"></div>
+      <div id="video-preview" class="upload-preview"></div>
+      <div id="file-preview" class="file-preview"></div>
+      <div id="upload-progress" class="upload-progress hidden">
+        <div class="upload-progress-bar"><div id="upload-progress-fill"></div></div>
+        <span id="upload-progress-text"></span>
+      </div>
+      <button id="submit-post" onclick="submitPost()">发布</button>
+    </div>
+
+      <!-- 动态列表 -->
+      <div id="posts-list"></div>
+    </div>
+
+    <!-- ===== 主页面二：信息通讯（同学 / 会话 / 聊天） ===== -->
+    <div id="page-msg" class="hidden">
+      <!-- 同学列表视图 -->
+      <div id="users-view" class="hidden"></div>
+
+      <!-- 私信会话列表视图 -->
+      <div id="conversations-view" class="hidden"></div>
+
+      <!-- 聊天界面视图 -->
+      <div id="chat-view" class="hidden"></div>
+    </div>
+
+    <!-- ===== 主页面三：工具分享 ===== -->
+    <div id="page-tools" class="hidden"></div>
+
+    <!-- ===== 主页面四：学习（番茄钟 + 学习资料库） ===== -->
+    <div id="page-study" class="hidden"></div>
+  </main>
+
+  <!-- 登录弹窗 -->
+  <div id="login-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>登录</h2>
+      <input id="login-username" placeholder="用户名">
+      <input id="login-password" type="password" placeholder="密码">
+      <button onclick="doLogin()">登录</button>
+      <button class="modal-cancel" onclick="closeModal('login-modal')">取消</button>
+    </div>
+  </div>
+
+  <!-- 注册弹窗 -->
+  <div id="register-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>注册</h2>
+      <input id="reg-username" placeholder="用户名">
+      <input id="reg-password" type="password" placeholder="密码">
+      <input id="reg-nickname" placeholder="昵称">
+      <button onclick="doRegister()">注册</button>
+      <button class="modal-cancel" onclick="closeModal('register-modal')">取消</button>
+    </div>
+  </div>
+
+  <!-- 管理员模式弹窗 -->
+  <div id="admin-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>管理员模式</h2>
+      <p class="modal-tip">输入管理员密码后即可开启管理员模式，可以删除任何人的帖子和评论</p>
+      <input id="admin-password" type="password" placeholder="请输入管理员密码" onkeydown="if(event.key==='Enter')doApplyAdmin()">
+      <button onclick="doApplyAdmin()">确认</button>
+      <button class="modal-cancel" onclick="closeModal('admin-modal')">取消</button>
+    </div>
+  </div>
+
+  <!-- 修改密码弹窗 -->
+  <div id="password-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>🔑 修改密码</h2>
+      <input id="pwd-old" type="password" placeholder="原密码" maxlength="32">
+      <input id="pwd-new" type="password" placeholder="新密码（6-32 位）" maxlength="32">
+      <input id="pwd-confirm" type="password" placeholder="再输入一遍新密码" maxlength="32"
+        onkeydown="if(event.key==='Enter')submitChangePassword()">
+      <button onclick="submitChangePassword()">确认修改</button>
+      <button class="modal-cancel" onclick="closeModal('password-modal')">取消</button>
+    </div>
+  </div>
+
+  <!-- 设置头像弹窗 -->
+  <div id="avatar-modal" class="modal hidden">
+    <div class="modal-content avatar-modal-content">
+      <h2>设置头像</h2>
+      <label class="avatar-upload-btn">📁 选择照片上传
+        <input type="file" id="avatar-file-input" accept="image/*">
+      </label>
+      <p class="modal-tip" style="margin-top:12px">或选一个表情头像：</p>
+      <div class="avatar-presets" id="avatar-presets"></div>
+      <button class="modal-cancel" onclick="closeModal('avatar-modal')">关闭</button>
+    </div>
+  </div>
+
+  <!-- 创建群聊弹窗 -->
+  <div id="group-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>创建群聊</h2>
+      <input id="group-name-input" placeholder="群名称（最多 30 字）" maxlength="30">
+      <p class="modal-tip">选择群成员：</p>
+      <div id="group-member-list" class="group-member-list"></div>
+      <button onclick="createGroup()">创建</button>
+      <button class="modal-cancel" onclick="closeModal('group-modal')">取消</button>
+    </div>
+  </div>
+
+  <!-- 群设置弹窗（改名/加人/移除成员/退群/解散） -->
+  <div id="group-settings-modal" class="modal hidden">
+    <div class="modal-content group-settings-content">
+      <h2>⚙️ 群设置</h2>
+      <div id="gs-body"></div>
+      <button class="modal-cancel" onclick="closeModal('group-settings-modal')">关闭</button>
+    </div>
+  </div>
+
+  <!-- 消息通知弹窗 -->
+  <div id="notif-modal" class="modal hidden">
+    <div class="modal-content notif-modal-content">
+      <h2>🔔 消息通知</h2>
+      <div id="notif-list"></div>
+      <button class="modal-cancel" onclick="closeModal('notif-modal')">关闭</button>
+    </div>
+  </div>
+
+  <!-- 图片查看弹窗（滚轮缩放、拖动移动、右上角❌关闭） -->
+  <div id="image-viewer" class="image-viewer hidden">
+    <button class="viewer-close" onclick="closeImageViewer()">❌</button>
+    <img id="image-viewer-img" src="" alt="查看图片" draggable="false">
+  </div>
+
+  <!-- 分享弹窗：链接 + 二维码 -->
+  <div id="share-modal" class="modal hidden">
+    <div class="modal-content share-modal-content">
+      <h2>🔗 分享这条动态</h2>
+      <div id="share-preview" class="share-preview"></div>
+      <input id="share-url" readonly class="share-url-input">
+      <button onclick="copyShareLink()" class="primary-btn">📋 复制链接</button>
+      <p class="share-tip">📱 用手机扫码或在浏览器打开链接即可查看本帖</p>
+      <div id="share-qrcode" class="share-qrcode"></div>
+      <p class="share-warn">⚠️ 链接里的 IP 是当前电脑的地址，IP 变化后链接失效</p>
+      <button class="modal-cancel" onclick="closeShareModal()">关闭</button>
+    </div>
+  </div>
+
+  <!-- 公告详情弹窗 -->
+  <div id="announcement-modal" class="modal hidden">
+    <div class="modal-content announcement-modal-content">
+      <h2 id="announcement-modal-title">📢 班级公告</h2>
+      <div id="announcement-modal-meta" class="announcement-modal-meta"></div>
+      <div id="announcement-modal-body" class="announcement-modal-body"></div>
+      <button class="modal-cancel" onclick="closeModal('announcement-modal')">关闭</button>
+    </div>
+  </div>
+
+  <!-- 发布公告弹窗（管理员） -->
+  <div id="announcement-edit-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>📢 发布班级公告</h2>
+      <p class="modal-tip">公告会常驻首页顶部，所有同学收到通知</p>
+      <input id="announcement-title-input" placeholder="标题（最多 60 字）" maxlength="60">
+      <textarea id="announcement-content-input" placeholder="公告内容（最多 1000 字）" maxlength="1000" rows="6"></textarea>
+      <button onclick="submitAnnouncement()">发布</button>
+      <button class="modal-cancel" onclick="closeModal('announcement-edit-modal')">取消</button>
+    </div>
+  </div>
+
+  <!-- 每日签到提醒：打开网站时若未签到自动弹出 -->
+  <div id="checkin-remind-modal" class="modal hidden">
+    <div class="modal-content checkin-remind-content">
+      <h2>📅 今日签到</h2>
+      <div id="checkin-remind-body" class="checkin-remind-body"></div>
+      <button class="primary-btn" onclick="checkinFromRemind()">✅ 立即签到</button>
+      <button class="modal-cancel" onclick="closeModal('checkin-remind-modal')">稍后再说</button>
+    </div>
+  </div>
+
+  <!-- 添加到手机桌面指引 -->
+  <div id="add-home-modal" class="modal hidden">
+    <div class="modal-content add-home-content">
+      <h2>📱 添加到手机桌面</h2>
+      <div id="add-home-body" class="add-home-body"></div>
+      <button class="modal-cancel" onclick="closeModal('add-home-modal')">知道了</button>
+    </div>
+  </div>
+</div>
+
+<script src="heic2any.min.js"></script>
+<script src="qrcode.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

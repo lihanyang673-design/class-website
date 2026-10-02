@@ -1,0 +1,421 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="robots" content="noindex,nofollow">
+<title>页面不存在</title>
+<style>
+:root{--pink:#ff3b6b;--cyan:#36d1ff;--yellow:#ffe17a;--purple:#7a4dff;--bg0:#160a24;--bg1:#241040;--glass:rgba(255,255,255,.06);--line:rgba(255,255,255,.12);--txt:#fff;--sub:#c9b8e8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:linear-gradient(135deg,#160a24,#241040);color:var(--txt);min-height:100vh;padding:20px}
+.wrap{max-width:720px;margin:0 auto}
+h1{font-size:28px;font-weight:900;margin-bottom:8px;background:linear-gradient(90deg,var(--pink),var(--yellow));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--sub);font-size:13px;margin-bottom:20px}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px;backdrop-filter:blur(8px)}
+.login-box{display:flex;gap:10px;align-items:center}
+input{background:var(--bg1);color:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-size:15px;font-family:inherit;width:100%}
+button{cursor:pointer;border:none;font-family:inherit;font-weight:800;border-radius:12px;padding:12px 22px;font-size:15px;transition:.12s}
+.btn-main{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;box-shadow:0 6px 0 #a01448}
+.btn-main:active{transform:translateY(3px)}
+.btn-ghost{background:var(--glass);color:#fff;border:1px solid var(--line)}
+.btn-ghost:hover{background:#ffffff1c}
+.btn-danger{background:linear-gradient(135deg,#ff4444,#aa0000);color:#fff}
+.btn-warn{background:linear-gradient(135deg,var(--yellow),#ffb347);color:#5a3a00}
+.stat-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
+.stat-row:last-child{border-bottom:none}
+.stat-row .k{color:var(--sub)}
+.stat-row .v{font-weight:900;color:var(--yellow)}
+.grid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.form-row{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center;margin-bottom:10px}
+.form-row label{font-size:14px;color:var(--sub);font-weight:700}
+.code-item{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  background:var(--bg1);border:1px solid var(--line);border-radius:10px;
+  padding:9px 12px;margin-bottom:7px;cursor:pointer;transition:.12s;
+}
+.code-item:hover{border-color:var(--yellow)}
+.code-item .code-text{font-family:Consolas,monospace;font-size:13px;color:var(--yellow);word-break:break-all}
+.code-item .code-meta{font-size:11px;color:var(--sub);white-space:nowrap}
+@media(max-width:560px){.form-row{grid-template-columns:1fr}.form-row label{margin-bottom:-4px}}
+.section-title{font-size:18px;font-weight:900;margin:16px 0 10px;display:flex;align-items:center;gap:8px}
+.hint{font-size:12px;color:var(--sub);margin-top:6px}
+.toast{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:#fff;color:#3a1a4a;font-weight:800;padding:10px 22px;border-radius:99px;opacity:0;transition:.25s;z-index:99}
+.toast.on{opacity:1}
+a.back{color:var(--sub);text-decoration:none;font-size:14px}
+a.back:hover{color:#fff}
+.topbar-tools{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+#btnLogout{padding:8px 16px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ====== 伪装 404：默认显示（不依赖 JS），暗号正确才被隐藏 ====== -->
+  <div id="fake404" style="text-align:center;padding-top:22vh">
+    <div style="font-size:72px;font-weight:900;background:linear-gradient(90deg,var(--pink),var(--yellow));-webkit-background-clip:text;background-clip:text;color:transparent">404</div>
+    <div style="font-size:20px;font-weight:800;margin:10px 0">页面走丢了</div>
+    <div class="sub">你访问的页面不存在或已被移除</div>
+    <a href="index.html" style="display:inline-block;margin-top:22px;color:var(--cyan);text-decoration:none;font-weight:800">← 回到游戏首页</a>
+  </div>
+
+  <!-- ====== 真正的后台（暗号正确才显示） ====== -->
+  <div id="adminRoot" style="display:none">
+    <div class="topbar-tools">
+      <h1 style="margin:0">🛠️ 奶娃街舞 · 管理员后台</h1>
+      <button class="btn-ghost" id="btnLogout">退出登录</button>
+    </div>
+    <div class="sub">管理本地存档数据 · 奶币充值 · 兑换码签发 · 数据维护</div>
+
+    <!-- 登录 -->
+    <div class="card" id="loginCard">
+      <div class="section-title">🔐 管理员验证</div>
+      <div class="login-box">
+        <input type="password" id="pwd" placeholder="请输入管理员密码" autocomplete="off">
+        <button class="btn-main" id="btnLogin">登 录</button>
+      </div>
+      <div class="hint" id="loginHint">连续输错 5 次将临时锁定 30 秒</div>
+    </div>
+
+    <!-- 管理面板 -->
+    <div id="panel" style="display:none">
+
+      <!-- ★ 兑换码生成器（给玩家发奖励的正式渠道） -->
+      <div class="card">
+        <div class="section-title">🎁 奶币兑换码生成器 <span style="font-size:12px;color:var(--sub);font-weight:400">（正式发奖用这个）</span></div>
+        <div class="hint" style="margin-bottom:14px;line-height:1.7">
+          用法：玩家把他的「编号」(NAI-XXXXXX) 发给你 → 填到下面 → 生成兑换码发给他 → 他在游戏「设置→兑换码」里领取。<br>
+          ✅ 带防伪签名，玩家无法自己伪造；✅ 填了编号就只有本人能用；✅ 每个码只能用一次。
+        </div>
+        <div class="form-row">
+          <label>奶币数量</label>
+          <input type="number" id="gcCoins" value="1000" min="1" step="100">
+        </div>
+        <div class="form-row">
+          <label>绑定玩家编号</label>
+          <input type="text" id="gcUid" placeholder="NAI-XXXXXX（留空=通用码，谁都能领）" style="text-transform:uppercase">
+        </div>
+        <div class="form-row">
+          <label>有效期</label>
+          <select id="gcExpire" style="background:var(--bg1);color:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:15px;font-family:inherit">
+            <option value="0">永久有效</option>
+            <option value="7">7 天</option>
+            <option value="30" selected>30 天</option>
+            <option value="90">90 天</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>生成数量</label>
+          <input type="number" id="gcCount" value="1" min="1" max="100">
+        </div>
+        <button class="btn-main" id="btnGenCode" style="width:100%;margin-top:8px">🎫 生成兑换码</button>
+
+        <div id="codeResult" style="margin-top:16px;display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <b>生成结果（点击单条可复制）</b>
+            <button class="btn-ghost" id="btnCopyAll" style="padding:6px 14px;font-size:13px">📋 全部复制</button>
+          </div>
+          <div id="codeList" style="max-height:280px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- 当前存档概览 -->
+      <div class="card">
+        <div class="section-title">📊 当前存档数据</div>
+        <div id="statsView"></div>
+      </div>
+
+      <!-- 奶币充值（本机调试） -->
+      <div class="card">
+        <div class="section-title">🪙 本机奶币调试 <span style="font-size:12px;color:#ff9b9b;font-weight:400">（只改你这台电脑的存档，发不了给玩家）</span></div>
+        <div class="grid">
+          <input type="number" id="coinAdd" placeholder="输入要增加的奶币数量（正数=加，负数=扣）" value="1000">
+          <button class="btn-main" id="btnAddCoin">➕ 加奶币</button>
+        </div>
+        <div class="hint">给玩家发奖励请用上面的「兑换码生成器」</div>
+        <div class="grid" style="margin-top:12px">
+          <input type="number" id="coinSet" placeholder="直接设置奶币为指定数量">
+          <button class="btn-warn" id="btnSetCoin">🔧 设为指定值</button>
+        </div>
+      </div>
+
+      <!-- 快捷操作（本机调试） -->
+      <div class="card">
+        <div class="section-title">⚡ 本机快捷调试</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-ghost" data-quick="500">+500</button>
+          <button class="btn-ghost" data-quick="1000">+1000</button>
+          <button class="btn-ghost" data-quick="5000">+5000</button>
+          <button class="btn-ghost" data-quick="10000">+10000</button>
+          <button class="btn-ghost" data-quick="99999">+99999</button>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn-ghost" id="btnAllSkins">🎁 解锁全部涂装</button>
+          <button class="btn-ghost" id="btnMaxStats">📈 拉满统计数据</button>
+        </div>
+      </div>
+
+      <!-- 解锁涂装 -->
+      <div class="card">
+        <div class="section-title">👕 涂装管理</div>
+        <div id="skinList" style="max-height:300px;overflow-y:auto"></div>
+      </div>
+
+      <!-- 修改管理员密码 -->
+      <div class="card">
+        <div class="section-title">🔑 修改管理员密码</div>
+        <div class="form-row">
+          <label>当前密码</label>
+          <input type="password" id="oldPwd" placeholder="输入当前密码" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <label>新密码</label>
+          <input type="password" id="newPwd" placeholder="至少 6 位，建议字母+数字" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <label>确认新密码</label>
+          <input type="password" id="newPwd2" placeholder="再输一遍新密码" autocomplete="off">
+        </div>
+        <button class="btn-main" id="btnChangePwd" style="width:100%;margin-top:6px">确认修改</button>
+        <div class="hint">改密码后请牢记，忘记密码只能在浏览器控制台执行 localStorage.removeItem('naiwa_admin_pwd_hash') 重置。</div>
+      </div>
+
+      <!-- 数据维护 -->
+      <div class="card">
+        <div class="section-title">🧹 数据维护</div>
+        <button class="btn-ghost" id="btnRefresh">🔄 刷新数据</button>
+        <button class="btn-danger" id="btnReset" style="margin-left:10px">⚠️ 清空全部存档</button>
+        <div class="hint">清空存档后不可恢复，慎点！</div>
+      </div>
+
+      <a href="index.html" class="back">← 返回游戏</a>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/codec.js?v=20260929b"></script>
+<script>
+// ============================================================
+// 管理员安全配置
+// ============================================================
+const ADMIN_HASH = '#nai-boss';   // ★ URL 暗号：必须用 admin.html#nai-boss 打开（可改成你自己的暗号）
+// 默认密码 nailong2024 的 SHA-256（代码中不存明文；登录后请立刻改密码）
+const DEFAULT_PWD_HASH = 'e924979c94757ebe2c58afeea670511becee23e241f9d544e1e3a7ffff01d052';
+const PWD_HASH_KEY = 'naiwa_admin_pwd_hash';   // 改密后哈希存这里
+const SESSION_KEY = 'naiwa_admin_ok';
+const FAIL_KEY    = 'naiwa_admin_fail';        // {n:次数, until:锁定到的时间戳}
+const MAX_FAIL = 5, LOCK_MS = 30000;
+
+const KEY='naiwa_dance_save_v1';
+const SKINS_IDS=['classic','lemon','mint','sky','peach','strawberry','apple','orange','banana','matcha','berry','milktea','ocean','choco','grape','blueberry','cherry','watermelon','tomato','taro','coconut','caramel','honey','gold','neon','rainbow','galaxy'];
+
+const $=id=>document.getElementById(id);
+
+function load(){
+  try{ return JSON.parse(localStorage.getItem(KEY))||{}; }
+  catch{ return {}; }
+}
+function save(d){ localStorage.setItem(KEY, JSON.stringify(d)); }
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),1600); }
+
+// ============================================================
+// 第一道门：URL 暗号。不对 → 伪装 404，不暴露任何后台痕迹
+// ============================================================
+if(location.hash !== ADMIN_HASH){
+  document.title = '页面不存在';
+  $('fake404').style.display = 'block';
+  $('adminRoot').style.display = 'none';
+  throw new Error('404');   // 终止后续所有脚本
+}
+document.title = '奶娃街舞 · 管理员后台';
+$('fake404').style.display = 'none';
+$('adminRoot').style.display = 'block';
+
+// ============================================================
+// 第二道门：密码哈希校验 + 失败锁定
+// ============================================================
+function getPwdHash(){ return localStorage.getItem(PWD_HASH_KEY) || DEFAULT_PWD_HASH; }
+function getFail(){ try{ return JSON.parse(sessionStorage.getItem(FAIL_KEY))||{n:0,until:0}; }catch{ return {n:0,until:0}; } }
+function setFail(f){ sessionStorage.setItem(FAIL_KEY, JSON.stringify(f)); }
+
+function renderStats(){
+  const d=load();
+  const s=d.stats||{};
+  const html=[
+    ['奶币余额', d.coins||0],
+    ['已拥有涂装', (d.owned||[]).length+' 套'],
+    ['当前装备', d.equipped||'classic'],
+    ['演出场次', s.plays||0],
+    ['最高分', (s.bestScore||0).toLocaleString()],
+    ['最大连击', s.maxCombo||0],
+    ['累计 PERFECT', s.totalPerfect||0],
+    ['累计获得奶币', s.totalCoins||0],
+    ['最佳准确率', s.bestAcc? (s.bestAcc*100).toFixed(1)+'%' : '0%'],
+    ['全连次数', s.fullCombos||0],
+    ['SS 次数', s.ssCount||0],
+    ['已解锁成就', Object.keys(d.ach||{}).length],
+  ].map(([k,v])=>`<div class="stat-row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+  $('statsView').innerHTML=html;
+}
+
+function renderSkins(){
+  const d=load();
+  const owned=d.owned||['classic'];
+  $('skinList').innerHTML=SKINS_IDS.map(id=>{
+    const has=owned.includes(id);
+    return `<div class="stat-row"><span class="k">${id}</span><span class="v" style="color:${has?'#7fffd4':'#ff6b6b'}">${has?'✓ 已拥有':'✗ 未拥有'}</span></div>`;
+  }).join('');
+}
+
+function refresh(){ renderStats(); renderSkins(); }
+
+function enterAdmin(){
+  $('loginCard').style.display='none';
+  $('panel').style.display='block';
+  refresh();
+}
+function logout(){
+  sessionStorage.removeItem(SESSION_KEY);
+  $('panel').style.display='none';
+  $('loginCard').style.display='block';
+  $('pwd').value='';
+  toast('已退出登录');
+}
+$('btnLogout').addEventListener('click', logout);
+
+function tryLogin(){
+  const fail = getFail();
+  if(fail.until > Date.now()){
+    $('loginHint').textContent = '🔒 密码错误次数过多，请 ' + Math.ceil((fail.until-Date.now())/1000) + ' 秒后再试';
+    return;
+  }
+  const input = $('pwd').value;
+  if(!input){ toast('请输入密码'); return; }
+  if(NaiCode.sha256Hex(input) === getPwdHash()){
+    sessionStorage.setItem(SESSION_KEY,'1');
+    setFail({n:0,until:0});
+    enterAdmin();
+    toast('✅ 登录成功');
+  }else{
+    const f = getFail();
+    f.n = (f.until > Date.now() ? f.n : 0) + 1;
+    if(f.n >= MAX_FAIL){ f.until = Date.now() + LOCK_MS; f.n = 0; }
+    setFail(f);
+    $('pwd').value='';
+    $('loginHint').textContent = f.until > Date.now()
+      ? '🔒 错误次数过多，已锁定 30 秒'
+      : ('❌ 密码错误，还可尝试 ' + (MAX_FAIL - f.n) + ' 次');
+  }
+}
+$('btnLogin').addEventListener('click', tryLogin);
+$('pwd').addEventListener('keydown',e=>{ if(e.key==='Enter') tryLogin(); });
+// 同一会话内刷新免重输（仍要求 URL 暗号正确）
+if(sessionStorage.getItem(SESSION_KEY)==='1') enterAdmin();
+
+// ============================================================
+// 修改密码
+// ============================================================
+$('btnChangePwd').addEventListener('click',()=>{
+  const o=$('oldPwd').value, n=$('newPwd').value, n2=$('newPwd2').value;
+  if(NaiCode.sha256Hex(o) !== getPwdHash()){ toast('❌ 当前密码不正确'); return; }
+  if(n.length < 6){ toast('❌ 新密码至少 6 位'); return; }
+  if(n !== n2){ toast('❌ 两次输入的新密码不一致'); return; }
+  localStorage.setItem(PWD_HASH_KEY, NaiCode.sha256Hex(n));
+  $('oldPwd').value=$('newPwd').value=$('newPwd2').value='';
+  toast('🔑 密码修改成功');
+});
+
+// ============================================================
+// 兑换码生成器
+// ============================================================
+let lastCodes=[];
+function copyText(txt){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).catch(()=>fallbackCopy(txt));
+  }else fallbackCopy(txt);
+}
+function fallbackCopy(txt){
+  const t=document.createElement('textarea'); t.value=txt; document.body.appendChild(t);
+  t.select(); document.execCommand('copy'); t.remove();
+}
+$('btnGenCode').addEventListener('click',async ()=>{
+  const coins=parseInt($('gcCoins').value);
+  const uid=$('gcUid').value.trim().toUpperCase();
+  const expireDays=parseInt($('gcExpire').value)||0;
+  const count=Math.min(100,Math.max(1,parseInt($('gcCount').value)||1));
+  if(!coins||coins<=0){ toast('奶币数量要大于 0'); return; }
+  if(uid && !/^NAI-[A-HJ-NP-Z2-9]{6}$/.test(uid)){
+    if(!confirm('编号格式看起来不太对（应为 NAI-XXXXXX），确定继续吗？')) return;
+  }
+  lastCodes=[];
+  for(let i=0;i<count;i++){
+    const code=await NaiCode.makeCode({coins, uid, expireDays});
+    lastCodes.push(code);
+  }
+  const expText=expireDays>0?expireDays+'天有效':'永久';
+  const bindText=uid?('仅 '+uid+' 可用'):'通用码';
+  $('codeResult').style.display='block';
+  $('codeList').innerHTML=lastCodes.map(c=>`
+    <div class="code-item" data-code="${c}">
+      <span class="code-text">${c}</span>
+      <span class="code-meta">${coins}🪙 · ${bindText} · ${expText} · 📋</span>
+    </div>`).join('');
+  document.querySelectorAll('#codeList .code-item').forEach(el=>{
+    el.addEventListener('click',()=>{ copyText(el.dataset.code); toast('已复制该兑换码'); });
+  });
+  toast(`🎫 已生成 ${count} 个兑换码`);
+});
+$('btnCopyAll').addEventListener('click',()=>{
+  if(!lastCodes.length) return;
+  copyText(lastCodes.join('\n'));
+  toast('📋 已全部复制（共 '+lastCodes.length+' 个）');
+});
+
+// 加奶币
+$('btnAddCoin').addEventListener('click',()=>{
+  const n=parseInt($('coinAdd').value)||0;
+  const d=load(); d.coins=(d.coins||0)+n; save(d); refresh();
+  toast(`🪙 ${n>0?'+':''}${n} 奶币，当前余额 ${d.coins}`);
+});
+// 设为指定值
+$('btnSetCoin').addEventListener('click',()=>{
+  const n=parseInt($('coinSet').value);
+  if(isNaN(n)){ toast('请输入有效数字'); return; }
+  const d=load(); d.coins=n; save(d); refresh();
+  toast(`🔧 奶币已设为 ${n}`);
+});
+// 快捷按钮
+document.querySelectorAll('[data-quick]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const n=parseInt(b.dataset.quick);
+    const d=load(); d.coins=(d.coins||0)+n; save(d); refresh();
+    toast(`🪙 +${n} 奶币`);
+  });
+});
+// 解锁全部涂装
+$('btnAllSkins').addEventListener('click',()=>{
+  const d=load(); d.owned=[...SKINS_IDS]; save(d); refresh();
+  toast('🎁 已解锁全部 27 套涂装');
+});
+// 拉满统计
+$('btnMaxStats').addEventListener('click',()=>{
+  const d=load();
+  d.stats=d.stats||{};
+  Object.assign(d.stats,{plays:100,bestScore:999999,maxCombo:999,totalPerfect:9999,totalCoins:99999,bestAcc:1,fullCombos:50,ssCount:50});
+  save(d); refresh();
+  toast('📈 统计数据已拉满');
+});
+// 刷新
+$('btnRefresh').addEventListener('click',()=>{ refresh(); toast('🔄 已刷新'); });
+// 清空
+$('btnReset').addEventListener('click',()=>{
+  if(confirm('确定清空全部存档？此操作不可恢复！')){
+    localStorage.removeItem(KEY); refresh();
+    toast('🧹 存档已清空');
+  }
+});
+</script>
+</body>
+</html>

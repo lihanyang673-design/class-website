@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自定义范围和数量的随机数生成器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            text-align: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input[type="number"] {
+            width: 50px;
+            padding: 5px;
+            margin: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #ddd;
+        }
+        #randomNumbers {
+            font-size: 1.5em;
+            margin-top: 20px;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+        #randomNumbers.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>随机数生成器</h2>
+        <label for="min">最小值:</label>
+        <input type="number" id="min" value="1" min="1">
+        <label for="max">最大值:</label>
+        <input type="number" id="max" value="9" min="1">
+        <br>
+        <label for="count">数量:</label>
+        <input type="number" id="count" value="1" min="1">
+        <br>
+        <button onclick="generateRandomNumbers()">生成随机数</button>
+        <button onclick="clearRandomNumbers()">清除</button>
+        <div id="randomNumbers"></div>
+    </div>
+
+    <script>
+        function generateRandomNumbers() {
+            const min = parseInt(document.getElementById('min').value, 10);
+            const max = parseInt(document.getElementById('max').value, 10);
+            const count = parseInt(document.getElementById('count').value, 10);
+
+            if (isNaN(min) || isNaN(max) || isNaN(count) || min > max || count <= 0 || count > (max - min + 1)) {
+                document.getElementById('randomNumbers').textContent = '无效输入或数量超过范围';
+                return;
+            }
+
+            let randomNumbers = new Set();
+            while (randomNumbers.size < count) {
+                const randomNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+                randomNumbers.add(randomNumber);
+            }
+
+            const resultDiv = document.getElementById('randomNumbers');
+            resultDiv.textContent = Array.from(randomNumbers).join(', ');
+
+            // Remove the 'visible' class and force a reflow to ensure the transition works each time
+            resultDiv.classList.remove('visible');
+            void resultDiv.offsetWidth; // Trigger a reflow
+
+            // Add a temporary class to force the transition
+            resultDiv.classList.add('temp-visible');
+            setTimeout(() => {
+                resultDiv.classList.replace('temp-visible', 'visible');
+            }, 10); // Use a small delay to ensure the transition is triggered
+        }
+
+        function clearRandomNumbers() {
+            const resultDiv = document.getElementById('randomNumbers');
+            resultDiv.textContent = '';
+            resultDiv.classList.remove('visible');
+        }
+    </script>
+</body>
+</html>
+
+
