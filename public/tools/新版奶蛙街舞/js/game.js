@@ -11,6 +11,8 @@ import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 // ---------- 判定窗口（秒） ----------
 const WIN_GOOD = 0.15, WIN_PERFECT = 0.07, WIN_MISS = 0.19;
 const LANE_HEX = [0xff3b6b, 0x36d1ff, 0xffe17a, 0x7a4dff];  // 四轨道主题色
+// 相邻方块最小间隔（秒）：高 BPM 歌曲的半拍会密到看不清，统一卡一个下限（同时点的双押不受限）
+const MIN_GAP = 0.22;
 
 export const Game = {
   playing:false, paused:false,
@@ -71,12 +73,14 @@ function chartNotes(chart, diff, durSec, seedStr){
     out.push({ t, lane, state:0 });
   }
   let lane=(rnd()*4)|0;                  // 起始轨道
+  let lastT=-9;                          // 上一个方块的时间（配合 MIN_GAP 防过密）
   // cand 个密谱格 = 一个候选位置（easy 每4格=整拍；其余每2格=半拍）
   for(let i=0; i<chart.length; i+=P.cand){
     const t=+chart[i].t;
     if(t<1.0 || t>end) continue;
     if(rnd() < P.rest) continue;                    // 原版：按概率休息（休息不换道）
-    add(t, lane);
+    if(t - lastT < MIN_GAP) continue;               // 与上一个方块太近（高 BPM 半拍）→ 强制休息
+    add(t, lane); lastT=t;
     if(P.dbl && rnd() < P.dbl){                     // 原版：按概率双押（第二轨必不同于本轨）
       add(t, (lane + 1 + ((rnd()*3)|0)) % 4);
     }
@@ -109,14 +113,16 @@ export function genChart(diff, bpm, durSec, offsetSec, seedStr=''){
   }[diff];
   let lane = (rnd()*4)|0;
   const step = beat/DIFF.div;
+  let lastT=-9;                          // 上一个方块的时间（配合 MIN_GAP 防过密）
 
   const seen=new Set();
   const reg=(t,l)=>seen.add(t.toFixed(3)+'|'+l);
   let b=first;
   while(b<last){
     if(rnd() < DIFF.rest){ b+=step; continue; }      // 随机休息拍
+    if(b - lastT < MIN_GAP){ b+=step; continue; }    // 与上一个方块太近（高 BPM 半拍）→ 强制休息
     notes.push({ t:b, lane, state:0 });              // state: 0待 1hit 2miss
-    reg(b,lane);
+    reg(b,lane); lastT=b;
     // 双押
     if(rnd() < DIFF.dbl){
       const l2=(lane + 1 + ((rnd()*3)|0)) % 4;
@@ -206,6 +212,7 @@ export function startGame(cfg){
   window.__music = Music.el;   // 调试钩子（与 __game 同性质）
   console.log(`%c[演出] 🎬 开始！难度=${cfg.diff}${cfg.endless?' ♾无尽':''} BPM=${cfg.bpm} 音符数=${Game.notes.length} 时长≈${cfg.duration.toFixed(0)}s`, 'color:#ffe17a;font-weight:bold');
   Music.play();
+  if(cfg.endless) speedToast('♾ 无尽模式开启 · 1.1×');   // 开局也弹一次提醒
   loop();
 }
 
@@ -409,6 +416,14 @@ function finishGame(natural){
 // 无尽模式：音乐循环播放，每段提速 10%（最高 2×），方块同倍率移动；
 // 分数/连击/判定从普通局继续累加；Miss 扣 ❤（5 颗），打光即结束。
 // ============================================================
+// 提速提醒：屏幕上方弹一个小动画（fixed 定位、pointer-events:none，不挡轨道视线）
+function speedToast(txt){
+  const d=document.createElement('div');
+  d.className='speedToast'; d.textContent=txt;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(), 1000);
+}
+
 // 进入下一段（wrap=true 音乐循环回绕一圈；false 只是到达本圈内的段界）：
 // 每段提速 10%（最高 2×）；回绕时才追加下一圈谱面（固定种子 = 与第一遍完全相同的节奏型）
 function nextRound(wrap){
@@ -426,6 +441,7 @@ function nextRound(wrap){
   }
   E.round++;
   Music.el.playbackRate = Math.min(2, 1 + 0.1*E.round);   // 每段 +10%，最高 2 倍速
+  speedToast('⚡ 提速 '+Music.el.playbackRate.toFixed(1)+'×');
   updateHud();
   console.log(`%c[无尽] ⚡ 第${E.round}段开始，倍速 ${Music.el.playbackRate.toFixed(1)}×，❤×${E.lives}`, 'color:#ff9de2;font-weight:bold');
 }
