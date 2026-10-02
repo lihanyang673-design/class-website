@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>班级动态</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" href="/icons/favicon-32.png">
-<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="theme-color" content="#1877f2">
 <!-- iOS 全屏样式 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -303,5 +303,17 @@
 <script src="heic2any.min.js"></script>
 <script src="qrcode.min.js"></script>
 <script src="app.js"></script>
+<script>
+// GitHub Pages 静态展示版：页面顶部提示条（校园网/本机运行时不显示）
+if (location.hostname.indexOf('github.io') >= 0 || location.hostname.indexOf('githubusercontent.com') >= 0) {
+  (function () {
+    var b = document.createElement('div');
+    b.style.cssText = 'position:sticky;top:0;z-index:9999;background:#fff7e0;color:#8a6100;'
+      + 'border-bottom:1px solid #f0dca0;padding:8px 14px;font-size:13px;text-align:center';
+    b.textContent = '📖 当前是 GitHub 静态展示版：仅能浏览界面，登录/发帖/相册等功能需连接班级服务器（校园网内使用）';
+    document.body.insertBefore(b, document.body.firstChild);
+  })();
+}
+</script>
 </body>
 </html>
