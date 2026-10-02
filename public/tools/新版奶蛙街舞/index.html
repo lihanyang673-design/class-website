@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>奶娃街舞 · Dance Baby</title>
-<link rel="stylesheet" href="style.css?v=20261031">
+<link rel="stylesheet" href="style.css?v=20261035">
 </head>
 <body>
 
@@ -21,6 +21,14 @@
   <!-- 初始化就绪前隐藏；就绪后由 main.js 点亮，点击解锁音频并开始开场 -->
   <button class="gate-btn hidden" id="loadStart" disabled>🎵 开 跳 🎵</button>
   <div class="load-sub" id="loadSub">首次加载需下载 3D 模型，请稍候…</div>
+</div>
+
+<!-- 开局加载进度条：点「开始表演」后显示，音频/谱面/方块就绪再开演 -->
+<div id="playLoad">
+  <div class="pl-box">
+    <div class="pl-txt" id="playLoadTxt">🎵 加载音频中…</div>
+    <div class="pl-bar"><i id="playLoadBar"></i></div>
+  </div>
 </div>
 
 <!-- ===================== 开场动画层 ===================== -->
@@ -355,7 +363,7 @@
 }
 </script>
 <script src="js/codec.js?v=20260929l"></script>
-<script type="module" src="js/main.js?v=20261034"></script>
+<script type="module" src="js/main.js?v=20261035"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';

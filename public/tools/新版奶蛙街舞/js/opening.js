@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // opening.js —— 开场动画
 // 按用户要求：只保留两个 3D 奶娃模型按路径飞过，无任何特效（无拖尾/光带/闪光/粒子）
 // 流程：
@@ -8,7 +8,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { ensureCtx, sfxWhoosh, sfxBoop, sfxBoing, sfxOutro } from './audio.js?v=20261034';
+import { ensureCtx, sfxWhoosh, sfxBoop, sfxBoing, sfxOutro } from './audio.js?v=20261035';
 
 export const Opening = { active:false };
 

@@ -42,6 +42,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   background:linear-gradient(90deg,#7a4dff,#36d1ff);transition:width .25s}
 @keyframes bounceL{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-16px) scale(1.08)}}
 
+/* ===== 开局加载进度条 ===== */
+#playLoad{
+  position:fixed;inset:0;z-index:180;display:none;
+  align-items:center;justify-content:center;
+  background:rgba(10,5,20,.82);backdrop-filter:blur(6px);
+}
+#playLoad.on{display:flex}
+#playLoad .pl-box{width:min(340px,72vw);text-align:center}
+#playLoad .pl-txt{font-size:17px;font-weight:800;color:#ffe17a;margin-bottom:14px;text-shadow:0 2px 8px #000}
+#playLoad .pl-bar{height:10px;border-radius:99px;background:#ffffff2a;overflow:hidden}
+#playLoad .pl-bar i{display:block;height:100%;width:0%;border-radius:99px;
+  background:linear-gradient(90deg,#7a4dff,#36d1ff);transition:width .2s}
+
 /* ============================================================
    开场动画层
    ============================================================ */

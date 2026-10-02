@@ -236,12 +236,19 @@ export const Music = {
   currentSong: 'music.mp3',
   // 切换歌曲（传入文件名，如 'song2.mp3'）
   setSong(file){
-    this.currentSong = file;
     // 路径适配：绝对路径/URL 直接用；默认曲直接放游戏目录；上传曲根据环境选前缀
     let src=file;
     if(!file.startsWith('/') && !file.includes('://') && file!=='music.mp3'){
       const isStatic = location.hostname.includes('github.io') || location.protocol==='file:';
       src = isStatic ? file : '/uploads/dance/'+file;
+    }
+    this.currentSong = file;
+    this._src = src;
+    // ★ 同一首歌已在加载/已加载（选歌时已 preload）→ 不重复 load，避免开演时重新下载造成卡顿
+    const cur = music.currentSrc || '';
+    if(cur && (cur.endsWith(src) || cur.endsWith(encodeURI(src)))){
+      if(music.readyState>=3){ music._readyP = Promise.resolve(music.duration||95); return; }
+      if(music._readyP) return;   // 正在加载中：沿用选歌时已建好的就绪 Promise
     }
     music.src = src;
     music.load();
@@ -262,7 +269,7 @@ export const Music = {
   },
   load(){ music.load(); },
   async play(){
-    const want = this.currentSong;
+    const want = this._src || this.currentSong;   // 用适配后的实际路径比较/重载
     // ★ 保底：如果 currentSrc 不是当前歌（新 src 加载失败回退到旧值），强制重载并等 canplay
     const cur = music.currentSrc || '';
     if(want && !cur.endsWith(want) && !cur.endsWith(encodeURI(want)) && !cur.endsWith(decodeURIComponent(want))){

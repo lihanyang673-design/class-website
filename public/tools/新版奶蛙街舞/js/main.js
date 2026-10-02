@@ -1,15 +1,15 @@
-// ============================================================
+﻿// ============================================================
 // main.js —— 程序入口 / 总调度
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261034';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261034';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261035';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261035';
 import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20260929r';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane } from './game.js?v=20261034';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane } from './game.js?v=20261035';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261034';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261035';
 
 const $=id=>document.getElementById(id);
 
@@ -197,6 +197,10 @@ const main={
   async startShow(themeId,diffId,songId){
     ensureCtx();
     stopMenuBgm();              // 开演：停菜单 BGM，交由歌曲
+    // ===== 开局加载进度条：把音频/谱面/方块的准备过程摆到明面上 =====
+    const pl=$('playLoad'), plBar=$('playLoadBar'), plTxt=$('playLoadTxt');
+    const setP=(p,t)=>{ plBar.style.width=p+'%'; if(t) plTxt.textContent=t; };
+    pl.classList.add('on'); setP(5,'🎵 加载音频中…');
     // 切换歌曲（含玩家上传歌曲）
     const song=getSongById(songId)||SONGS[0];
     Music.setSong(song.file);
@@ -212,12 +216,19 @@ const main={
     Game.hooks.onEnd=onShowEnd;
     Game.hooks.onEndlessEnd=onEndlessOver;
     // ★ 修复：等歌曲元数据拿到真实时长再生成谱面（之前拿 NaN 只生成前 95s，后半段空）
+    setP(25,'🎵 解析音频时长…');
     const dur = await Music.awaitDuration(3000);
     // ★ 玩家自制歌曲：拉取数据库里存的谱面（真实节奏点）
+    setP(55,'🎼 加载谱面…');
     let chart=null;
     try{ chart=await ensureChart(song); }
     catch(e){ console.warn('[演出] 谱面加载失败，退回程序生成谱面', e); }
+    // 让浏览器先把进度条画出来，再一次性建几百个方块 DOM（否则UI冻住像卡死）
+    setP(85,'🧱 搭建方块轨道…');
+    await new Promise(r=>setTimeout(r,50));
     startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart});
+    setP(100,'▶ 开演！');
+    setTimeout(()=>pl.classList.remove('on'), 250);
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },
   quitShow(){
