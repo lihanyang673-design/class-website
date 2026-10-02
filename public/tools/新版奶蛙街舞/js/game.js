@@ -276,6 +276,11 @@ function loop(){
     // 过线未按 → Miss
     if(dt < -WIN_MISS) judge(n, 'miss', 0);
   }
+  // ★ 兜底：普通局所有音符都已处理完（但音乐尾音还在放）→ 立刻结算，不傻等 onended
+  //        或音频元素已 ended 但 onended 事件没派发（浏览器偶发）→ 也立刻结算
+  if(!Game.endless && (Game._head >= Game.notes.length || Music.el.ended)){
+    finishGame(true);
+  }
 }
 
 // ============================================================
