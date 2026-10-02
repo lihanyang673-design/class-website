@@ -295,12 +295,11 @@ export const Music = {
     console.log('%c[音乐] ▶ 播放 → '+music.currentSrc+' (readyState='+music.readyState+')', 'color:#7fffd4;font-weight:bold');
     try{
       await music.play();
+      return true;
     }catch(e){
-      // ★ 手机浏览器（尤其QQ/微信）禁止"异步等待后的自动播放"：开始后等了音频解析，手势时效过了
-      // → 播放被拒 → 音乐不走 → 方块永不出现。修法：等用户下一次触摸屏幕时再开播
-      console.warn('[音乐] 自动播放被拒，等待用户触摸后开播', e);
-      const retry=()=>{ document.removeEventListener('pointerdown',retry); music.play().catch(()=>{}); };
-      document.addEventListener('pointerdown', retry);
+      // ★ 手机浏览器（QQ/微信）拒绝异步手势后的播放：不静默，返回 false 让闸门提示玩家再点一次
+      console.warn('[音乐] 播放被浏览器拒绝：', e.name, e.message);
+      return false;
     }
   },
   pause(){ music.pause(); },

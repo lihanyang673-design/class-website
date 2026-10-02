@@ -4,7 +4,7 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261038';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261039';
 import { doAction, stumble } from './dancer.js?v=20260929r';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
@@ -222,17 +222,30 @@ export function startGame(cfg, defer){
   beginPlayback(endless);
 }
 
-// 真正开播：音乐 + 主循环（无尽顺带弹开局提醒）
-function beginPlayback(endless){
-  Music.play();
+// 真正开播：音乐 + 主循环（无尽顺带弹开局提醒）。返回是否成功
+async function beginPlayback(endless){
+  try{
+    await Music.play();
+  }catch(e){
+    console.warn('[音乐] 闸门开播失败', e);
+    return false;
+  }
   if(endless) speedToast('♾ 无尽模式 · 计分从0开始 · 1.1×');
   loop();
+  return true;
 }
 
 // 由「开演」按钮调用：在用户真实点击的手势里同步开播
-export function launchFromGate(){
-  document.getElementById('stageGate').classList.remove('on');
-  beginPlayback(!!Game.endless);
+export async function launchFromGate(){
+  const gate=document.getElementById('stageGate');
+  const sub=document.getElementById('stageGateSub');
+  gate.classList.remove('on');
+  const ok=await beginPlayback(!!Game.endless);
+  if(!ok){
+    // 开播被拒/失败：闸门重新出现，让玩家再点一次（每次点击都是新的真手势）
+    sub.textContent='刚才没播成功，请再点一次按钮';
+    gate.classList.add('on');
+  }
 }
 
 export function pauseGame(){

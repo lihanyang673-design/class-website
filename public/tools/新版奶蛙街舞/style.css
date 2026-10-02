@@ -404,9 +404,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #stageUI{position:fixed;inset:0;z-index:60;display:none;pointer-events:none}
 #stageUI.on{display:block}
 
-/* 开播闸门：加载完不点不播（手机浏览器手势要求）。默认不挡操作，只有按钮可点 */
-#stageGate{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;pointer-events:none}
-#stageGate.on{display:flex}
+/* 开播闸门：加载完不点不播（手机浏览器手势要求）。
+   显示时整层置顶并接收点击（游戏未开始，挡住其他元素无影响），保证按钮点得到 */
+#stageGate{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;z-index:50}
+#stageGate.on{display:flex;pointer-events:auto}
 #stageGateBtn{
   pointer-events:auto;font-size:21px;font-weight:900;color:#1c1030;
   background:linear-gradient(180deg,#ffe17a,#ffb84d);border:none;border-radius:99px;

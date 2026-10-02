@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261038';
-import { Game, pauseGame } from './game.js?v=20261038';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261039';
+import { Game, pauseGame } from './game.js?v=20261039';
 
 // ============================================================
 // 存档（localStorage）
@@ -906,31 +906,31 @@ function bindSettings(){
     }
   };
 
-  // ---- 清理本站缓存：只清本站的缓存文件/Service Worker，不动存档（localStorage）----
-  // 解决"改了代码但浏览器还用旧文件"的问题，同学自己就能点，不用清整个浏览器/QQ
+  // ---- 清理本站缓存：只删旧【代码】文件，保留 3D 模型/图片（重新下载模型很慢）----
+  // 同学自己就能点，不用清整个浏览器/QQ；存档(localStorage)完全不动
   $('btnClearCache').onclick=async()=>{
     const btn=$('btnClearCache');
     btn.textContent='清理中…'; btn.disabled=true;
-    let cleared=[];
+    let delN=0, keptN=0;
     try{
-      // ① 清 Cache Storage（本站的缓存文件）
       if('caches' in window){
-        const keys=await caches.keys();
-        await Promise.all(keys.map(k=>caches.delete(k)));
-        cleared.push(`缓存文件 ${keys.length} 组`);
+        const CODE=/\.(html|js|css|json)(\?.*)?$/i;   // 只清代码；.glb/.gltf/.bin/图片/音频一律保留
+        for(const name of await caches.keys()){
+          const cache=await caches.open(name);
+          for(const req of await cache.keys()){
+            const p=new URL(req.url).pathname;
+            if(CODE.test(p)){ await cache.delete(req); delN++; }
+            else keptN++;
+          }
+        }
       }
-      // ② 注销 Service Worker（它会拦截请求给旧文件，是"更新不生效"的头号元凶）
-      if('serviceWorker' in navigator){
-        const regs=await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(r=>r.unregister()));
-        if(regs.length) cleared.push(`Service Worker ${regs.length} 个`);
-      }
-      toast('缓存已清（'+(cleared.join('、')||'本来就没有')+'），2秒后自动刷新');
+      // 注意：不注销 Service Worker —— 它是"网络优先"，在线时永远先拿新代码，旧缓存只在断网时兜底
+      toast(`已清 ${delN} 个旧代码文件，3D模型等 ${keptN} 个文件保留；2秒后刷新`);
     }catch(e){
       console.error('清缓存失败', e);
       toast('清理完成，2秒后自动刷新');
     }
-    // 带随机参数强制刷新，确保拿到全新文件
+    // 带随机参数强制刷新，确保 HTML/JS 拿到全新文件
     setTimeout(()=>{ location.href=location.pathname+'?v='+Date.now(); }, 2000);
   };
 
