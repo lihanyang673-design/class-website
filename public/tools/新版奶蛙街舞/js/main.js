@@ -7,7 +7,7 @@ import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick
 import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20260929r';
 import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20260929r';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, startEndless, stopGame, pauseGame, resumeGame, hitLane } from './game.js?v=20261030';
+import { Game, startGame, startEndless, stopGame, pauseGame, resumeGame, hitLane } from './game.js?v=20261031';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
          checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261029';
 

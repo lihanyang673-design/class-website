@@ -661,18 +661,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .up-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:2px}
 .up-note{font-size:11px;color:var(--sub);opacity:.7;text-align:center}
 
-/* ===== 无尽模式提速提醒：屏幕上方小动画，不挡轨道（pointer-events:none） ===== */
+/* ===== 无尽模式提速提醒：屏幕中间偏上弹药丸动画，不挡轨道（pointer-events:none） ===== */
 .speedToast{
-  position:fixed;top:14%;left:50%;z-index:120;pointer-events:none;
+  position:fixed;top:34%;left:50%;z-index:120;pointer-events:none;
   transform:translate(-50%,0);
-  font-size:26px;font-weight:800;letter-spacing:1px;color:#ffe17a;
-  text-shadow:0 0 16px #ffe17a88,0 2px 6px #000a;
-  animation:speedToastIn 1s ease-out forwards;
+  font-size:30px;font-weight:800;letter-spacing:1px;color:#ffe17a;
+  text-shadow:0 0 16px #ffe17a88;
+  background:#0a0514cc;border:1px solid #ffe17a66;border-radius:999px;
+  padding:10px 26px;backdrop-filter:blur(4px);
+  animation:speedToastIn 1.5s ease-out forwards;
   white-space:nowrap;
 }
 @keyframes speedToastIn{
-  0%{opacity:0;transform:translate(-50%,12px) scale(.6)}
-  22%{opacity:1;transform:translate(-50%,0) scale(1.18)}
-  55%{opacity:1;transform:translate(-50%,-6px) scale(1)}
-  100%{opacity:0;transform:translate(-50%,-22px) scale(1)}
+  0%{opacity:0;transform:translate(-50%,16px) scale(.5)}
+  18%{opacity:1;transform:translate(-50%,0) scale(1.15)}
+  30%{transform:translate(-50%,0) scale(1)}
+  70%{opacity:1;transform:translate(-50%,-4px) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-18px) scale(1)}
 }

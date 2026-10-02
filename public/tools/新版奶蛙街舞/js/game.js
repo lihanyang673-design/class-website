@@ -426,7 +426,7 @@ function speedToast(txt){
   const d=document.createElement('div');
   d.className='speedToast'; d.textContent=txt;
   document.body.appendChild(d);
-  setTimeout(()=>d.remove(), 1000);
+  setTimeout(()=>d.remove(), 1600);
 }
 
 // 进入下一段（wrap=true 音乐循环回绕一圈；false 只是到达本圈内的段界）：
@@ -445,8 +445,14 @@ function nextRound(wrap){
     E.nextBoundary += E.segLen;   // 下一道段界
   }
   E.round++;
-  Music.el.playbackRate = Math.min(2, 1 + 0.1*E.round);   // 每段 +10%，最高 2 倍速
-  speedToast('⚡ 提速 '+Music.el.playbackRate.toFixed(1)+'×');
+  const newRate=Math.min(2, 1 + 0.1*E.round);          // 每段 +10%，最高 2 倍速
+  if(newRate - Music.el.playbackRate > 0.001){
+    Music.el.playbackRate = newRate;
+    speedToast('⚡ 提速 '+newRate.toFixed(1)+'×');
+  }else if(!E.maxedNoticed){                            // 已到 2× 封顶：只提醒一次
+    E.maxedNoticed=true;
+    speedToast('🔥 已到最高速 2×');
+  }
   updateHud();
   console.log(`%c[无尽] ⚡ 第${E.round}段开始，倍速 ${Music.el.playbackRate.toFixed(1)}×，❤×${E.lives}`, 'color:#ff9de2;font-weight:bold');
 }
