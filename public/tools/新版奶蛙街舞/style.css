@@ -404,6 +404,18 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #stageUI{position:fixed;inset:0;z-index:60;display:none;pointer-events:none}
 #stageUI.on{display:block}
 
+/* 开播闸门：加载完不点不播（手机浏览器手势要求）。默认不挡操作，只有按钮可点 */
+#stageGate{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;pointer-events:none}
+#stageGate.on{display:flex}
+#stageGateBtn{
+  pointer-events:auto;font-size:21px;font-weight:900;color:#1c1030;
+  background:linear-gradient(180deg,#ffe17a,#ffb84d);border:none;border-radius:99px;
+  padding:17px 38px;box-shadow:0 8px 28px #0008,0 0 0 4px #ffffff44;
+  animation:gatePulse 1.15s ease-in-out infinite;font-family:inherit;
+}
+#stageGate .gate-sub{margin-top:14px;font-size:13px;color:#fff;text-shadow:0 1px 4px #000;opacity:.92;text-align:center;padding:0 20px}
+@keyframes gatePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
 /* 分数/连击 */
 #hud{position:absolute;top:70px;left:20px;text-shadow:0 2px 8px #000a}
 /* ★ 暂停/退出按钮（右上角，玻璃拟态圆钮，与整体 UI 风格统一） */

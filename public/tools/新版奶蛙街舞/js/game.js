@@ -4,7 +4,7 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261037';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261038';
 import { doAction, stumble } from './dancer.js?v=20260929r';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
@@ -168,10 +168,11 @@ function spawnNoteEl(n){
   return el;
 }
 
-export function startGame(cfg){
+export function startGame(cfg, defer){
   // cfg:{diff,bpm,offset,speed,duration,chart?}
   // diff==='endless' = 无尽难度（独立第5难度，谱面按地狱密度生成，计分从0开始）
   // chart 存在 = 玩家自制谱面（按难度抽稀）；否则按 BPM 程序化生成
+  // defer=true：只搭台不开播，等用户点「开演」按钮（手机浏览器要求真手势）
   stopGame(true);
   Game.cfg = cfg;
   const endless = cfg.diff==='endless';
@@ -213,9 +214,25 @@ export function startGame(cfg){
   Music.el.onended = endless ? null : ()=> finishGame(true);
   window.__music = Music.el;   // 调试钩子（与 __game 同性质）
   console.log(`%c[演出] 🎬 开始！难度=${cfg.diff} BPM=${cfg.bpm} 音符数=${Game.notes.length} 时长≈${cfg.duration.toFixed(0)}s`, 'color:#ffe17a;font-weight:bold');
+  if(defer){
+    // 只搭台不开播：舞台中央显示「点我开演」，等用户真手势再开播
+    document.getElementById('stageGate').classList.add('on');
+    return;
+  }
+  beginPlayback(endless);
+}
+
+// 真正开播：音乐 + 主循环（无尽顺带弹开局提醒）
+function beginPlayback(endless){
   Music.play();
-  if(endless) speedToast('♾ 无尽模式 · 计分从0开始 · 1.1×');   // 开局也弹一次提醒
+  if(endless) speedToast('♾ 无尽模式 · 计分从0开始 · 1.1×');
   loop();
+}
+
+// 由「开演」按钮调用：在用户真实点击的手势里同步开播
+export function launchFromGate(){
+  document.getElementById('stageGate').classList.remove('on');
+  beginPlayback(!!Game.endless);
 }
 
 export function pauseGame(){
@@ -233,6 +250,7 @@ export function stopGame(silent){
   Music.el.onended=null;
   Music.el.loop=false; Music.el.playbackRate=1;
   Game.endless=null;
+  document.getElementById('stageGate')?.classList.remove('on');
   if(!silent){
     document.getElementById('stageUI').classList.remove('on');
     document.getElementById('noteTilt').querySelectorAll('.note').forEach(n=>n.remove());

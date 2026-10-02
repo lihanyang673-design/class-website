@@ -3,15 +3,16 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261037';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261037';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261038';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261038';
 import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20260929r';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane } from './game.js?v=20261037';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261038';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261037';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261038';
 
 const $=id=>document.getElementById(id);
+let stageGateBound=false;    // 「点我开演」闸门按钮只绑定一次
 
 // ============================================================
 // 渲染器 / 场景 / 相机
@@ -226,9 +227,18 @@ const main={
     // 让浏览器先把进度条画出来，再一次性建几百个方块 DOM（否则UI冻住像卡死）
     setP(85,'🧱 搭建方块轨道…');
     await new Promise(r=>setTimeout(r,50));
-    startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart});
-    setP(100,'▶ 开演！');
+    startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart}, true);
+    setP(100,'准备就绪！');
     setTimeout(()=>pl.classList.remove('on'), 250);
+    // 「点我开演」闸门只绑一次：点击瞬间（真手势）恢复音频上下文 + 开播
+    if(!stageGateBound){
+      stageGateBound=true;
+      $('stageGateBtn').addEventListener('click', ()=>{
+        ensureCtx();
+        if(window.AudioContext && Music.ctx && Music.ctx.state==='suspended') Music.ctx.resume();
+        launchFromGate();
+      });
+    }
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },
   quitShow(){
