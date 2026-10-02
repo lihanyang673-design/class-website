@@ -4,7 +4,7 @@
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
 import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20260929r';
-import { Game, pauseGame } from './game.js?v=20261026';
+import { Game, pauseGame } from './game.js?v=20261027';
 
 // ============================================================
 // 存档（localStorage）
@@ -397,7 +397,7 @@ export function initUI(main){
 
   // ---- 结算按钮 ----
   document.getElementById('btnRetry').addEventListener('click',()=>{ sfxClick(); startShow(); });
-  document.getElementById('btnEndless').addEventListener('click',()=>{ sfxClick(); mainRef.startEndless(); });
+  document.getElementById('btnEndless').addEventListener('click',()=>{ sfxClick(); mainRef.startEndlessMode(); });
   document.getElementById('btnBackHome').addEventListener('click',()=>{
     sfxClick(); showScreen('scr-home'); renderHome();
   });
