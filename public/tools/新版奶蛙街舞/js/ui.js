@@ -4,7 +4,7 @@
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
 import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20260929r';
-import { Game, pauseGame } from './game.js?v=20261031';
+import { Game, pauseGame } from './game.js?v=20261032';
 
 // ============================================================
 // 存档（localStorage）
@@ -144,6 +144,11 @@ export const SONGS=[
   {id:'u15', name:'玻璃', artist:'Gareth.T', file:'1790905313361_805251406.mp3', bpm:146, desc:'146 BPM · 约3分钟', cat:'builtin', staticChart:true},
   {id:'u16', name:'晴天', artist:'周杰伦', file:'1790905913537_81414028.mp3', bpm:137, desc:'137 BPM · 约4.5分钟', cat:'builtin', staticChart:true},
   {id:'u17', name:'甲乙丙丁', artist:'李佳薇', file:'1790906408562_96433968.mp3', bpm:130, desc:'130 BPM · 约3.5分钟', cat:'builtin', staticChart:true},
+  {id:'u18', name:'雨天', artist:'孙燕姿', file:'1790921439546_533325666.mp3', bpm:114, desc:'114 BPM · 约4分钟', cat:'builtin', staticChart:true},
+  {id:'u19', name:'一见如故', artist:'同学上传', file:'1790930389175_193904487.mp3', bpm:118, desc:'118 BPM · 约4.5分钟', cat:'builtin', staticChart:true},
+  {id:'u20', name:'女骑士', artist:'徐良', file:'1790935598626_920508153.mp3', bpm:110, desc:'110 BPM · 约4分钟', cat:'builtin', staticChart:true},
+  {id:'u21', name:'河山大好', artist:'许嵩', file:'1790937139158_104059326.mp3', bpm:175, desc:'175 BPM · 约3.5分钟', cat:'builtin', staticChart:true},
+  {id:'u22', name:'渲染离别', artist:'许嵩', file:'1790940036039_422108884.mp3', bpm:120, desc:'120 BPM · 约4.5分钟', cat:'builtin', staticChart:true},
 ];
 
 // 歌曲分类（渲染时每组带小标题；空的分组会自动跳过）
@@ -509,6 +514,8 @@ function renderPlay(){
     sg.innerHTML='';
     // 渲染前顺手刷新一次玩家歌曲（首次进页面时已拉过，这里只在未加载时补拉）
     SONG_CATS.forEach(cat=>{
+      // 连着班级服务器（本地版）时隐藏「内置」分区：内置歌都来自同学上传，避免重复显示
+      if(cat.id==='builtin' && serverOn) return;
       const list=cat.id==='user' ? [...TEMP_SONGS, ...USER_SONGS.list] : SONGS.filter(s=>s.cat===cat.id);
       if(!list.length){
         // 班级自制分区：哪怕还没歌也显示出来，让同学知道这里能放自己的歌
