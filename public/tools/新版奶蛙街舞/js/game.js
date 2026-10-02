@@ -172,7 +172,10 @@ export function startGame(cfg){
     : genChart(cfg.diff, cfg.bpm, cfg.duration, cfg.offset/1000, cfg.songId||'');
   // ===== 无尽模式：音乐循环 + 每段提速；分数/判定明细从普通局继续累加，连击重开 =====
   if(cfg.endless){
-    Game.endless={ base:0, round:1, lives:5, baseScore:Game.score };
+    // 切段规则：歌几分钟就切几+1段（约每分钟一段提速一次）；3.5分钟的歌 = 4段
+    const segN=Math.max(1, Math.floor(cfg.duration/60)+1);
+    const segLen=cfg.duration/segN;
+    Game.endless={ base:0, round:1, lives:5, baseScore:Game.score, segLen, nextBoundary:segLen };
     Game.combo=0;
     Music.el.loop=true;                // 音乐循环播放
     Music.el.playbackRate=1.1;         // 无尽第 1 段就提速 10%
@@ -238,7 +241,8 @@ function loop(){
   // 歌曲时钟（秒）。无尽模式：音频时钟倒回 = 循环回绕 → 追加下一段更快谱面
   const raw = Music.time();
   if(Game.endless){
-    if(raw < Game._lastRaw - 0.05) nextRound();   // currentTime 倒回 = 音乐循环了一圈
+    if(raw < Game._lastRaw - 0.05) nextRound(true);   // currentTime 倒回 = 音乐循环了一圈
+    else if(raw >= Game.endless.nextBoundary) nextRound(false);  // 到达段界 = 提速进入下一段
     Game._lastRaw = raw;
   }
   const t = Game.endless ? raw + Game.endless.base : raw;   // 谱面时间（跨段累加，永远前进）
@@ -405,19 +409,25 @@ function finishGame(natural){
 // 无尽模式：音乐循环播放，每段提速 10%（最高 2×），方块同倍率移动；
 // 分数/连击/判定从普通局继续累加；Miss 扣 ❤（5 颗），打光即结束。
 // ============================================================
-// 循环回绕处理：刚播完一段 → 追加下一段谱面（固定种子 = 与第一遍完全相同的节奏型）
-function nextRound(){
+// 进入下一段（wrap=true 音乐循环回绕一圈；false 只是到达本圈内的段界）：
+// 每段提速 10%（最高 2×）；回绕时才追加下一圈谱面（固定种子 = 与第一遍完全相同的节奏型）
+function nextRound(wrap){
   const E=Game.endless, cfg=Game.cfg;
-  E.base += Game._lastRaw;      // 谱面时间轴整体前移一段的长度（上一帧音频时钟 ≈ 段长）
+  if(wrap){
+    E.base += Game._lastRaw;      // 谱面时间轴整体前移一段的长度（上一帧音频时钟 ≈ 圈长）
+    E.nextBoundary = E.segLen;    // 段界在新圈内重新计
+    // 重新生成同一圈谱面并平移追加（notes 保持有序，滑动窗口/判定逻辑全部无感复用）
+    let seg;
+    if(cfg.chart && cfg.chart.length) seg=chartNotes(cfg.chart,'hard',cfg.duration,cfg.songId||'');
+    else seg=genChart('hard',cfg.bpm,cfg.duration,cfg.offset/1000,cfg.songId||'');
+    for(const n of seg){ n.t += E.base; spawnNoteEl(n); Game.notes.push(n); }
+  }else{
+    E.nextBoundary += E.segLen;   // 下一道段界
+  }
   E.round++;
   Music.el.playbackRate = Math.min(2, 1 + 0.1*E.round);   // 每段 +10%，最高 2 倍速
-  // 重新生成同一段谱面并平移追加（notes 保持有序，滑动窗口/判定逻辑全部无感复用）
-  let seg;
-  if(cfg.chart && cfg.chart.length) seg=chartNotes(cfg.chart,'hard',cfg.duration,cfg.songId||'');
-  else seg=genChart('hard',cfg.bpm,cfg.duration,cfg.offset/1000,cfg.songId||'');
-  for(const n of seg){ n.t += E.base; spawnNoteEl(n); Game.notes.push(n); }
   updateHud();
-  console.log(`%c[无尽] 🔁 第${E.round}段开始，倍速 ${Music.el.playbackRate.toFixed(1)}×，❤×${E.lives}`, 'color:#ff9de2;font-weight:bold');
+  console.log(`%c[无尽] ⚡ 第${E.round}段开始，倍速 ${Music.el.playbackRate.toFixed(1)}×，❤×${E.lives}`, 'color:#ff9de2;font-weight:bold');
 }
 
 // ❤ 打光：结束无尽 → 结算累计总分（普通局分数 + 无尽各段累加）

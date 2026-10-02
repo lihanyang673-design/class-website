@@ -4,7 +4,7 @@
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
 import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20260929r';
-import { Game, pauseGame } from './game.js?v=20261027';
+import { Game, pauseGame } from './game.js?v=20261028';
 
 // ============================================================
 // 存档（localStorage）
