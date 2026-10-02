@@ -170,7 +170,7 @@
       <button class="btn-back" data-back>← 返回</button>
       <div class="sec-title" style="margin:0">♾ 无尽榜 <small>ENDLESS</small></div>
     </div>
-    <div class="rank-help">💀 只有<b>地狱难度</b>有无尽模式：整首歌弹完后点「♾ 继续无尽模式」，音乐循环播放且<b>约每分钟提速 10%</b>（歌几分钟就切几+1段，方块同倍率变快，最高 2×），分数继续累加；❤×5 被 Miss 打光即结束。排行按<b>累计总分</b>，每人每首歌只记最高一次。</div>
+    <div class="rank-help">♾ <b>无尽是独立难度</b>：在选歌页直接选「♾ 无尽」开局，<b>计分从 0 开始</b>，音乐循环播放且<b>约每分钟提速 10%</b>（歌几分钟就切几+1段，方块同倍率变快，最高 2×）；❤×5 被 Miss 打光即结束。排行按<b>总分</b>，每人每首歌只记最高一次。</div>
     <select id="endlessSong" class="board-select"></select>
     <div id="endlessList"></div>
   </section>
@@ -267,7 +267,6 @@
       <div class="result-coin" id="resCoinLine">🪙 本场演出费 +<span id="resCoin">0</span> 奶币</div>
       <div class="result-btns">
         <button class="btn-main" id="btnRetry">🔁 再来一次</button>
-        <button class="btn-ghost" id="btnEndless" style="display:none">♾ 继续无尽模式</button>
         <button class="btn-ghost" id="btnBackHome">回主界面</button>
       </div>
     </div>
@@ -356,7 +355,7 @@
 }
 </script>
 <script src="js/codec.js?v=20260929l"></script>
-<script type="module" src="js/main.js?v=20261032"></script>
+<script type="module" src="js/main.js?v=20261033"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';

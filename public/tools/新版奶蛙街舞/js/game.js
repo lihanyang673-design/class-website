@@ -20,7 +20,7 @@ export const Game = {
   score:0, combo:0, maxCombo:0,
   cnt:{perfect:0,good:0,miss:0},
   hooks:{},                          // main 注入：onEnd(result) / onEndlessEnd(result)
-  endless:null,                      // 无尽模式状态：{base,round,lives,baseScore}
+  endless:null,                      // 无尽难度状态：{base,round,lives,segLen,nextBoundary}
   _raf:0, _lastY:0,
   _head:0, _hitY:0,                  // 滑动窗口头指针 + 缓存的判定线位置
   _lastRaw:0,                        // 无尽用：上一帧的音频原始时钟（检测循环回绕）
@@ -169,26 +169,28 @@ function spawnNoteEl(n){
 }
 
 export function startGame(cfg){
-  // cfg:{diff,bpm,offset,speed,duration,chart?,endless?}
+  // cfg:{diff,bpm,offset,speed,duration,chart?}
+  // diff==='endless' = 无尽难度（独立第5难度，谱面按地狱密度生成，计分从0开始）
   // chart 存在 = 玩家自制谱面（按难度抽稀）；否则按 BPM 程序化生成
   stopGame(true);
   Game.cfg = cfg;
+  const endless = cfg.diff==='endless';
+  const gdiff = endless ? 'hard' : cfg.diff;    // 无尽谱面密度 = 地狱
   Game.notes = cfg.chart && cfg.chart.length
-    ? chartNotes(cfg.chart, cfg.diff, cfg.duration, cfg.songId||'')
-    : genChart(cfg.diff, cfg.bpm, cfg.duration, cfg.offset/1000, cfg.songId||'');
-  // ===== 无尽模式：音乐循环 + 每段提速；分数/判定明细从普通局继续累加，连击重开 =====
-  if(cfg.endless){
+    ? chartNotes(cfg.chart, gdiff, cfg.duration, cfg.songId||'')
+    : genChart(gdiff, cfg.bpm, cfg.duration, cfg.offset/1000, cfg.songId||'');
+  Game.score=0; Game.combo=0; Game.maxCombo=0;  // 任何难度（含无尽）计分都从 0 开始
+  Game.cnt={perfect:0,good:0,miss:0};
+  // ===== 无尽难度：音乐循环 + 每段提速 + ❤×5 =====
+  if(endless){
     // 切段规则：歌几分钟就切几+1段（约每分钟一段提速一次）；3.5分钟的歌 = 4段
     const segN=Math.max(1, Math.floor(cfg.duration/60)+1);
     const segLen=cfg.duration/segN;
-    Game.endless={ base:0, round:1, lives:5, baseScore:Game.score, segLen, nextBoundary:segLen };
-    Game.combo=0;
+    Game.endless={ base:0, round:1, lives:5, segLen, nextBoundary:segLen };
     Music.el.loop=true;                // 音乐循环播放
     Music.el.playbackRate=1.1;         // 无尽第 1 段就提速 10%
   }else{
     Game.endless=null;
-    Game.score=0; Game.combo=0; Game.maxCombo=0;
-    Game.cnt={perfect:0,good:0,miss:0};
     Music.el.loop=false;
     Music.el.playbackRate=1;
   }
@@ -208,11 +210,11 @@ export function startGame(cfg){
 
   updateHud();
   // 无尽模式用 loop 循环播放，onended 永不触发；普通局一曲结束 = 自然结算
-  Music.el.onended = cfg.endless ? null : ()=> finishGame(true);
+  Music.el.onended = endless ? null : ()=> finishGame(true);
   window.__music = Music.el;   // 调试钩子（与 __game 同性质）
-  console.log(`%c[演出] 🎬 开始！难度=${cfg.diff}${cfg.endless?' ♾无尽':''} BPM=${cfg.bpm} 音符数=${Game.notes.length} 时长≈${cfg.duration.toFixed(0)}s`, 'color:#ffe17a;font-weight:bold');
+  console.log(`%c[演出] 🎬 开始！难度=${cfg.diff} BPM=${cfg.bpm} 音符数=${Game.notes.length} 时长≈${cfg.duration.toFixed(0)}s`, 'color:#ffe17a;font-weight:bold');
   Music.play();
-  if(cfg.endless) speedToast('♾ 无尽模式开启 · 1.1×');   // 开局也弹一次提醒
+  if(endless) speedToast('♾ 无尽模式 · 计分从0开始 · 1.1×');   // 开局也弹一次提醒
   loop();
 }
 
@@ -466,17 +468,10 @@ function endEndless(){
   Music.el.loop=false; Music.el.playbackRate=1;
   Music.stop();
   Game.hooks.onEndlessEnd && Game.hooks.onEndlessEnd({
-    score:Game.score, baseScore:E.baseScore, maxCombo:Game.maxCombo, cnt:{...Game.cnt},
+    score:Game.score, maxCombo:Game.maxCombo, cnt:{...Game.cnt},
     round:E.round, lives:E.lives, diff:Game.cfg.diff,
     song:Game.cfg.songName||'', songId:Game.cfg.songId||'',
   });
-}
-
-// 结算页「继续无尽模式」入口：沿用上一局配置，分数接着算
-export function startEndless(){
-  const prev=Game.cfg;
-  if(!prev || Game.playing) return;
-  startGame({...prev, endless:true});
 }
 
 // 总谱面剩余时长（生成后调用，用于判断提前结束）

@@ -7,9 +7,9 @@ import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick
 import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20260929r';
 import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20260929r';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, startEndless, stopGame, pauseGame, resumeGame, hitLane } from './game.js?v=20261032';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane } from './game.js?v=20261033';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261032';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261033';
 
 const $=id=>document.getElementById(id);
 
@@ -218,19 +218,6 @@ const main={
     try{ chart=await ensureChart(song); }
     catch(e){ console.warn('[演出] 谱面加载失败，退回程序生成谱面', e); }
     startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart});
-  },
-  // ♾ 无尽模式：沿用上一局配置与分数，音乐循环 + 每段提速（结算页「继续无尽」按钮进入）
-  startEndlessMode(){
-    ensureCtx();
-    stopMenuBgm();
-    showUIRoot(false);
-    showStageUI(true);
-    camera.position.copy(CAM_PLAY);
-    Fx.camBase.copy(CAM_PLAY);
-    resetBody();
-    Game.hooks.onEnd=onShowEnd;
-    Game.hooks.onEndlessEnd=onEndlessOver;
-    startEndless();
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },
   quitShow(){

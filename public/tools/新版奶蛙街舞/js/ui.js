@@ -4,7 +4,7 @@
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
 import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20260929r';
-import { Game, pauseGame } from './game.js?v=20261032';
+import { Game, pauseGame } from './game.js?v=20261033';
 
 // ============================================================
 // 存档（localStorage）
@@ -291,6 +291,7 @@ export const DIFFS=[
   {id:'casual',name:'🙂 进阶', desc:'一两个一拍 · 初识双押'},
   {id:'normal',name:'🔥 狂热', desc:'半拍为主 · 更多喘息'},
   {id:'hard',  name:'💀 地狱', desc:'连续半拍 · 偶有双押'},
+  {id:'endless',name:'♾ 无尽', desc:'计分从0开始 · 循环加速 · ❤×5'},
 ];
 
 const CODEX=[
@@ -402,7 +403,6 @@ export function initUI(main){
 
   // ---- 结算按钮 ----
   document.getElementById('btnRetry').addEventListener('click',()=>{ sfxClick(); startShow(); });
-  document.getElementById('btnEndless').addEventListener('click',()=>{ sfxClick(); mainRef.startEndlessMode(); });
   document.getElementById('btnBackHome').addEventListener('click',()=>{
     sfxClick(); showScreen('scr-home'); renderHome();
   });
@@ -1153,8 +1153,6 @@ export function showResult(res, isNew){
   document.getElementById('resCombo').textContent=res.maxCombo;
   document.getElementById('resCoinLine').innerHTML='🪙 本场演出费 +<span id="resCoin">'+res.coin+'</span> 奶币';
   document.getElementById('resNew').style.display=isNew?'':'none';
-  // 地狱难度打完整首 → 结算页提供「♾ 继续无尽模式」入口（普通成绩已在上方先上传）
-  document.getElementById('btnEndless').style.display = res.diff==='hard' ? '' : 'none';
   showScreen('scr-result');
   renderHome(); renderAch();
 }
@@ -1186,8 +1184,8 @@ export function showEndlessResult(res){
   const s=Store.data.stats;
   if(res.score>s.bestScore) s.bestScore=res.score;
   if(res.maxCombo>s.maxCombo) s.maxCombo=res.maxCombo;
-  // 无尽加演费：只按无尽段内新挣的分数发奶币（普通局那份已在 showResult 发过）
-  const coin=Math.max(0, Math.floor((res.score-(res.baseScore||0))/400));
+  // 无尽演出费：无尽计分从0开始，直接按总分发奶币
+  const coin=Math.floor(res.score/400);
   Store.data.coins+=coin;
   Store.save();
 
@@ -1199,8 +1197,7 @@ export function showEndlessResult(res){
   document.getElementById('resGood').textContent=res.cnt.good;
   document.getElementById('resMiss').textContent=res.cnt.miss;
   document.getElementById('resCombo').textContent=res.maxCombo;
-  document.getElementById('resCoinLine').innerHTML='🪙 无尽加演费 +<span id="resCoin">'+coin+'</span> 奶币';
-  document.getElementById('btnEndless').style.display='none';   // 已在无尽里，不再叠加
+  document.getElementById('resCoinLine').innerHTML='🪙 无尽演出费 +<span id="resCoin">'+coin+'</span> 奶币';
   showScreen('scr-result');
   renderHome(); renderAch();
 }
