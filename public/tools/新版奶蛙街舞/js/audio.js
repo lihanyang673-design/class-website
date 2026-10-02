@@ -237,7 +237,13 @@ export const Music = {
   // 切换歌曲（传入文件名，如 'song2.mp3'）
   setSong(file){
     this.currentSong = file;
-    music.src = file;
+    // 路径适配：绝对路径/URL 直接用；默认曲直接放游戏目录；上传曲根据环境选前缀
+    let src=file;
+    if(!file.startsWith('/') && !file.includes('://') && file!=='music.mp3'){
+      const isStatic = location.hostname.includes('github.io') || location.protocol==='file:';
+      src = isStatic ? file : '/uploads/dance/'+file;
+    }
+    music.src = src;
     music.load();
     // ★ load 之后立即注册 ready 监听（避免错过事件），等 canplay/loadedmetadata 或超时
     music._readyP = new Promise(res=>{
