@@ -267,12 +267,81 @@ export const Music = {
     });
     console.log('%c[音乐] 🎵 切歌 → '+file, 'color:#36d1ff;font-weight:bold');
   },
+  // 路径适配（和 setSong 同源），单独抽出来复用
+  _resolveSrc(file){
+    let src=file;
+    if(!file.startsWith('/') && !file.includes('://') && file!=='music.mp3'){
+      const isStatic = location.hostname.includes('github.io') || location.protocol==='file:';
+      src = isStatic ? file : '/uploads/dance/'+file;
+    }
+    return src;
+  },
+  // ★ 完整下载整首歌为本地 blob 再开播：进度条没满之前一个字节都不少，
+  //   进游戏后是读本地文件，不再边下边播（这是手机卡顿的根因）
+  async preloadFull(file, onProgress){
+    const src=this._resolveSrc(file);
+    this.currentSong=file; this._src=src;
+    // 已完整下载过同一首 → 直接复用（选歌时预载的也认）
+    if(this._blobSrc && this._blobSrc===src){
+      music.src=this._blobURL;
+      await this._metaReady();
+      return music.duration||95;
+    }
+    try{
+      const res=await fetch(src, {credentials:'same-origin'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const total=+res.headers.get('content-length')||0;
+      let blob;
+      // 边下边报进度（支持 ReadableStream 的浏览器）
+      if(res.body && res.body.getReader && total){
+        const reader=res.body.getReader(); const chunks=[];
+        let got=0;
+        for(;;){
+          const {done,value}=await reader.read();
+          if(done) break;
+          chunks.push(value); got+=value.length;
+          if(onProgress) onProgress(got/total);
+        }
+        blob=new Blob(chunks);
+      }else{
+        blob=await res.blob();
+        if(onProgress) onProgress(1);
+      }
+      // 上一首的本地URL释放掉，避免占手机内存
+      if(this._blobURL) URL.revokeObjectURL(this._blobURL);
+      this._blobURL=URL.createObjectURL(blob);
+      this._blobSrc=src;
+      music.src=this._blobURL;
+      await this._metaReady();
+      if(onProgress) onProgress(1);
+      console.log('%c[音乐] ✅ 整首歌已完整下载 '+file, 'color:#7fffd4;font-weight:bold');
+      return music.duration||95;
+    }catch(e){
+      // 兜底：完整下载失败（如老旧浏览器）→ 退回普通流式加载，至少能玩
+      console.warn('[音乐] 完整下载失败，退回边下边播', e);
+      this.setSong(file);
+      return await this.awaitDuration(3000);
+    }
+  },
+  // 等音频元数据就绪（拿真实时长）
+  _metaReady(){
+    return new Promise(res=>{
+      if(music.readyState>=1 && isFinite(music.duration)) return res();
+      let done=false;
+      const ok=()=>{ if(done)return; done=true; cleanup(); res(); };
+      const to=setTimeout(ok, 3000);
+      const cleanup=()=>{ music.removeEventListener('loadedmetadata',ok); clearTimeout(to); };
+      music.addEventListener('loadedmetadata',ok,{once:true});
+    });
+  },
   load(){ music.load(); },
   async play(){
     const want = this._src || this.currentSong;
     // ★ 保底：用 URL 规范化比较，解决 QQ 浏览器路径编码差异导致误判"不匹配"而强制重载卡住
     const needReload = ()=>{
       if(!want) return false;
+      // 已完整下载为本地 blob：src 就是 blob URL，绝不能按原路径比较后重载
+      if(this._blobSrc===want && music.src===this._blobURL) return false;
       try{
         const curUrl = new URL(music.currentSrc, location.href).pathname;
         const wantUrl = new URL(want, location.href).pathname;

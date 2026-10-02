@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261041';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261041';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261042';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261042';
 import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20260929r';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261041';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261042';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261041';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261042';
 
 const $=id=>document.getElementById(id);
 let stageGateBound=false;    // 「点我开演」闸门按钮只绑定一次
@@ -201,10 +201,9 @@ const main={
     // ===== 开局加载进度条：把音频/谱面/方块的准备过程摆到明面上 =====
     const pl=$('playLoad'), plBar=$('playLoadBar'), plTxt=$('playLoadTxt');
     const setP=(p,t)=>{ plBar.style.width=p+'%'; if(t) plTxt.textContent=t; };
-    pl.classList.add('on'); setP(5,'🎵 加载音频中…');
+    pl.classList.add('on'); setP(3,'🎵 完整下载歌曲中…');
     // 切换歌曲（含玩家上传歌曲）
     const song=getSongById(songId)||SONGS[0];
-    Music.setSong(song.file);
     const theme=THEMES.find(t=>t.id===themeId);
     if(theme && theme.id!==curTheme.id) buildStage(theme);
     const set=Store.data.set;
@@ -216,20 +215,21 @@ const main={
     resetBody();               // ★ 开演前复位奶娃（清上局躺地/庆祝残留）
     Game.hooks.onEnd=onShowEnd;
     Game.hooks.onEndlessEnd=onEndlessOver;
-    // ★ 修复：等歌曲元数据拿到真实时长再生成谱面（之前拿 NaN 只生成前 95s，后半段空）
-    setP(25,'🎵 解析音频时长…');
-    const dur = await Music.awaitDuration(3000);
-    // ★ 玩家自制歌曲：拉取数据库里存的谱面（真实节奏点）
-    setP(55,'🎼 加载谱面…');
+    // ★ 门槛1：整首歌完整下载（进度 3%→78% 是真实下载进度，没下完绝不往下走）
+    const dur = await Music.preloadFull(song.file, p=>{
+      setP(3+Math.round(p*75), `🎵 完整下载歌曲中 ${Math.round(p*100)}%`);
+    });
+    // ★ 门槛2：整首曲谱完整拉取（80%→93%）
+    setP(82,'🎼 完整加载曲谱…');
     let chart=null;
     try{ chart=await ensureChart(song); }
     catch(e){ console.warn('[演出] 谱面加载失败，退回程序生成谱面', e); }
-    // 让浏览器先把进度条画出来，再一次性建几百个方块 DOM（否则UI冻住像卡死）
-    setP(85,'🧱 搭建方块轨道…');
-    await new Promise(r=>setTimeout(r,50));
+    // ★ 门槛3：方块全部建好（94%→99%）。先让浏览器把进度条画出来，避免UI冻住像卡死
+    setP(94,'🧱 搭建方块轨道…');
+    await new Promise(r=>setTimeout(r,60));
     startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart}, true);
-    setP(100,'准备就绪！');
-    setTimeout(()=>pl.classList.remove('on'), 250);
+    setP(100,'✅ 全部就绪！点按钮开演');
+    setTimeout(()=>pl.classList.remove('on'), 300);
     // 「点我开演」闸门只绑一次：点击瞬间（真手势）恢复音频上下文 + 开播
     if(!stageGateBound){
       stageGateBound=true;
