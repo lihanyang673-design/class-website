@@ -269,14 +269,20 @@ export const Music = {
   },
   load(){ music.load(); },
   async play(){
-    const want = this._src || this.currentSong;   // 用适配后的实际路径比较/重载
-    // ★ 保底：如果 currentSrc 不是当前歌（新 src 加载失败回退到旧值），强制重载并等 canplay
-    const cur = music.currentSrc || '';
-    if(want && !cur.endsWith(want) && !cur.endsWith(encodeURI(want)) && !cur.endsWith(decodeURIComponent(want))){
-      console.log('%c[音乐] ⚠ currentSrc('+cur+') 不匹配当前歌('+want+')，重载', 'color:#ff9800;font-weight:bold');
+    const want = this._src || this.currentSong;
+    // ★ 保底：用 URL 规范化比较，解决 QQ 浏览器路径编码差异导致误判"不匹配"而强制重载卡住
+    const needReload = ()=>{
+      if(!want) return false;
+      try{
+        const curUrl = new URL(music.currentSrc, location.href).pathname;
+        const wantUrl = new URL(want, location.href).pathname;
+        return decodeURIComponent(curUrl) !== decodeURIComponent(wantUrl);
+      }catch{ return true; }
+    };
+    if(needReload()){
+      console.log('%c[音乐] ⚠ 路径不匹配，重载 → '+want, 'color:#ff9800;font-weight:bold');
       music.src = want;
       music.load();
-      // 等 canplay（readyState>=3）或超时
       if(music.readyState < 3){
         await new Promise(r=>{
           const ok=()=>{cleanup();r();}, err=()=>{cleanup();r();}, to=setTimeout(()=>{cleanup();r();},3000);
@@ -286,8 +292,16 @@ export const Music = {
         });
       }
     }
-    console.log('%c[音乐] ▶ 播放 → '+music.currentSrc+' (want='+want+' readyState='+music.readyState+')', 'color:#7fffd4;font-weight:bold');
-    try{ await music.play(); }catch(e){ console.warn('音乐播放失败', e); }
+    console.log('%c[音乐] ▶ 播放 → '+music.currentSrc+' (readyState='+music.readyState+')', 'color:#7fffd4;font-weight:bold');
+    try{
+      await music.play();
+    }catch(e){
+      // ★ 手机浏览器（尤其QQ/微信）禁止"异步等待后的自动播放"：开始后等了音频解析，手势时效过了
+      // → 播放被拒 → 音乐不走 → 方块永不出现。修法：等用户下一次触摸屏幕时再开播
+      console.warn('[音乐] 自动播放被拒，等待用户触摸后开播', e);
+      const retry=()=>{ document.removeEventListener('pointerdown',retry); music.play().catch(()=>{}); };
+      document.addEventListener('pointerdown', retry);
+    }
   },
   pause(){ music.pause(); },
   // ★ 只在已加载足够数据时才 seek，避免 abort 还在加载的新歌
