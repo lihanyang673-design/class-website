@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="zh-CN">
+    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>落花雨：奶龙王导恶搞表情包</title><meta property="og:title" content="落花雨：奶龙王导恶搞表情包">
+  <meta property="og:description" content="奶龙王导恶搞表情包">
+  <meta property="og:image" content="https://lihanyang673-design.github.io/class-website/snapshot/img/1789967009928_355082092.png">
+  <style>
+  *{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:#eef3f8;color:#1c2b3a}
+  a{color:inherit;text-decoration:none}.wrap{max-width:640px;margin:0 auto;padding:14px}
+  .top{background:linear-gradient(135deg,#1877f2,#3a9bfc);color:#fff;padding:22px 14px 18px;text-align:center}
+  .top h1{font-size:22px}.top p{font-size:12px;opacity:.85;margin-top:6px}
+  .card{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .head{display:flex;align-items:center;gap:10px}
+  .avatar{width:40px;height:40px;border-radius:50%;background:#3a9bfc;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+  .meta{flex:1;min-width:0}.name{font-weight:600;font-size:14px}.time{font-size:12px;color:#8a97a5}
+  .badge{font-size:11px;background:#e7f0ff;color:#1877f2;border-radius:8px;padding:2px 8px;margin-left:6px}
+  .badge.pin{background:#fff3d6;color:#b07d00}.content{margin-top:10px;font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .imgs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+  .imgs img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}
+  .imgs.single img{aspect-ratio:auto;max-height:340px;object-fit:contain}
+  .foot{display:flex;gap:18px;margin-top:10px;font-size:13px;color:#8a97a5}
+  .ph{margin-top:10px;background:#f2f5f8;border-radius:8px;padding:10px;font-size:13px;color:#8a97a5;text-align:center}
+  .btn{display:inline-block;background:#1877f2;color:#fff;border-radius:20px;padding:8px 20px;font-size:14px;border:0;cursor:pointer}
+  .btn.plain{background:#fff;color:#1877f2;border:1px solid #cfe0f5}
+  .back{display:inline-block;margin:12px 0;font-size:14px;color:#1877f2}
+  .cmt{display:flex;gap:10px;padding:10px 0;border-top:1px solid #f0f3f6}
+  .cmt .avatar{width:32px;height:32px;font-size:13px}.cmt .name{font-size:13px}.cmt .content{margin-top:4px;font-size:14px;white-space:pre-wrap}
+  .cmt img{max-width:180px;border-radius:8px;margin-top:6px;display:block}
+  .toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;opacity:0;transition:.3s;pointer-events:none}
+  .toast.on{opacity:1}</style></head>
+    <body><div class="wrap">
+    <a class="back" href="index.html">← 返回帖子广场</a>
+    <div class="card">
+      <div class="head"><div class="avatar">落</div>
+      <div class="meta"><div class="name">落花雨<span class="badge">恶搞</span></div>
+      <div class="time">2026-09-21 21:03</div></div></div>
+      <div class="content">奶龙王导恶搞表情包</div>
+      <div class="imgs" style="grid-template-columns:repeat(3,1fr)"><img loading="lazy" src="img/1789967009928_355082092.png"><img loading="lazy" src="img/1789967010075_627231396.png"></div>
+      
+      
+      <div class="ph">📊 此帖含投票（请在校园网完整版参与）</div>
+      <div class="foot"><span>❤ 7</span><span>💬 0</span><span>👁 27</span>
+      <span style="margin-left:auto"><button class="btn" style="padding:4px 14px;font-size:13px" onclick="share()">🔗 分享</button></span></div>
+    </div>
+    <div class="card"><div style="font-weight:600;font-size:15px;margin-bottom:4px">💬 评论 0</div>
+    <div style="color:#8a97a5;font-size:14px;padding:10px 0">暂无评论</div>
+    </div>
+    <div style="text-align:center;margin:16px 0"><a class="btn plain" href="index.html">📱 看更多帖子</a></div></div>
+    <div class="toast" id="toast">链接已复制</div>
+    <script>
+    function share(){
+      var url=location.href;
+      if(navigator.share){navigator.share({title:document.title,url:url}).catch(function(){});return}
+      (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(ok,function(){
+        var i=document.createElement('input');i.value=url;document.body.appendChild(i);i.select();
+        try{document.execCommand('copy');ok()}catch(e){}
+        document.body.removeChild(i)});
+      function ok(){var t=document.getElementById('toast');t.classList.add('on');setTimeout(function(){t.classList.remove('on')},1800)}
+    }
+    </script></body></html>
