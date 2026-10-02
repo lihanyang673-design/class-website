@@ -17,9 +17,11 @@ export const Game = {
   cfg:null, notes:[], dom:[],        // notes:{t,lane,el,state}
   score:0, combo:0, maxCombo:0,
   cnt:{perfect:0,good:0,miss:0},
-  hooks:{},                          // main 注入：onEnd(result)
+  hooks:{},                          // main 注入：onEnd(result) / onEndlessEnd(result)
+  endless:null,                      // 无尽模式状态：{base,round,lives,baseScore}
   _raf:0, _lastY:0,
   _head:0, _hitY:0,                  // 滑动窗口头指针 + 缓存的判定线位置
+  _lastRaw:0,                        // 无尽用：上一帧的音频原始时钟（检测循环回绕）
 };
 if(typeof window!=='undefined') window.__game=Game;   // 调试只读钩子（同 __music/__danceParts 风格）
 
@@ -146,18 +148,43 @@ export function genChart(diff, bpm, durSec, offsetSec, seedStr=''){
 // ============================================================
 // 开始 / 暂停 / 结束
 // ============================================================
+// 创建单个音符的箭头 DOM（开局建场与无尽追加段共用）
+function spawnNoteEl(n){
+  const el=document.createElement('div');
+  el.className='note'; el.dataset.l=n.lane; el.dataset.dir=n.lane;
+  el.innerHTML='<span class="na">➤</span>';
+  const hex='#'+LANE_HEX[n.lane].toString(16).padStart(6,'0');
+  el.style.borderColor=hex; el.style.color=hex;
+  el.style.textShadow=`0 0 14px ${hex}88`;
+  el.style.display='none';
+  document.querySelector(`.lane[data-l="${n.lane}"]`).appendChild(el);
+  n.el=el;
+  return el;
+}
+
 export function startGame(cfg){
-  // cfg:{diff,bpm,offset,speed,duration,chart?}
+  // cfg:{diff,bpm,offset,speed,duration,chart?,endless?}
   // chart 存在 = 玩家自制谱面（按难度抽稀）；否则按 BPM 程序化生成
   stopGame(true);
   Game.cfg = cfg;
   Game.notes = cfg.chart && cfg.chart.length
     ? chartNotes(cfg.chart, cfg.diff, cfg.duration, cfg.songId||'')
     : genChart(cfg.diff, cfg.bpm, cfg.duration, cfg.offset/1000, cfg.songId||'');
-  Game.score=0; Game.combo=0; Game.maxCombo=0;
-  Game.cnt={perfect:0,good:0,miss:0};
+  // ===== 无尽模式：音乐循环 + 每段提速；分数/判定明细从普通局继续累加，连击重开 =====
+  if(cfg.endless){
+    Game.endless={ base:0, round:1, lives:5, baseScore:Game.score };
+    Game.combo=0;
+    Music.el.loop=true;                // 音乐循环播放
+    Music.el.playbackRate=1.1;         // 无尽第 1 段就提速 10%
+  }else{
+    Game.endless=null;
+    Game.score=0; Game.combo=0; Game.maxCombo=0;
+    Game.cnt={perfect:0,good:0,miss:0};
+    Music.el.loop=false;
+    Music.el.playbackRate=1;
+  }
   Game.playing=true; Game.paused=false;
-  Game._head=0;
+  Game._head=0; Game._lastRaw=0;
   // 判定线位置缓存：开局算一次，窗口尺寸变化时更新（避免主循环每帧读 offsetTop 强制重排）
   Game._hitY=document.getElementById('hitLine').offsetTop;
   if(!Game._onResize){
@@ -168,23 +195,13 @@ export function startGame(cfg){
   // 清空轨道 DOM，建立箭头元素（延迟到接近屏幕才显示）
   const tilt=document.getElementById('noteTilt');
   tilt.querySelectorAll('.note').forEach(n=>n.remove());
-  Game.dom = Game.notes.map(n=>{
-    const el=document.createElement('div');
-    el.className='note'; el.dataset.l=n.lane; el.dataset.dir=n.lane;
-    el.innerHTML='<span class="na">➤</span>';
-    const hex='#'+LANE_HEX[n.lane].toString(16).padStart(6,'0');
-    el.style.borderColor=hex; el.style.color=hex;
-    el.style.textShadow=`0 0 14px ${hex}88`;
-    el.style.display='none';
-    document.querySelector(`.lane[data-l="${n.lane}"]`).appendChild(el);
-    n.el=el;
-    return el;
-  });
+  Game.dom = Game.notes.map(n=>spawnNoteEl(n));
 
   updateHud();
-  Music.el.onended = ()=> finishGame(true);
+  // 无尽模式用 loop 循环播放，onended 永不触发；普通局一曲结束 = 自然结算
+  Music.el.onended = cfg.endless ? null : ()=> finishGame(true);
   window.__music = Music.el;   // 调试钩子（与 __game 同性质）
-  console.log(`%c[演出] 🎬 开始！难度=${cfg.diff} BPM=${cfg.bpm} 音符数=${Game.notes.length} 时长≈${cfg.duration.toFixed(0)}s`, 'color:#ffe17a;font-weight:bold');
+  console.log(`%c[演出] 🎬 开始！难度=${cfg.diff}${cfg.endless?' ♾无尽':''} BPM=${cfg.bpm} 音符数=${Game.notes.length} 时长≈${cfg.duration.toFixed(0)}s`, 'color:#ffe17a;font-weight:bold');
   Music.play();
   loop();
 }
@@ -202,6 +219,8 @@ export function stopGame(silent){
   cancelAnimationFrame(Game._raf);
   Music.stop();
   Music.el.onended=null;
+  Music.el.loop=false; Music.el.playbackRate=1;
+  Game.endless=null;
   if(!silent){
     document.getElementById('stageUI').classList.remove('on');
     document.getElementById('noteTilt').querySelectorAll('.note').forEach(n=>n.remove());
@@ -216,7 +235,13 @@ function loop(){
   Game._raf = requestAnimationFrame(loop);
   if(Game.paused) return;
 
-  const t = Music.time();                      // 歌曲时钟（秒）
+  // 歌曲时钟（秒）。无尽模式：音频时钟倒回 = 循环回绕 → 追加下一段更快谱面
+  const raw = Music.time();
+  if(Game.endless){
+    if(raw < Game._lastRaw - 0.05) nextRound();   // currentTime 倒回 = 音乐循环了一圈
+    Game._lastRaw = raw;
+  }
+  const t = Game.endless ? raw + Game.endless.base : raw;   // 谱面时间（跨段累加，永远前进）
   const hitY = Game._hitY;                     // 判定线位置（开局/窗口变化时才算，避免每帧强制重排）
   const pps = 340 * Game.cfg.speed;            // 像素/秒
 
@@ -247,7 +272,8 @@ function loop(){
 // ============================================================
 export function hitLane(lane){
   if(!Game.playing || Game.paused) return;
-  const t = Music.time();
+  // 谱面时间与主循环同源（无尽模式 = 音频时钟 + 已累加的段长）
+  const t = Game.endless ? Music.time() + Game.endless.base : Music.time();
   let best=null, bestDt=1e9;
   for(let i=Game._head; i<Game.notes.length; i++){
     const n=Game.notes[i];
@@ -273,6 +299,11 @@ function judge(n, q, lane){
     const vig=document.getElementById('missVig');
     vig.classList.add('on'); setTimeout(()=>vig.classList.remove('on'),130);
     floatText(lane,'MISS','#ff5b7f');
+    // 无尽模式：Miss 扣一颗 ❤，扣光 = 无尽结束（结算累计总分）
+    if(Game.endless){
+      Game.endless.lives--;
+      if(Game.endless.lives<=0){ endEndless(); return; }
+    }
   } else {
     Game.cnt[q==='perfect'?'perfect':'good']++;
     Game.combo++; Game.maxCombo=Math.max(Game.maxCombo,Game.combo);
@@ -313,10 +344,18 @@ function floatText(lane, txt, color){
 
 function updateHud(){
   document.getElementById('hudScore').textContent = Game.score.toLocaleString();
-  const total = Game.cnt.perfect+Game.cnt.good+Game.cnt.miss;
-  const acc = total ? Math.round((Game.cnt.perfect + Game.cnt.good*0.5)/total*100) : 100;
-  document.getElementById('hudMeta').textContent =
-    `P ${Game.cnt.perfect} · G ${Game.cnt.good} · M ${Game.cnt.miss} · ${acc}%`;
+  if(Game.endless){
+    // 无尽 HUD：❤ 血量 + 段数 + 倍速（分数继续走主显示位）
+    const E=Game.endless;
+    const rate=(1 + 0.1*E.round).toFixed(1);
+    document.getElementById('hudMeta').textContent =
+      '❤'.repeat(Math.max(0,E.lives))+'🖤'.repeat(Math.max(0,5-E.lives))+' 第'+E.round+'段 · '+rate+'×';
+  }else{
+    const total = Game.cnt.perfect+Game.cnt.good+Game.cnt.miss;
+    const acc = total ? Math.round((Game.cnt.perfect + Game.cnt.good*0.5)/total*100) : 100;
+    document.getElementById('hudMeta').textContent =
+      `P ${Game.cnt.perfect} · G ${Game.cnt.good} · M ${Game.cnt.miss} · ${acc}%`;
+  }
   const cb=document.getElementById('comboBox');
   if(Game.combo>=2){
     cb.classList.add('on');
@@ -360,6 +399,47 @@ function finishGame(natural){
     acc, rank, coin, diff:Game.cfg.diff, rel, maxScore, notes:noteN,
     song:Game.cfg.songName||'', songId:Game.cfg.songId||'',
   });
+}
+
+// ============================================================
+// 无尽模式：音乐循环播放，每段提速 10%（最高 2×），方块同倍率移动；
+// 分数/连击/判定从普通局继续累加；Miss 扣 ❤（5 颗），打光即结束。
+// ============================================================
+// 循环回绕处理：刚播完一段 → 追加下一段谱面（固定种子 = 与第一遍完全相同的节奏型）
+function nextRound(){
+  const E=Game.endless, cfg=Game.cfg;
+  E.base += Game._lastRaw;      // 谱面时间轴整体前移一段的长度（上一帧音频时钟 ≈ 段长）
+  E.round++;
+  Music.el.playbackRate = Math.min(2, 1 + 0.1*E.round);   // 每段 +10%，最高 2 倍速
+  // 重新生成同一段谱面并平移追加（notes 保持有序，滑动窗口/判定逻辑全部无感复用）
+  let seg;
+  if(cfg.chart && cfg.chart.length) seg=chartNotes(cfg.chart,'hard',cfg.duration,cfg.songId||'');
+  else seg=genChart('hard',cfg.bpm,cfg.duration,cfg.offset/1000,cfg.songId||'');
+  for(const n of seg){ n.t += E.base; spawnNoteEl(n); Game.notes.push(n); }
+  updateHud();
+  console.log(`%c[无尽] 🔁 第${E.round}段开始，倍速 ${Music.el.playbackRate.toFixed(1)}×，❤×${E.lives}`, 'color:#ff9de2;font-weight:bold');
+}
+
+// ❤ 打光：结束无尽 → 结算累计总分（普通局分数 + 无尽各段累加）
+function endEndless(){
+  const E=Game.endless;
+  Game.endless=null;
+  Game.playing=false;
+  cancelAnimationFrame(Game._raf);
+  Music.el.loop=false; Music.el.playbackRate=1;
+  Music.stop();
+  Game.hooks.onEndlessEnd && Game.hooks.onEndlessEnd({
+    score:Game.score, baseScore:E.baseScore, maxCombo:Game.maxCombo, cnt:{...Game.cnt},
+    round:E.round, lives:E.lives, diff:Game.cfg.diff,
+    song:Game.cfg.songName||'', songId:Game.cfg.songId||'',
+  });
+}
+
+// 结算页「继续无尽模式」入口：沿用上一局配置，分数接着算
+export function startEndless(){
+  const prev=Game.cfg;
+  if(!prev || Game.playing) return;
+  startGame({...prev, endless:true});
 }
 
 // 总谱面剩余时长（生成后调用，用于判断提前结束）

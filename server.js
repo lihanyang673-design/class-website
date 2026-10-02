@@ -375,6 +375,20 @@ async function initDB() {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(song_key, diff, user_key)
   )`);
+  // ===== 奶娃街舞：无尽模式排行榜（仅地狱难度，音乐循环加速，按累计总分排行）=====
+  db.run(`CREATE TABLE IF NOT EXISTS dance_endless (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    song_key TEXT NOT NULL,           -- 曲目稳定标识：内置 'default' / 上传 'u'+dbId
+    song_name TEXT DEFAULT '',
+    user_key TEXT NOT NULL,           -- 玩家标识：'u'+userId / 游客 'g'+本地playerId
+    user_name TEXT DEFAULT '玩家',
+    score INTEGER DEFAULT 0,          -- 累计总分（普通局 + 无尽各段累加），排行依据
+    round INTEGER DEFAULT 1,          -- 坚持到的段数（第1段=1.1倍速，每段+10%）
+    combo INTEGER DEFAULT 0,          -- 累计最大连击
+    notes INTEGER DEFAULT 0,          -- 累计击中音符数（PERFECT+GOOD）
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(song_key, user_key)        -- 同一玩家同一首歌只留最高总分
+  )`);
   saveDB();
 }
 
@@ -2399,6 +2413,63 @@ app.post('/api/dance/scores', (req, res) => {
     res.json({ ok: true, updated: true });
   } catch (e) {
     res.status(500).json({ error: '成绩提交失败：' + e.message });
+  }
+});
+
+// ===== 无尽模式排行榜 =====
+// 按曲目查询：全员无尽成绩（按累计总分降序；同玩家只留最高分已在表内保证）
+app.get('/api/dance/endless/:songKey', (req, res) => {
+  const songKey = String(req.params.songKey || '').slice(0, 60);
+  if (!songKey) return res.status(400).json({ error: '缺少曲目标识' });
+  const rows = query(
+    `SELECT user_name, score, round, combo, notes, created_at
+     FROM dance_endless WHERE song_key = ? ORDER BY score DESC, id ASC`,
+    [songKey]);
+  const songRow = query('SELECT song_name FROM dance_endless WHERE song_key = ? LIMIT 1', [songKey])[0];
+  res.json({ song: songRow ? songRow.song_name : '', rows });
+});
+
+// 提交无尽成绩（死亡结算时自动上传；不强制登录，身份规则与普通榜一致）
+// 同一玩家同一首歌只保留累计总分最高的一次
+app.post('/api/dance/endless', (req, res) => {
+  try {
+    const b = req.body || {};
+    const songKey = String(b.songKey || '').slice(0, 60);
+    const songName = String(b.songName || '').slice(0, 50);
+    const userKey = String(b.userKey || '').slice(0, 60);
+    let userName = String(b.userName || '').trim().slice(0, 20) || '玩家';
+    if (!songKey || !userKey) return res.status(400).json({ error: '缺少曲目或玩家标识' });
+    const score = Math.max(0, Math.min(2000000000, Math.round(+b.score) || 0));
+    const round = Math.max(1, Math.min(9999, Math.round(+b.round) || 1));
+    const combo = Math.max(0, Math.min(1000000, Math.round(+b.combo) || 0));
+    const notes = Math.max(0, Math.min(10000000, Math.round(+b.notes) || 0));
+
+    // 登录玩家：强制以账号 id 和昵称为准（防伪造身份）；游客沿用浏览器提交的本地标识
+    let finalUserKey = userKey, finalUserName = userName;
+    if (req.session.userId) {
+      const me = query('SELECT nickname FROM users WHERE id = ?', [req.session.userId])[0];
+      finalUserKey = 'u' + req.session.userId;
+      if (me && me.nickname) finalUserName = me.nickname;
+    }
+
+    const old = query('SELECT score FROM dance_endless WHERE song_key = ? AND user_key = ?',
+      [songKey, finalUserKey])[0];
+    if (old && score <= old.score) return res.json({ ok: true, updated: false });
+
+    if (old) {
+      run(`UPDATE dance_endless SET song_name=?, user_name=?, score=?, round=?, combo=?, notes=?,
+           created_at=CURRENT_TIMESTAMP
+           WHERE song_key=? AND user_key=?`,
+        [songName, finalUserName, score, round, combo, notes, songKey, finalUserKey]);
+    } else {
+      run(`INSERT INTO dance_endless (song_key, song_name, user_key, user_name, score, round, combo, notes)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [songKey, songName, finalUserKey, finalUserName, score, round, combo, notes]);
+    }
+    saveDB();
+    res.json({ ok: true, updated: true });
+  } catch (e) {
+    res.status(500).json({ error: '无尽成绩提交失败：' + e.message });
   }
 });
 

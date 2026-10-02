@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // main.js —— 程序入口 / 总调度
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
@@ -7,9 +7,9 @@ import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick
 import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20260929r';
 import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20260929r';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane } from './game.js?v=20261025';
-import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261025';
+import { Game, startGame, startEndless, stopGame, pauseGame, resumeGame, hitLane } from './game.js?v=20261026';
+import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261026';
 
 const $=id=>document.getElementById(id);
 
@@ -210,6 +210,7 @@ const main={
     Fx.camBase.copy(CAM_PLAY);
     resetBody();               // ★ 开演前复位奶娃（清上局躺地/庆祝残留）
     Game.hooks.onEnd=onShowEnd;
+    Game.hooks.onEndlessEnd=onEndlessOver;
     // ★ 修复：等歌曲元数据拿到真实时长再生成谱面（之前拿 NaN 只生成前 95s，后半段空）
     const dur = await Music.awaitDuration(3000);
     // ★ 玩家自制歌曲：拉取数据库里存的谱面（真实节奏点）
@@ -217,6 +218,19 @@ const main={
     try{ chart=await ensureChart(song); }
     catch(e){ console.warn('[演出] 谱面加载失败，退回程序生成谱面', e); }
     startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart});
+  },
+  // ♾ 无尽模式：沿用上一局配置与分数，音乐循环 + 每段提速（结算页「继续无尽」按钮进入）
+  startEndlessMode(){
+    ensureCtx();
+    stopMenuBgm();
+    showUIRoot(false);
+    showStageUI(true);
+    camera.position.copy(CAM_PLAY);
+    Fx.camBase.copy(CAM_PLAY);
+    resetBody();
+    Game.hooks.onEnd=onShowEnd;
+    Game.hooks.onEndlessEnd=onEndlessOver;
+    startEndless();
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },
   quitShow(){
@@ -247,6 +261,18 @@ function onShowEnd(res){
   showUIRoot(true);
   startMenuBgm();                   // 演出结束回到结算页：恢复菜单 BGM
   // ★ 每局结束必播结束语音（稍延迟，等页面切稳）
+  setTimeout(()=>sfxEndVoice(), 500);
+}
+
+// ♾ 无尽结束回调（❤ 打光）：结算累计总分 + 上传无尽榜
+function onEndlessOver(res){
+  showStageUI(false);
+  camera.position.copy(CAM_HOME);
+  Fx.camBase.copy(CAM_HOME);
+  showEndlessResult(res);           // ui 内部完成存档 + 自动上传无尽榜
+  lieDown();                        // ❤ 打光：奶娃躺地上
+  showUIRoot(true);
+  startMenuBgm();
   setTimeout(()=>sfxEndVoice(), 500);
 }
 

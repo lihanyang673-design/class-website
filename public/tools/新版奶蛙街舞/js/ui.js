@@ -1,10 +1,10 @@
-﻿// ============================================================
+// ============================================================
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
 import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20260929r';
-import { Game, pauseGame } from './game.js?v=20261025';
+import { Game, pauseGame } from './game.js?v=20261026';
 
 // ============================================================
 // 存档（localStorage）
@@ -358,6 +358,7 @@ export function initUI(main){
       if(id==='scr-ach')  renderAch();
       if(id==='scr-rank') renderRank();
       if(id==='scr-board') renderBoard();
+      if(id==='scr-endless') renderEndlessBoard();
       if(id==='scr-home') renderHome();
       if(id==='scr-set') updateAdminAuthUI();
       showScreen(id);
@@ -396,6 +397,7 @@ export function initUI(main){
 
   // ---- 结算按钮 ----
   document.getElementById('btnRetry').addEventListener('click',()=>{ sfxClick(); startShow(); });
+  document.getElementById('btnEndless').addEventListener('click',()=>{ sfxClick(); mainRef.startEndless(); });
   document.getElementById('btnBackHome').addEventListener('click',()=>{
     sfxClick(); showScreen('scr-home'); renderHome();
   });
@@ -774,6 +776,68 @@ function paintBoard(){
   });
 }
 
+// ---------- 无尽模式排行榜（仅地狱难度，按累计总分排行）----------
+const endlessState={song:'default', ready:false};
+
+async function renderEndlessBoard(){
+  if(!USER_SONGS.loaded) await refreshUserSongs();
+  const sel=document.getElementById('endlessSong');
+  // 静态版：没有在线排行榜，直接说明
+  if(!serverOn){
+    if(sel) sel.style.display='none';
+    document.getElementById('endlessList').innerHTML=
+      '<div class="rank-empty">🌐 这是网页版，无尽排行榜需要连接班级服务器。<br>回到校园网玩，就能和全班比高低啦！<br>（无尽模式本身照常可玩：整首地狱谱弹完后点「♾ 继续无尽模式」）</div>';
+    return;
+  }
+  if(sel) sel.style.display='';
+  // 曲目下拉：内置 + 全班上传，只构建一次
+  if(!endlessState.ready){
+    const all=[...SONGS, ...USER_SONGS.list];
+    sel.innerHTML=all.map(s=>`<option value="${s.id}">${s.name}${s.user?'（上传曲）':''}</option>`).join('');
+    sel.value=endlessState.song;
+    sel.addEventListener('change',()=>{ endlessState.song=sel.value; loadEndlessScores(); });
+    endlessState.ready=true;
+  }
+  await loadEndlessScores();
+}
+
+async function loadEndlessScores(){
+  const list=document.getElementById('endlessList');
+  list.innerHTML='<div class="rank-empty">加载中…</div>';
+  try{
+    const r=await fetch('/api/dance/endless/'+encodeURIComponent(endlessState.song), {credentials:'same-origin'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    endlessState.data=await r.json();
+  }catch(e){
+    endlessState.data=null;
+    list.innerHTML='<div class="rank-empty">加载失败，请稍后再试</div>';
+    return;
+  }
+  paintEndless();
+}
+
+function paintEndless(){
+  const list=document.getElementById('endlessList'); list.innerHTML='';
+  const arr=(endlessState.data&&endlessState.data.rows)||[];
+  if(!arr.length){ list.innerHTML='<div class="rank-empty">这首曲子还没人挑战无尽 —— 弹完整首地狱谱试试！</div>'; return; }
+  const top=arr[0].score||1;
+  arr.forEach((r,i)=>{
+    const pct=Math.max(2,Math.min(100,r.score/top*100));
+    const date=String(r.created_at||'').slice(0,10);
+    const row=document.createElement('div');
+    row.className='rank-row'+(i===0?' top1':'');
+    row.innerHTML=`<div class="no">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
+      <div class="rbody">
+        <div class="rsong">👤 ${r.user_name||'玩家'}</div>
+        <div class="rbar"><div class="rfill" style="width:${pct.toFixed(2)}%"></div><span class="rpct">${r.score.toLocaleString()} 分</span></div>
+        <div class="rj"><span class="rj-p">♾ 坚持 ${r.round} 段</span><span class="rj-g">连击 ×${r.combo}</span><span class="rj-m">击中 ${r.notes}</span></div>
+        <div class="rmeta">累计总分 ${r.score.toLocaleString()} · ${date}</div>
+      </div>
+      <div class="rrank">♾</div>`;
+    list.appendChild(row);
+  });
+}
+
 // ---------- 设置 ----------
 // 管理员认证区块的状态显示（已认证/未认证，按钮在"认证/退出认证"间切换）
 function updateAdminAuthUI(){
@@ -1080,8 +1144,56 @@ export function showResult(res, isNew){
   document.getElementById('resGood').textContent=res.cnt.good;
   document.getElementById('resMiss').textContent=res.cnt.miss;
   document.getElementById('resCombo').textContent=res.maxCombo;
-  document.getElementById('resCoin').textContent=res.coin;
+  document.getElementById('resCoinLine').innerHTML='🪙 本场演出费 +<span id="resCoin">'+res.coin+'</span> 奶币';
   document.getElementById('resNew').style.display=isNew?'':'none';
+  // 地狱难度打完整首 → 结算页提供「♾ 继续无尽模式」入口（普通成绩已在上方先上传）
+  document.getElementById('btnEndless').style.display = res.diff==='hard' ? '' : 'none';
+  showScreen('scr-result');
+  renderHome(); renderAch();
+}
+
+// ---------- 无尽模式结算 ----------
+// 自动上传无尽成绩（fire-and-forget；排行=累计总分，同玩家同曲目只留最高）
+async function submitServerEndless(res){
+  if(!serverOn) return;
+  try{
+    const localId=Store.data.playerId||'anon';
+    const body={
+      songKey:res.songId||'default',
+      songName:res.song||'',
+      userKey:'g'+localId,
+      userName:myIdentity?myIdentity.name:('游客'+String(localId).slice(-4)),
+      score:res.score, round:res.round, combo:res.maxCombo,
+      notes:res.cnt.perfect+res.cnt.good,
+    };
+    await fetch('/api/dance/endless',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body), credentials:'same-origin',
+    });
+  }catch(e){ console.warn('[无尽榜] 成绩自动上传失败（不影响游戏）', e); }
+}
+
+// 无尽结束（❤ 打光）→ 复用结算屏展示累计总分
+export function showEndlessResult(res){
+  submitServerEndless(res);
+  const s=Store.data.stats;
+  if(res.score>s.bestScore) s.bestScore=res.score;
+  if(res.maxCombo>s.maxCombo) s.maxCombo=res.maxCombo;
+  // 无尽加演费：只按无尽段内新挣的分数发奶币（普通局那份已在 showResult 发过）
+  const coin=Math.max(0, Math.floor((res.score-(res.baseScore||0))/400));
+  Store.data.coins+=coin;
+  Store.save();
+
+  document.getElementById('resRank').textContent='♾';
+  document.getElementById('resScore').textContent=res.score.toLocaleString();
+  document.getElementById('resRel').textContent=`坚持 ${res.round} 段 · 累计总分排行（无尽榜）`;
+  document.getElementById('resNew').style.display='none';
+  document.getElementById('resPerfect').textContent=res.cnt.perfect;
+  document.getElementById('resGood').textContent=res.cnt.good;
+  document.getElementById('resMiss').textContent=res.cnt.miss;
+  document.getElementById('resCombo').textContent=res.maxCombo;
+  document.getElementById('resCoinLine').innerHTML='🪙 无尽加演费 +<span id="resCoin">'+coin+'</span> 奶币';
+  document.getElementById('btnEndless').style.display='none';   // 已在无尽里，不再叠加
   showScreen('scr-result');
   renderHome(); renderAch();
 }

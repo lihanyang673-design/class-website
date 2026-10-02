@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>奶娃街舞 · Dance Baby</title>
-<link rel="stylesheet" href="style.css?v=20261025">
+<link rel="stylesheet" href="style.css?v=20261026">
 </head>
 <body>
 
@@ -48,6 +48,7 @@
       <button data-scr="scr-ach">🎯 挑战之路</button>
       <button data-scr="scr-rank">🏆 我的纪录</button>
       <button data-scr="scr-board">📊 排行榜</button>
+      <button data-scr="scr-endless">♾ 无尽榜</button>
       <button data-scr="scr-set">⚙️ 设置</button>
       <!-- GitHub 展示版专用：回到入口大厅（校园网运行时不显示） -->
       <button id="navHallBtn" onclick="location.href='../../'" style="display:none">⬅ 大厅</button>
@@ -73,6 +74,7 @@
       <button class="home-card" data-scr="scr-codex"><span class="ic">📖</span>舞步图鉴</button>
       <button class="home-card" data-scr="scr-rank"><span class="ic">🏆</span>我的纪录</button>
       <button class="home-card" data-scr="scr-board"><span class="ic">📊</span>排行榜</button>
+      <button class="home-card" data-scr="scr-endless"><span class="ic">♾</span>无尽榜</button>
       <button class="home-card" data-scr="scr-ach"><span class="ic">🎯</span>挑战之路</button>
       <button class="home-card" data-scr="scr-set"><span class="ic">⚙️</span>游戏设置</button>
     </div>
@@ -160,6 +162,17 @@
       <button data-d="hard">💀 地狱</button>
     </div>
     <div id="boardList"></div>
+  </section>
+
+  <!-- 无尽榜（仅地狱难度，音乐循环加速，按累计总分排行） -->
+  <section class="screen" id="scr-endless">
+    <div class="page-head">
+      <button class="btn-back" data-back>← 返回</button>
+      <div class="sec-title" style="margin:0">♾ 无尽榜 <small>ENDLESS</small></div>
+    </div>
+    <div class="rank-help">💀 只有<b>地狱难度</b>有无尽模式：整首歌弹完后点「♾ 继续无尽模式」，音乐循环播放且<b>每段加速 10%</b>（方块同倍率变快，最高 2×），分数继续累加；❤×5 被 Miss 打光即结束。排行按<b>累计总分</b>，每人每首歌只记最高一次。</div>
+    <select id="endlessSong" class="board-select"></select>
+    <div id="endlessList"></div>
   </section>
 
   <!-- 设置 -->
@@ -251,9 +264,10 @@
         <div class="rg"><b id="resMiss" style="color:var(--pink)">0</b><span>MISS</span></div>
         <div class="rg"><b id="resCombo" style="color:var(--purple)">0</b><span>最大连击</span></div>
       </div>
-      <div class="result-coin">🪙 本场演出费 +<span id="resCoin">0</span> 奶币</div>
+      <div class="result-coin" id="resCoinLine">🪙 本场演出费 +<span id="resCoin">0</span> 奶币</div>
       <div class="result-btns">
         <button class="btn-main" id="btnRetry">🔁 再来一次</button>
+        <button class="btn-ghost" id="btnEndless" style="display:none">♾ 继续无尽模式</button>
         <button class="btn-ghost" id="btnBackHome">回主界面</button>
       </div>
     </div>
@@ -342,7 +356,7 @@
 }
 </script>
 <script src="js/codec.js?v=20260929l"></script>
-<script type="module" src="js/main.js?v=20261025"></script>
+<script type="module" src="js/main.js?v=20261026"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';
