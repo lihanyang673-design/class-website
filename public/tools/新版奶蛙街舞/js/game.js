@@ -4,7 +4,7 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20260929r';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261034';
 import { doAction, stumble } from './dancer.js?v=20260929r';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 

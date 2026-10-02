@@ -4,7 +4,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261034';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20260929r';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261034';
 import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20260929r';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
 import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane } from './game.js?v=20261034';
