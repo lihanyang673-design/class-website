@@ -15,9 +15,6 @@
      注意：「开跳」按钮必须在这一层内（本层 z-index 最高），
      否则会被自己盖住造成「按钮点不到→开场不播→遮罩永不消失」的死锁 -->
 <div id="loadOverlay">
-  <!-- GitHub 展示版：左上角返回大厅按钮（校园网运行时不显示） -->
-  <a id="ghBackBtn" href="../../" style="display:none;position:fixed;top:10px;left:10px;z-index:99999;
-    background:rgba(0,0,0,.45);color:#fff;text-decoration:none;border-radius:18px;padding:6px 14px;font-size:13px">⬅ 返回大厅</a>
   <img class="load-baby" src="baby.png" alt="奶娃">
   <div class="load-txt" id="loadTxt">奶娃街舞 · 装扮舞台中…</div>
   <div class="load-bar"><i id="loadBar"></i></div>
@@ -52,6 +49,8 @@
       <button data-scr="scr-rank">🏆 我的纪录</button>
       <button data-scr="scr-board">📊 排行榜</button>
       <button data-scr="scr-set">⚙️ 设置</button>
+      <!-- GitHub 展示版专用：回到入口大厅（校园网运行时不显示） -->
+      <button id="navHallBtn" onclick="location.href='../../'" style="display:none">⬅ 大厅</button>
     </nav>
     <div class="coin-chip">🪙 <span id="coinNum">0</span></div>
   </header>
@@ -345,8 +344,8 @@
 <script src="js/codec.js?v=20260929l"></script>
 <script type="module" src="js/main.js?v=20261025"></script>
 <script>
-// GitHub 展示版：显示左上角返回大厅按钮（校园网运行时不显示）
-if (location.hostname.indexOf('github.io') >= 0) document.getElementById('ghBackBtn').style.display = '';
+// GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
+if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';
 </script>
 </body>
 </html>

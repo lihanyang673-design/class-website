@@ -179,5 +179,71 @@ function avatarHtml(name, avatar, cls = '') {
     </div>${shareJs}</body></html>`);
   }
 
-  console.log(`快照完成：${postsData.length} 条帖子 → snapshot/`);
+  // ===== 工具分享（原版"🌐 网站分享"模块的静态版） =====
+  // 原版 app.js toolIcon() 的完整拷贝
+  const toolIcon = host => {
+    const h = (host || '').toLowerCase();
+    if (h.includes('bilibili')) return '📺';
+    if (h.includes('github')) return '🐙';
+    if (h.includes('zhihu')) return '💡';
+    if (h.includes('baidu')) return '🐾';
+    if (h.includes('docs.qq') || h.includes('doc')) return '📄';
+    if (h.includes('pan.') || h.includes('drive') || h.includes('disk')) return '💾';
+    if (h.includes('edu') || h.includes('xuexi') || h.includes('school')) return '🎓';
+    if (h.includes('translate')) return '🌍';
+    if (h.includes('music') || h.includes('163')) return '🎵';
+    if (h.includes('video') || h.includes('tv')) return '🎬';
+    return '🧰';
+  };
+
+  const toolCats = q('SELECT id, name, sort_order FROM tool_categories ORDER BY sort_order, id');
+  const toolRows = q(`SELECT t.*, u.nickname, u.username, u.avatar,
+      (SELECT COUNT(*) FROM tool_likes WHERE tool_id = t.id) AS like_count
+    FROM tools t LEFT JOIN users u ON u.id = t.user_id ORDER BY t.id DESC`);
+  const catName = Object.fromEntries(toolCats.map(c => [c.id, c.name]));
+
+  const toolCards = toolRows.map(t => {
+    const tu = t.user_id > 0 ? users[t.user_id] : null;
+    const name = tu ? (tu.nickname || tu.username || '同学') : '同学';
+    const avatar = tu ? tu.avatar : '';
+    const host = (() => { try { return new URL(t.url.startsWith('http') ? t.url : 'https://' + t.url).hostname.replace(/^www\./, ''); } catch (e) { return t.url; } })();
+    const url = /^https?:\/\//.test(t.url) ? t.url : 'https://' + t.url;
+    return `<div class="card tool-card" data-cat="${t.category_id || 0}">
+      <div class="tool-card-main">
+        <span class="tool-icon">${toolIcon(host)}</span>
+        <div class="tool-info">
+          <a class="tool-title" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(t.title)} <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">${esc(host)}</div>
+          <div class="tool-desc">${esc(t.description)}</div>
+          <div class="tool-meta">
+            ${avatarHtml(name, avatar, 'avatar-xs')}
+            <span class="tool-who">${esc(name)}</span>
+            <span>· ${esc(fmtTime(t.created_at))} 分享</span>
+            ${t.category_id ? `<span class="tool-cat-badge">📂 ${esc(catName[t.category_id] || '未分类')}</span>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">${t.like_count}</span></button>
+        <a class="tool-open-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>`;
+  }).join('\n');
+
+  const chipHtml = ['<button class="tool-chip active" data-cat="0" onclick="setCat(0)">全部</button>']
+    .concat(toolCats.map(c => `<button class="tool-chip" data-cat="${c.id}" onclick="setCat(${c.id})">${esc(c.name)}</button>`)).join('');
+
+  fs.writeFileSync(path.join(OUT, 'tools.html'), `<!DOCTYPE html><html lang="zh-CN">
+  ${pageHead('班级动态 · 网站分享', '同学们分享的好用工具网站，共 ' + toolRows.length + ' 个', '')}
+  <body>${navbar}<div class="static-wrap">
+  <div class="static-tip">🧰 同学们分享的好用工具网站 · 登录/上传/点赞请使用校园网完整版</div>
+  <div class="tool-chips-row">${chipHtml}</div>
+  ${toolCards || '<div class="card empty-state">🧰 这里还空空的，快来分享第一个工具网站吧～</div>'}
+  </div><script>
+  function setCat(id){
+    document.querySelectorAll('.tool-chip').forEach(function(b){b.classList.toggle('active', b.dataset.cat == id)});
+    document.querySelectorAll('.tool-card').forEach(function(c){c.style.display = (id == 0 || c.dataset.cat == id) ? '' : 'none'});
+  }
+  </script></body></html>`);
+
+  console.log(`快照完成：${postsData.length} 条帖子、${toolRows.length} 个工具 → snapshot/`);
 })();

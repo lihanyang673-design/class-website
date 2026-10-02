@@ -1,0 +1,311 @@
+<!DOCTYPE html><html lang="zh-CN">
+  <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>班级动态 · 网站分享</title><meta property="og:title" content="班级动态 · 网站分享">
+  <meta property="og:description" content="同学们分享的好用工具网站，共 15 个">
+  
+  <link rel="stylesheet" href="../public/style.css"><style>
+  .static-wrap{max-width:640px;margin:0 auto;padding:14px}
+  .nav-back{display:inline-flex;align-items:center;gap:4px;color:#fff;background:rgba(255,255,255,.18);
+    border:0;border-radius:18px;padding:5px 13px;font-size:13px;cursor:pointer;text-decoration:none}
+  .post-card-link{cursor:pointer;transition:box-shadow .15s}
+  .post-card-link:hover{box-shadow:0 3px 10px rgba(0,0,0,.12)}
+  .static-tip{text-align:center;font-size:12px;color:var(--text-secondary);margin:2px 0 12px}
+  .comment-reply-tag{color:var(--link);font-size:13px;margin-right:4px}
+  .toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;
+    padding:8px 18px;border-radius:20px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;z-index:99}
+  .toast.on{opacity:1}</style></head>
+  <body><header class="navbar"><h1 style="display:flex;align-items:center;gap:10px">
+    <a class="nav-back" href="../">⬅ 大厅</a>📚 班级动态</h1></header><div class="static-wrap">
+  <div class="static-tip">🧰 同学们分享的好用工具网站 · 登录/上传/点赞请使用校园网完整版</div>
+  <div class="tool-chips-row"><button class="tool-chip active" data-cat="0" onclick="setCat(0)">全部</button><button class="tool-chip" data-cat="1" onclick="setCat(1)">宣传</button><button class="tool-chip" data-cat="3" onclick="setCat(3)">学习</button><button class="tool-chip" data-cat="4" onclick="setCat(4)">行政</button><button class="tool-chip" data-cat="5" onclick="setCat(5)">游戏</button><button class="tool-chip" data-cat="6" onclick="setCat(6)">办公</button></div>
+  <div class="card tool-card" data-cat="5">
+      <div class="tool-card-main">
+        <span class="tool-icon">🧰</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https:///tools/新版奶蛙街舞" target="_blank" rel="noopener noreferrer">新版奶蛙街舞 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">tools</div>
+          <div class="tool-desc">支持自定义曲子，可以自己导入音乐</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-10-01 30:11 分享</span>
+            <span class="tool-cat-badge">📂 游戏</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">2</span></button>
+        <a class="tool-open-btn" href="https:///tools/新版奶蛙街舞" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="5">
+      <div class="tool-card-main">
+        <span class="tool-icon">🐙</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https://oodwina.github.io/BigNaiWa/" target="_blank" rel="noopener noreferrer">合成大奶蛙 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">oodwina.github.io</div>
+          <div class="tool-desc">好玩</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-10-01 24:50 分享</span>
+            <span class="tool-cat-badge">📂 游戏</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">2</span></button>
+        <a class="tool-open-btn" href="https://oodwina.github.io/BigNaiWa/" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="5">
+      <div class="tool-card-main">
+        <span class="tool-icon">🧰</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https://nailong-dance.pages.dev/" target="_blank" rel="noopener noreferrer">奶蛙街舞 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">nailong-dance.pages.dev</div>
+          <div class="tool-desc">音游，好玩</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-10-01 24:49 分享</span>
+            <span class="tool-cat-badge">📂 游戏</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">2</span></button>
+        <a class="tool-open-btn" href="https://nailong-dance.pages.dev/" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="4">
+      <div class="tool-card-main">
+        <span class="tool-icon">🎓</span>
+        <div class="tool-info">
+          <a class="tool-title" href="http://jxsy.seu.edu.cn/" target="_blank" rel="noopener noreferrer">导师交流报名 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">jxsy.seu.edu.cn</div>
+          <div class="tool-desc">根本抢不到</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-29 24:41 分享</span>
+            <span class="tool-cat-badge">📂 行政</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">2</span></button>
+        <a class="tool-open-btn" href="http://jxsy.seu.edu.cn/" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="1">
+      <div class="tool-card-main">
+        <span class="tool-icon">🧰</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https:///tools/班级相册/班级相册.html" target="_blank" rel="noopener noreferrer">班级相册 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">tools</div>
+          <div class="tool-desc">合照+签名+语音自我介绍，让你更快认识同学们</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-22 24:54 分享</span>
+            <span class="tool-cat-badge">📂 宣传</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">2</span></button>
+        <a class="tool-open-btn" href="https:///tools/班级相册/班级相册.html" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="6">
+      <div class="tool-card-main">
+        <span class="tool-icon">🧰</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https:///tools/random-number.html" target="_blank" rel="noopener noreferrer">随机数生成器 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">tools</div>
+          <div class="tool-desc">生成随机数</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-22 20:01 分享</span>
+            <span class="tool-cat-badge">📂 办公</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">2</span></button>
+        <a class="tool-open-btn" href="https:///tools/random-number.html" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="1">
+      <div class="tool-card-main">
+        <span class="tool-icon">🧰</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https://mp.weixin.qq.com/s/EGnQr1tyPKuTF9mbINov6Q" target="_blank" rel="noopener noreferrer">615265 班公众号 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">mp.weixin.qq.com</div>
+          <div class="tool-desc">615265班生存实录</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-22 17:52 分享</span>
+            <span class="tool-cat-badge">📂 宣传</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">2</span></button>
+        <a class="tool-open-btn" href="https://mp.weixin.qq.com/s/EGnQr1tyPKuTF9mbINov6Q" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="4">
+      <div class="tool-card-main">
+        <span class="tool-icon">🎓</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https://newxk.urp.seu.edu.cn/" target="_blank" rel="noopener noreferrer">东南大学选课系统 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">newxk.urp.seu.edu.cn</div>
+          <div class="tool-desc">糟糕的系统</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-21 29:40 分享</span>
+            <span class="tool-cat-badge">📂 行政</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">3</span></button>
+        <a class="tool-open-btn" href="https://newxk.urp.seu.edu.cn/" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="5">
+      <div class="tool-card-main">
+        <span class="tool-icon">🧰</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https://redstonearchive.top/" target="_blank" rel="noopener noreferrer">红石阁 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">redstonearchive.top</div>
+          <div class="tool-desc">收录 Minecraft 各类红石作品，提供很多信息，包括元件构成，3D展览，基本信息等等</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-21 29:38 分享</span>
+            <span class="tool-cat-badge">📂 游戏</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">2</span></button>
+        <a class="tool-open-btn" href="https://redstonearchive.top/" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="4">
+      <div class="tool-card-main">
+        <span class="tool-icon">🎓</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https://i.seu.edu.cn/" target="_blank" rel="noopener noreferrer">东南大学信息门户 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">i.seu.edu.cn</div>
+          <div class="tool-desc">好多行政的事情都在这里办</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-21 26:33 分享</span>
+            <span class="tool-cat-badge">📂 行政</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">1</span></button>
+        <a class="tool-open-btn" href="https://i.seu.edu.cn/" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="3">
+      <div class="tool-card-main">
+        <span class="tool-icon">🧰</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https://mp.weixin.qq.com/s/H-RqAanLvL1ArwrXyh3lxg" target="_blank" rel="noopener noreferrer">考研竞赛数学公众号 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">mp.weixin.qq.com</div>
+          <div class="tool-desc">贺丹老师推荐的，和数学竞赛有关</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-21 26:29 分享</span>
+            <span class="tool-cat-badge">📂 学习</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">1</span></button>
+        <a class="tool-open-btn" href="https://mp.weixin.qq.com/s/H-RqAanLvL1ArwrXyh3lxg" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="3">
+      <div class="tool-card-main">
+        <span class="tool-icon">🎵</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https://www.icourse163.org/course/SEU-1463825161" target="_blank" rel="noopener noreferrer">微积分预备演讲MOOC <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">icourse163.org</div>
+          <div class="tool-desc">泥车出品</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-21 26:28 分享</span>
+            <span class="tool-cat-badge">📂 学习</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">1</span></button>
+        <a class="tool-open-btn" href="https://www.icourse163.org/course/SEU-1463825161" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="3">
+      <div class="tool-card-main">
+        <span class="tool-icon">🧰</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https://seu1.fanya.chaoxing.com/portal" target="_blank" rel="noopener noreferrer">超星 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">seu1.fanya.chaoxing.com</div>
+          <div class="tool-desc">超星登录链接</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-21 26:27 分享</span>
+            <span class="tool-cat-badge">📂 学习</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">1</span></button>
+        <a class="tool-open-btn" href="https://seu1.fanya.chaoxing.com/portal" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="3">
+      <div class="tool-card-main">
+        <span class="tool-icon">🎵</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https://www.icourse163.org/course/SEU-1449769183?tid=1488466451" target="_blank" rel="noopener noreferrer">高等数学（上）MOOC <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">icourse163.org</div>
+          <div class="tool-desc">潮小李版</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-21 26:26 分享</span>
+            <span class="tool-cat-badge">📂 学习</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">1</span></button>
+        <a class="tool-open-btn" href="https://www.icourse163.org/course/SEU-1449769183?tid=1488466451" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+<div class="card tool-card" data-cat="1">
+      <div class="tool-card-main">
+        <span class="tool-icon">🧰</span>
+        <div class="tool-info">
+          <a class="tool-title" href="https://xiumi.us/" target="_blank" rel="noopener noreferrer">秀米 <span class="tool-open-ico">↗</span></a>
+          <div class="tool-host">xiumi.us</div>
+          <div class="tool-desc">图文编辑器，微信公众号文章排版</div>
+          <div class="tool-meta">
+            <span class="avatar avatar-xs" style="background:#f44336">落</span>
+            <span class="tool-who">落花雨</span>
+            <span>· 2026-09-21 21:23 分享</span>
+            <span class="tool-cat-badge">📂 宣传</span>
+          </div>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button class="tool-like-btn">❤️ <span class="tool-like-count">4</span></button>
+        <a class="tool-open-btn" href="https://xiumi.us/" target="_blank" rel="noopener noreferrer">打开网站 ↗</a>
+      </div></div>
+  </div><script>
+  function setCat(id){
+    document.querySelectorAll('.tool-chip').forEach(function(b){b.classList.toggle('active', b.dataset.cat == id)});
+    document.querySelectorAll('.tool-card').forEach(function(c){c.style.display = (id == 0 || c.dataset.cat == id) ? '' : 'none'});
+  }
+  </script></body></html>
