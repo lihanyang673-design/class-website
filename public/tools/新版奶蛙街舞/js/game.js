@@ -1,10 +1,10 @@
-﻿// ============================================================
+// ============================================================
 // game.js —— 节奏玩法核心
 // 判定线 + 四方向箭头掉落 + Perfect/Good/Miss + 连击计分
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261043';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261045';
 import { doAction, stumble } from './dancer.js?v=20260929r';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
@@ -234,7 +234,25 @@ async function beginPlayback(endless){
   }
   if(endless) speedToast('♾ 无尽模式 · 计分从0开始 · 1.1×');
   loop();
+  // ★ 方块预建保险：独立于 rAF 的定时器（rAF 在后台标签/开局主线程繁忙时会被冻结或延迟，
+  //   导致"音乐在放但没方块"）。每0.4秒把1.7秒内要进场的方块提前建好
+  spawnAhead();
+  if(Game._spawnTimer) clearInterval(Game._spawnTimer);
+  Game._spawnTimer=setInterval(spawnAhead, 400);
   return true;
+}
+
+// 提前创建即将进场的方块（从滑动窗口头往后扫1.7秒窗口，幂等）
+function spawnAhead(){
+  if(!Game.playing) return;
+  const t = Game.endless ? Music.time()+Game.endless.base : Music.time();
+  const ns=Game.notes;
+  for(let i=Game._head;i<ns.length;i++){
+    const n=ns[i];
+    if(n.state!==0) continue;
+    if(n.t-t > 1.7) break;
+    if(!n.el) spawnNoteEl(n);
+  }
 }
 
 // 由「开演」按钮调用：在用户真实点击的手势里同步开播
@@ -242,12 +260,26 @@ export async function launchFromGate(){
   const gate=document.getElementById('stageGate');
   const sub=document.getElementById('stageGateSub');
   gate.classList.remove('on');
+  if(Game._watchdog){ clearTimeout(Game._watchdog); Game._watchdog=0; }
   const ok=await beginPlayback(!!Game.endless);
   if(!ok){
     // 开播被拒/失败：闸门重新出现，让玩家再点一次（每次点击都是新的真手势）
     sub.textContent='刚才没播成功，请再点一次按钮';
     gate.classList.add('on');
+    return;
   }
+  // ★ 看门狗：1.6秒后检查音乐时钟是否真的往前走。
+  //   某些手机（QQ/微信内核）play() 不报错但时钟卡住 → 方块永远不出现。
+  //   卡住就把闸门弹回来，并附上诊断信息，让用户重点
+  const t0=Music.time();
+  Game._watchdog=setTimeout(()=>{
+    const t1=Music.time(), el=Music.el;
+    if(t1-t0 < 0.15){
+      console.warn('[看门狗] 音乐时钟没走 t0='+t0+' t1='+t1+' paused='+el.paused+' readyState='+el.readyState);
+      sub.textContent='音乐没启动，请再点一次按钮（可多点几次）';
+      gate.classList.add('on');
+    }
+  }, 1600);
 }
 
 export function pauseGame(){
@@ -265,6 +297,8 @@ export function stopGame(silent){
   Music.el.onended=null;
   Music.el.loop=false; Music.el.playbackRate=1;
   Game.endless=null;
+  if(Game._watchdog){ clearTimeout(Game._watchdog); Game._watchdog=0; }
+  if(Game._spawnTimer){ clearInterval(Game._spawnTimer); Game._spawnTimer=0; }
   document.getElementById('stageGate')?.classList.remove('on');
   if(!silent){
     document.getElementById('stageUI').classList.remove('on');
