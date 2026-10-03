@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261052';
-import { Game, pauseGame } from './game.js?v=20261052';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261053';
+import { Game, pauseGame } from './game.js?v=20261053';
 
 // ============================================================
 // 存档（localStorage）
@@ -152,6 +152,10 @@ export const SONGS=[
   {id:'u20', name:'女骑士', artist:'徐良', file:'1790935598626_920508153.mp3', bpm:110, desc:'110 BPM · 约4分钟', cat:'builtin', staticChart:true},
   {id:'u21', name:'河山大好', artist:'许嵩', file:'1790937139158_104059326.mp3', bpm:175, desc:'175 BPM · 约3.5分钟', cat:'builtin', staticChart:true},
   {id:'u22', name:'渲染离别', artist:'许嵩', file:'1790940036039_422108884.mp3', bpm:120, desc:'120 BPM · 约4.5分钟', cat:'builtin', staticChart:true},
+  {id:'u23', name:'那时雨', artist:'徐良', file:'1790997804951_1054170.mp3', bpm:119, desc:'119 BPM · 约3.5分钟', cat:'builtin', staticChart:true},
+  {id:'u24', name:'下完这场雨', artist:'后弦', file:'1790997815955_933366348.mp3', bpm:146, desc:'146 BPM · 约4.5分钟', cat:'builtin', staticChart:true},
+  {id:'u25', name:'玫瑰花的葬礼', artist:'许嵩', file:'1790997826227_330567208.mp3', bpm:164, desc:'164 BPM · 约4.3分钟', cat:'builtin', staticChart:true},
+  {id:'u26', name:'画风', artist:'后弦', file:'1790997851988_318725934.mp3', bpm:146, desc:'146 BPM · 约4.1分钟', cat:'builtin', staticChart:true},
 ];
 
 // 歌曲分类（渲染时每组带小标题；空的分组会自动跳过）
@@ -165,7 +169,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261041');
+    const r=await fetch('charts.json?v=20261053');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
