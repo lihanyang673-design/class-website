@@ -366,6 +366,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .rank-row .rj-g{color:var(--yellow)}
 .rank-row .rj-m{color:var(--pink)}
 .rank-row .rmeta{font-size:11.5px;color:var(--sub)}
+/* 无尽本地记录：绝对分大字（代替相对分进度条的位置） */
+.rank-row .ebig{font-size:23px;font-weight:900;line-height:1.15;color:var(--yellow);
+  text-shadow:0 0 16px rgba(255,225,122,.35)}
+.rank-row .ebig small{margin-left:7px;font-size:11px;font-weight:600;color:var(--sub)}
 .rank-row .rrank{font-weight:900;font-size:18px;color:var(--yellow);padding-top:2px}
 .rank-empty{padding:40px;text-align:center;color:var(--sub)}
 

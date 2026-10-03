@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261047';
-import { Game, pauseGame } from './game.js?v=20261047';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261048';
+import { Game, pauseGame } from './game.js?v=20261048';
 
 // ============================================================
 // 存档（localStorage）
@@ -17,7 +17,7 @@ const DEFAULTS={
   owned:['classic'], equipped:'classic',
   stats:{plays:0,bestScore:0,bestRel:0,maxCombo:0,totalPerfect:0,totalCoins:0,bestAcc:0,fullCombos:0,ssCount:0},
   ach:{},
-  scores:{easy:[],casual:[],normal:[],hard:[]},
+  scores:{easy:[],casual:[],normal:[],hard:[],endless:[]},
   set:{vol:0.8,sfx:1,offset:0,bpm:104,speed:1,quality:1},
 };
 export const Store={
@@ -33,7 +33,10 @@ export const Store={
     let purged=false;
     for(const d of Object.keys(this.data.scores)){
       const before=this.data.scores[d].length;
-      this.data.scores[d]=this.data.scores[d].filter(r=>typeof r.rel==='number'&&typeof r.p==='number');
+      // 无尽记录没有相对分（按绝对分记），迁移口径单独处理
+      this.data.scores[d]=d==='endless'
+        ? this.data.scores[d].filter(r=>typeof r.score==='number'&&typeof r.p==='number')
+        : this.data.scores[d].filter(r=>typeof r.rel==='number'&&typeof r.p==='number');
       if(this.data.scores[d].length!==before) purged=true;
     }
     if(purged) this.save();
@@ -693,6 +696,29 @@ function rankCmp(a,b){ return (b.rel??-1)-(a.rel??-1); }
 function renderRank(){ renderRankList(document.querySelector('#rankTabs button.cur').dataset.d); }
 function renderRankList(diff){
   const list=document.getElementById('rankList'); list.innerHTML='';
+  const help=document.querySelector('#scr-rank .rank-help');
+  // ★ 无尽页签：本地记录按绝对分排，结构与普通难度不同
+  if(diff==='endless'){
+    help.innerHTML='💡 <b>无尽记录只看绝对分。</b>无尽模式计分从 0 开始，看你在 ❤❤❤❤❤ 打光之前能攒下多少总分。每条记录都备注了<b>曲目、坚持段数、连击和日期</b>，只保存在你这台设备上（全班排名请看「♾ 无尽榜」）。';
+    const arr=[...(Store.data.scores.endless||[])].sort((a,b)=>b.score-a.score).slice(0,5);
+    if(!arr.length){ list.innerHTML='<div class="rank-empty">暂无无尽纪录 —— 去撑一波！</div>'; return; }
+    arr.forEach((r,i)=>{
+      const row=document.createElement('div');
+      row.className='rank-row'+(i===0?' top1':'');
+      row.innerHTML=`<div class="no">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
+        <div class="rbody">
+          <div class="rsong">🎵 ${r.song||'未知曲目'}</div>
+          <div class="ebig">${r.score.toLocaleString()}<small>绝对分</small></div>
+          <div class="rj"><span class="rj-p">完美 ${r.p}</span><span class="rj-g">良好 ${r.g}</span><span class="rj-m">漏掉 ${r.m}</span></div>
+          <div class="rmeta">坚持 ${r.round} 段 · 最大连击 ×${r.combo} · ${r.date}</div>
+        </div>
+        <div class="rrank">♾</div>`;
+      list.appendChild(row);
+    });
+    return;
+  }
+  // 普通难度：恢复相对分说明框
+  help.innerHTML='💡 <b>什么是相对分？</b>每首歌音符多少不同，直接比总分不公平。<b>相对分 = 你的得分 ÷ 这首歌的满分 × 100000</b>（满分就是"一个不漏、全部打完美"的成绩）。所以相对分越高，代表越接近完美；范围固定 0～100000，任何歌曲都能公平比较。';
   const arr=[...(Store.data.scores[diff]||[])].sort(rankCmp).slice(0,5);
   if(!arr.length){ list.innerHTML='<div class="rank-empty">暂无纪录 —— 上去就是第一名！</div>'; return; }
   arr.forEach((r,i)=>{
@@ -1215,6 +1241,16 @@ export function showEndlessResult(res){
   // 无尽演出费：无尽计分从0开始，直接按总分发奶币
   const coin=Math.floor(res.score/400);
   Store.data.coins+=coin;
+  // ★ 写入本地「我的纪录·无尽」：只记绝对分，备注曲目/段数/判定/日期（保留最近10条，按分排序）
+  Store.data.scores.endless=Store.data.scores.endless||[];
+  Store.data.scores.endless.push({
+    score:res.score, combo:res.maxCombo,
+    date:new Date().toLocaleDateString(),
+    song:res.song||'', round:res.round,
+    p:res.cnt.perfect, g:res.cnt.good, m:res.cnt.miss,
+  });
+  Store.data.scores.endless.sort((a,b)=>b.score-a.score);
+  Store.data.scores.endless=Store.data.scores.endless.slice(0,10);
   Store.save();
 
   document.getElementById('resRank').textContent='♾';
