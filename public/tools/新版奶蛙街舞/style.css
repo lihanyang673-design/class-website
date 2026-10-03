@@ -421,6 +421,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #stageGate .gate-sub{margin-top:14px;font-size:13px;color:#fff;text-shadow:0 1px 4px #000;opacity:.92;text-align:center;padding:0 20px}
 @keyframes gatePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 
+/* 倒计时大数字（3、2、1）：盖住按钮原本的脉动样式，每秒缩放弹出一次 */
+#stageGateBtn.counting{
+  width:150px;height:150px;border-radius:50%;padding:0;
+  font-size:76px;color:#fff;background:rgba(22,26,64,.55);
+  box-shadow:0 0 0 4px #ffffff55,0 10px 34px #0009;
+  animation:countPop 1s ease-out;
+}
+@keyframes countPop{0%{transform:scale(1.7);opacity:.25}100%{transform:scale(1);opacity:1}}
+
 /* 分数/连击 */
 #hud{position:absolute;top:70px;left:20px;text-shadow:0 2px 8px #000a}
 /* ★ 暂停/退出按钮（右上角，玻璃拟态圆钮，与整体 UI 风格统一） */
