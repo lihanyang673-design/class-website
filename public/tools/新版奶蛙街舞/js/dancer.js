@@ -64,7 +64,8 @@ export function loadDancer(url){
       }catch(e){ console.error('  ❌ rigged.glb 切分失败：', e); reject(e); }
     }, (xhr)=>{
       if(xhr.total){
-        const pct = Math.round(xhr.loaded/xhr.total*100);
+        // 封顶 100%：QQ/微信等浏览器经压缩代理传输时，loaded 可能大于 total（解压后字节），导致出现 131%
+        const pct = Math.min(100, Math.round(xhr.loaded/xhr.total*100));
         window.dispatchEvent(new CustomEvent('dancer-progress',{detail:pct}));
       }
     }, (err)=>{ console.error('  ❌ rigged.glb 下载失败：', err); reject(err); });

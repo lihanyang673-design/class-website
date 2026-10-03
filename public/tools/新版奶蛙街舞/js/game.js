@@ -1,11 +1,11 @@
-﻿// ============================================================
+// ============================================================
 // game.js —— 节奏玩法核心
 // 判定线 + 四方向箭头掉落 + Perfect/Good/Miss + 连击计分
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261049';
-import { doAction, stumble } from './dancer.js?v=20260929r';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261050';
+import { doAction, stumble } from './dancer.js?v=20261050';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
 // ---------- 判定窗口（秒） ----------
