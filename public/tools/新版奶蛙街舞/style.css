@@ -381,6 +381,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .set-item input[type=range]{flex:1;min-width:160px;accent-color:var(--pink)}
 .set-item select{background:var(--bg1);color:#fff;border:1px solid var(--line);
   border-radius:10px;padding:8px 12px;font-size:14px}
+.set-item input.speed-num{width:88px;background:var(--bg1);color:#fff;border:1px solid var(--line);
+  border-radius:10px;padding:8px 10px;font-size:14px}
 .set-item .mini-tip{width:100%;font-size:12px;color:var(--sub)}
 
 /* ---------- 结算 ---------- */

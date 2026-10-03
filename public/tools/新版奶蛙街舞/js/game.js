@@ -4,8 +4,8 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261054';
-import { doAction, stumble } from './dancer.js?v=20261054';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261055';
+import { doAction, stumble } from './dancer.js?v=20261055';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
 // ---------- 判定窗口（秒） ----------
@@ -287,7 +287,7 @@ function loop(){
   }
   const t = Game.endless ? raw + Game.endless.base : raw;   // 谱面时间（跨段累加，永远前进）
   const hitY = Game._hitY;                     // 判定线位置（开局/窗口变化时才算，避免每帧强制重排）
-  const pps = 340 * Game.cfg.speed;            // 像素/秒
+  const pps = Game.endless ? 340 : 340 * Game.cfg.speed;  // 像素/秒（无尽固定基准，不吃自定义速度；它靠 playbackRate 提速）
 
   // 滑动窗口头指针：已终结的音符（hit/miss）永久跳过，不再每帧从头扫
   const ns = Game.notes;
