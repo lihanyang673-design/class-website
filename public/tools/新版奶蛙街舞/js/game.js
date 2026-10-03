@@ -4,7 +4,7 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261046';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261047';
 import { doAction, stumble } from './dancer.js?v=20260929r';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
@@ -285,6 +285,7 @@ function loop(){
   const ns = Game.notes;
   while(Game._head < ns.length && ns[Game._head].state !== 0) Game._head++;
 
+  let spawnLeft=2;   // ★ 本帧最多新建2个方块：把DOM创建分摊到多帧，避免开局/循环时一帧建十几个造成卡顿
   for(let i=Game._head; i<ns.length; i++){
     const n = ns[i];
     const dt = n.t - t;
@@ -292,9 +293,10 @@ function loop(){
       if(n.el && n.el.dataset.done!=='2' && dt < -WIN_MISS){ n.el.remove(); n.el.dataset.done='2'; }
       continue;
     }
-    if(dt > 1.4) break;                        // 还没进场（notes 按时间有序）
-    // 延迟创建：进入1.4秒窗口的此刻才建方块DOM（每帧最多几个，开局不再卡）
-    if(!n.el) spawnNoteEl(n);
+    if(dt > 1.8) break;                        // 提前1.8秒开始准备（比以前的1.4秒略早，给分摊留时间）
+    // 延迟创建：每帧最多2个；但0.6秒内就要可见的必须立即建（兜底，任何情况都不会漏方块）
+    if(!n.el && (spawnLeft>0 || dt<=0.6)){ spawnNoteEl(n); spawnLeft--; }
+    if(!n.el) continue;                        // 本帧还没轮到建它 → 下帧再说
     // 位置：判定线上方 dt 秒 × 速度（y 为相对轨道顶端的绝对坐标）
     const y = hitY - dt*pps - 26;              // -26 让箭头中心对准判定线
     if(dt > 0.9){ n.el.style.display='none'; continue; }

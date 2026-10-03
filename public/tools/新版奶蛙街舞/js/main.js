@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261046';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261046';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261047';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261047';
 import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20260929r';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261046';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261047';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261046';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261047';
 
 const $=id=>document.getElementById(id);
 let stageGateBound=false;    // 「点我开演」闸门按钮只绑定一次
@@ -219,6 +219,8 @@ const main={
     try{ chart=await ensureChart(song); }
     catch(e){ console.warn('[演出] 谱面加载失败，退回程序生成谱面', e); }
     // 直接开演（defer 关闭：不开闸门、不弹任何按钮）
+    // ★ 演出中渲染分辨率封顶1.5：高画质手机每帧要算的像素减少约4成，3D只是背景肉眼几乎无差；退出时恢复
+    if(renderer.getPixelRatio() > 1.5) renderer.setPixelRatio(1.5);
     startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart});
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },
@@ -228,6 +230,8 @@ const main={
     showUIRoot(true);           // ★ 退出演出必须恢复主界面（之前漏了）
     camera.position.copy(CAM_HOME);
     Fx.camBase.copy(CAM_HOME);
+    const q=Store.data.set.quality;   // ★ 恢复主界面的渲染分辨率
+    renderer.setPixelRatio(q>=2?Math.min(devicePixelRatio,2):q);
     startMenuBgm();             // 回到菜单：恢复 BGM
   },
 };
