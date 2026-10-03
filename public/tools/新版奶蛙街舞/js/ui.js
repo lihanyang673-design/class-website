@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261053';
-import { Game, pauseGame } from './game.js?v=20261053';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261054';
+import { Game, pauseGame } from './game.js?v=20261054';
 
 // ============================================================
 // 存档（localStorage）
@@ -169,7 +169,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261053');
+    const r=await fetch('charts.json?v=20261054');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -521,9 +521,18 @@ function renderPlay(){
     sg.innerHTML='';
     // 渲染前顺手刷新一次玩家歌曲（首次进页面时已拉过，这里只在未加载时补拉）
     SONG_CATS.forEach(cat=>{
-      // 连着班级服务器（本地版）时隐藏「内置」分区：内置歌都来自同学上传，避免重复显示
-      if(cat.id==='builtin' && serverOn) return;
-      const list=cat.id==='user' ? [...TEMP_SONGS, ...USER_SONGS.list] : SONGS.filter(s=>s.cat===cat.id);
+      let list;
+      if(cat.id==='user'){
+        list=[...TEMP_SONGS, ...USER_SONGS.list];
+      }else{
+        list=SONGS.filter(s=>s.cat===cat.id);
+        // 连着班级服务器时：内置歌和「班级自制」里的数据库歌曲重复，逐首过滤掉；
+        // 但「默认曲目」数据库里没有 → 保留（以前是整个分区一刀切隐藏，导致默认曲目看不到）
+        if(serverOn){
+          const userIds=new Set(USER_SONGS.list.map(s=>s.id));
+          list=list.filter(s=>!userIds.has(s.id));
+        }
+      }
       if(!list.length){
         // 班级自制分区：哪怕还没歌也显示出来，让同学知道这里能放自己的歌
         if(cat.id==='user'){
