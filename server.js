@@ -89,9 +89,17 @@ app.get('/', (req, res, next) => {
 });
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders(res, filePath){
-    // HTML 不缓存（每次访问都向服务器确认有没有新版），JS/CSS 靠 ?v= 版本号破缓存
-    // 解决：浏览器缓存旧 HTML → 引用旧 JS → 更新不生效的问题
-    if(filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+    const f=filePath.toLowerCase();
+    // 【自动更新规则】2026-10-03 起：
+    // ① 代码文件(html/js/css)：每次打开都向服务器验证一次——没改版返回304秒过(几乎不耗流量)，
+    //    改了版自动下载新文件。同学进游戏永远是最新代码，再也不用手动清缓存。
+    if(/\.(html|js|css|mjs)$/.test(f)){
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if(/\.(mp3|wav|ogg|m4a|aac|png|jpg|jpeg|gif|webp|bmp|svg|glb|gltf|bin|ktx2|obj|fbx|babylon)$/.test(f)){
+      // ② 歌曲/图片/3D模型：长期缓存30天，不重复下载（这些文件基本不会变）
+      res.setHeader('Cache-Control', 'public, max-age=2592000');
+    }
+    // 其他文件（如曲谱 .json）：走默认的 ETag 验证，稳妥兜底
   }
 }));
 
