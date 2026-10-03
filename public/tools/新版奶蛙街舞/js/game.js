@@ -4,7 +4,7 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261048';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261049';
 import { doAction, stumble } from './dancer.js?v=20260929r';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
@@ -182,12 +182,12 @@ export function startGame(cfg, defer){
     : genChart(gdiff, cfg.bpm, cfg.duration, cfg.offset/1000, cfg.songId||'');
   Game.score=0; Game.combo=0; Game.maxCombo=0;  // 任何难度（含无尽）计分都从 0 开始
   Game.cnt={perfect:0,good:0,miss:0};
-  // ===== 无尽难度：音乐循环 + 每段提速 + ❤×5 =====
+  // ===== 无尽难度：音乐循环 + 每段提速 + ❤×10 =====
   if(endless){
     // 切段规则：歌几分钟就切几+1段（约每分钟一段提速一次）；3.5分钟的歌 = 4段
     const segN=Math.max(1, Math.floor(cfg.duration/60)+1);
     const segLen=cfg.duration/segN;
-    Game.endless={ base:0, round:1, lives:5, segLen, nextBoundary:segLen };
+    Game.endless={ base:0, round:1, lives:10, segLen, nextBoundary:segLen };
     Music.el.loop=true;                // 音乐循环播放
     Music.el.playbackRate=1.1;         // 无尽第 1 段就提速 10%
   }else{
@@ -394,7 +394,7 @@ function updateHud(){
     const E=Game.endless;
     const rate=(1 + 0.1*E.round).toFixed(1);
     document.getElementById('hudMeta').textContent =
-      '❤'.repeat(Math.max(0,E.lives))+'🖤'.repeat(Math.max(0,5-E.lives))+' 第'+E.round+'段 · '+rate+'×';
+      '❤ ×'+E.lives+'/10 · 第'+E.round+'段 · '+rate+'×';
   }else{
     const total = Game.cnt.perfect+Game.cnt.good+Game.cnt.miss;
     const acc = total ? Math.round((Game.cnt.perfect + Game.cnt.good*0.5)/total*100) : 100;

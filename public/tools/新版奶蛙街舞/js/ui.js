@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261048';
-import { Game, pauseGame } from './game.js?v=20261048';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261049';
+import { Game, pauseGame } from './game.js?v=20261049';
 
 // ============================================================
 // 存档（localStorage）
@@ -294,7 +294,7 @@ export const DIFFS=[
   {id:'casual',name:'🙂 进阶', desc:'一两个一拍 · 初识双押'},
   {id:'normal',name:'🔥 狂热', desc:'半拍为主 · 更多喘息'},
   {id:'hard',  name:'💀 地狱', desc:'连续半拍 · 偶有双押'},
-  {id:'endless',name:'♾ 无尽', desc:'计分从0开始 · 循环加速 · ❤×5'},
+  {id:'endless',name:'♾ 无尽', desc:'计分从0开始 · 循环加速 · ❤×10'},
 ];
 
 const CODEX=[
@@ -699,7 +699,7 @@ function renderRankList(diff){
   const help=document.querySelector('#scr-rank .rank-help');
   // ★ 无尽页签：本地记录按绝对分排，结构与普通难度不同
   if(diff==='endless'){
-    help.innerHTML='💡 <b>无尽记录只看绝对分。</b>无尽模式计分从 0 开始，看你在 ❤❤❤❤❤ 打光之前能攒下多少总分。每条记录都备注了<b>曲目、坚持段数、连击和日期</b>，只保存在你这台设备上（全班排名请看「♾ 无尽榜」）。';
+    help.innerHTML='💡 <b>无尽记录只看绝对分。</b>无尽模式计分从 0 开始，看你在 ❤×10 打光之前能攒下多少总分。每条记录都备注了<b>曲目、坚持段数、连击和日期</b>，只保存在你这台设备上（全班排名请看「♾ 无尽榜」）。';
     const arr=[...(Store.data.scores.endless||[])].sort((a,b)=>b.score-a.score).slice(0,5);
     if(!arr.length){ list.innerHTML='<div class="rank-empty">暂无无尽纪录 —— 去撑一波！</div>'; return; }
     arr.forEach((r,i)=>{
