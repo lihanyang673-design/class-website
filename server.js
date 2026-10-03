@@ -5,6 +5,8 @@ const bcrypt = require('bcryptjs');
 const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
+const { execFile } = require('child_process');
+const FFMPEG = require('ffmpeg-static');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -2267,6 +2269,33 @@ const danceUpload = multer({
   }
 });
 
+// 上传后自动压缩：任何格式统一转 128kbps mp3（文件小、手机加载快、省流量，和游戏里其他歌一致）。
+// 成功返回最终文件名；转码失败/超时 → 返回原文件名兜底（绝不让压缩问题导致上传失败）
+function compressDanceAudio(file) {
+  return new Promise((resolve) => {
+    const base = path.basename(file.filename, path.extname(file.filename));
+    const outName = base + '.mp3';
+    const finalPath = path.join(DANCE_DIR, outName);
+    const tmpPath = finalPath + '.tmp';
+    let done = false;
+    const finish = (name) => { if (!done) { done = true; resolve(name); } };
+    const to = setTimeout(() => { try { fs.unlinkSync(tmpPath); } catch {} finish(file.filename); }, 60000);
+    // -f mp3：临时文件后缀是 .tmp，ffmpeg 无法靠后缀判断格式，必须显式指定
+    execFile(FFMPEG, ['-y', '-hide_banner', '-loglevel', 'error', '-i', file.path,
+                      '-map_metadata', '-1', '-b:a', '128k', '-f', 'mp3', tmpPath], (err) => {
+      clearTimeout(to);
+      if (err) { try { fs.unlinkSync(tmpPath); } catch {} return finish(file.filename); }
+      try {
+        if (fs.statSync(tmpPath).size < 1024) throw new Error('输出文件异常');
+        if (outName === file.filename) fs.unlinkSync(file.path);  // Windows 不能 rename 覆盖已存在文件：先删原文件
+        fs.renameSync(tmpPath, finalPath);
+        if (outName !== file.filename) { try { fs.unlinkSync(file.path); } catch {} }
+      } catch (e) { try { fs.unlinkSync(tmpPath); } catch {} return finish(file.filename); }
+      finish(outName);
+    });
+  });
+}
+
 // 歌曲列表（不含谱面，谱面较大按需单独拉取）
 app.get('/api/dance/songs', (req, res) => {
   const rows = query(`SELECT id, title, artist, bpm, duration, note_count, audio,
@@ -2283,7 +2312,8 @@ app.get('/api/dance/songs/:id/chart', (req, res) => {
 
 // 上传：音频文件走 multipart，谱面/信息走表单字段（谱面在浏览器本地分析生成）
 // 不强制登录：游客也能上传，uploader_id 记 0、名字记"游客"（游客歌曲仅管理员可删）
-app.post('/api/dance/songs', danceUpload.single('audio'), (req, res) => {
+app.post('/api/dance/songs', danceUpload.single('audio'), async (req, res) => {
+  let finalName = null;
   try {
     if (!req.file) return res.status(400).json({ error: '缺少音频文件' });
     const title = String(req.body.title || '').trim().slice(0, 50) || '未命名歌曲';
@@ -2303,6 +2333,8 @@ app.post('/api/dance/songs', danceUpload.single('audio'), (req, res) => {
       try { fs.unlinkSync(req.file.path); } catch {}
       return res.status(400).json({ error: '谱面数据无效，请重新分析后再上传' });
     }
+    // ★ 谱面没问题后压缩音频（约几秒），任何格式都压成 128k mp3；失败时用原文件兜底
+    finalName = await compressDanceAudio(req.file);
     // 登录用户记本人 id 和昵称；游客记 0 / "游客"
     const uid = req.session.userId || 0;
     let uploaderName = '游客';
@@ -2314,10 +2346,13 @@ app.post('/api/dance/songs', danceUpload.single('audio'), (req, res) => {
       `INSERT INTO dance_songs (title, artist, bpm, duration, note_count, chart, audio, uploader_id, uploader_name)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [title, artist, bpm, duration, chart.length, JSON.stringify(chart),
-       '/uploads/dance/' + req.file.filename, uid, uploaderName]);
+       '/uploads/dance/' + finalName, uid, uploaderName]);
     res.json({ ok: true, id, note_count: chart.length });
   } catch (e) {
-    if (req.file) { try { fs.unlinkSync(req.file.path); } catch {} }
+    // 清理落盘音频（压缩后文件名可能已变为 finalName）
+    for (const f of [finalName && path.join(DANCE_DIR, finalName), req.file && req.file.path]) {
+      if (f) { try { fs.unlinkSync(f); } catch {} }
+    }
     res.status(500).json({ error: '保存失败：' + e.message });
   }
 });
