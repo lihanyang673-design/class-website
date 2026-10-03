@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261050';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261050';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261050';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261051';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261051';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261051';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261050';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261051';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261050';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261051';
 
 const $=id=>document.getElementById(id);
 let stageGateBound=false;    // 「点我开演」闸门按钮只绑定一次
@@ -180,6 +180,19 @@ addEventListener('dancer-progress',e=>{
   $('loadSub').textContent=`舞者模型下载中 ${pct}%`;
 });
 
+// 「准备好了」闸门按钮：只绑定一次。点击后才真正开播（手机浏览器要求音乐由真手势触发）
+if(!stageGateBound){
+  stageGateBound=true;
+  $('stageGateBtn').addEventListener('click', async ()=>{
+    ensureCtx();
+    sfxClick();
+    const btn=$('stageGateBtn');
+    btn.disabled=true;
+    const ok=await launchFromGate();
+    if(!ok) btn.disabled=false;     // 播放被浏览器拦截：闸门留着，可再点一次
+  });
+}
+
 // 音乐就绪日志（不阻塞）
 Music.el.addEventListener('canplaythrough', ()=>console.log('[启动] ✓ 背景音乐 music.mp3 已就绪'), {once:true});
 Music.el.addEventListener('error', ()=>console.warn('[启动] ⚠ 背景音乐 music.mp3 加载失败，游戏可照常进行'), {once:true});
@@ -218,10 +231,19 @@ const main={
     let chart=null;
     try{ chart=await ensureChart(song); }
     catch(e){ console.warn('[演出] 谱面加载失败，退回程序生成谱面', e); }
-    // 直接开演（defer 关闭：不开闸门、不弹任何按钮）
-    // ★ 演出中渲染分辨率封顶1.5：高画质手机每帧要算的像素减少约4成，3D只是背景肉眼几乎无差；退出时恢复
+    // 演出中渲染分辨率封顶1.5：高画质手机每帧要算的像素减少约4成，3D只是背景肉眼几乎无差；退出时恢复
     if(renderer.getPixelRatio() > 1.5) renderer.setPixelRatio(1.5);
-    startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart});
+    // ★ 先搭台不开播（defer）：舞台中央显示「准备好了」闸门，缓冲完成前按钮不可点
+    startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart}, true);
+    const gateBtn=$('stageGateBtn'), gateSub=$('stageGateSub');
+    gateBtn.disabled=true;
+    gateBtn.textContent='⏳ 歌曲缓冲中…';
+    gateSub.textContent='先深呼吸，马上就好';
+    // 少量缓冲约6秒（128kbps≈1MB）：同学看按钮、做准备的这几秒正好用来缓冲，点开就能唱
+    await Music.awaitBuffered(6);
+    gateBtn.disabled=false;
+    gateBtn.textContent='▶ 准备好了，点我开演';
+    gateSub.textContent='按下后音乐和方块立刻开始';
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },
   quitShow(){
@@ -274,7 +296,9 @@ function onEndlessOver(res){
 // ============================================================
 const KEYMAP={ArrowLeft:0,ArrowDown:1,ArrowUp:2,ArrowRight:3,KeyA:0,KeyS:1,KeyW:2,KeyD:3};
 addEventListener('keydown',e=>{
-  if(Game.playing){
+  // 「准备好了」闸门显示期间游戏还没真正开始：屏蔽所有游戏按键（防止误判/误暂停后状态错乱）
+  const gateOpen=$('stageGate').classList.contains('on');
+  if(Game.playing && !gateOpen){
     if(e.code in KEYMAP){ e.preventDefault(); if(!e.repeat) hitLane(KEYMAP[e.code]); }
     else if(e.code==='Escape'||e.code==='KeyP'){
       e.preventDefault();

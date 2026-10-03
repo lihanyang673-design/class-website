@@ -4,8 +4,8 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261050';
-import { doAction, stumble } from './dancer.js?v=20261050';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261051';
+import { doAction, stumble } from './dancer.js?v=20261051';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
 // ---------- 判定窗口（秒） ----------
@@ -234,10 +234,17 @@ async function beginPlayback(endless){
   return true;
 }
 
-// （已停用的开播闸门保留此接口，正常流程不会走到）
+// 开播闸门：用户点「准备好了」后调用。成功 → 收闸门；失败（手机偶尔拦截播放）→ 闸门留着提示再点
 export async function launchFromGate(){
-  document.getElementById('stageGate')?.classList.remove('on');
-  await beginPlayback(!!Game.endless);
+  const ok=await beginPlayback(!!Game.endless);
+  const gate=document.getElementById('stageGate');
+  if(ok){
+    gate?.classList.remove('on');
+  }else{
+    const sub=document.getElementById('stageGateSub');
+    if(sub) sub.textContent='音乐没启动，再点一次按钮';
+  }
+  return ok;
 }
 
 export function pauseGame(){

@@ -363,6 +363,24 @@ export const Music = {
   awaitDuration(){
     return music._readyP || Promise.resolve(music.duration||95);
   },
+  // ★ 等浏览器后台缓冲够 wantSec 秒（配合 setSong 使用，不重置 src、不打断下载）；
+  //   选歌时往往已缓冲完 → 立即返回；最多等 maxWait 毫秒兜底，超时也能玩（边播边缓）
+  awaitBuffered(wantSec=6, maxWait=6000){
+    return new Promise(res=>{
+      let done=false;
+      const finish=()=>{ if(done)return; done=true; cleanup(); res(); };
+      const goal=Math.min(wantSec, (music.duration||99)*0.35);
+      const check=()=>{
+        try{
+          if(music.buffered.length && music.buffered.end(music.buffered.length-1)>=goal-0.3) finish();
+        }catch{}
+      };
+      const to=setTimeout(finish, maxWait);
+      const cleanup=()=>{ music.removeEventListener('progress',check); clearTimeout(to); };
+      music.addEventListener('progress',check);
+      check();
+    });
+  },
   setVolume(v){ music.volume = Math.min(1, Math.max(0, v)); },
   isPlaying(){ return !music.paused; },
 };
