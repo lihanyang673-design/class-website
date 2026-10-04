@@ -7,12 +7,13 @@
 //   切块方案的关节两边各转各的，交界穿模只能靠"收角度"压制，治标不治本。
 //   现在在代码里【程序化造一副骨骼】，并按"每个顶点到每根骨的距离"
 //   自动算出平滑的蒙皮权重：关节附近的顶点同时受多根骨牵引，像橡皮一样
-//   平滑弯折。网格始终是完整一块，结构上不可能再出现缝隙/撕裂/交界穿模。
+//   平滑弯折。所有皮肤在同一个网格里，关节处不再有"两块各转各"的硬切。
 //
-// ★ v20261115：大臂根部埋在圆胖躯干里，单靠距离权重会被躯干骨稀释
-//   （实测大臂主体只有 0.6~0.8 跟手臂骨，一挥臂就肩臂脱节）。
-//   新增"手臂归属场"：按内外位置+高度的连续场明确归属，大臂主体权重=1，
-//   肩窝处平滑过渡，纯躯干区域逻辑完全不变。
+// ★ v20261116：发现 rigged.glb 本身【不密封】——肩/胯等处有真实缺口
+//   （全身 5000+ 条断头边）。手臂一转动缺口张开，"看穿到内部"形成黑色破洞，
+//   这才是"肩膀和大臂脱节"的真正根因（调权重堵不住真洞）。
+//   修法：材质改【双面渲染】，缺口露出的内壁也是皮肤色，任何姿势都不再有黑洞。
+//   同时撤销 v20261115 的"手臂归属场"（它的场边界切过臀部，反而制造拉扯）。
 //
 // 骨骼树（绑定姿势全部不旋转）：
 //   pelvis 骨盆
@@ -281,8 +282,6 @@ function build(gltf){
   const skinW=new Float32Array(VN*4);
   let fallbackCount=0;
   const ws=new Array(boneArr.length);
-  // 平滑阶跃
-  const ss=(a,b,x)=>{ if(x<=a)return 0; if(x>=b)return 1; const t=(x-a)/(b-a); return t*t*(3-2*t); };
   for(let i=0;i<VN;i++){
     const px=pos.getX(i), py=pos.getY(i), pz=pos.getZ(i);
     let sum=0, best=-1, bestW=1e-6;
@@ -293,25 +292,14 @@ function build(gltf){
       ws[bI]=w; sum+=w;
       if(w>bestW){ bestW=w; best=bI; }
     }
-    // 手臂归属场 gL/gR：大臂根部埋在圆胖躯干里，单靠距离会被躯干稀释，
-    // 用“内外位置 + 高度”连续场明确归属（大臂主体=1、肩窝平滑、躯干=0）
-    const yn=(py-box.min.y)/H, xn=(px-cx)/(W/2);
-    const hy=(1-ss(0.60,0.66,yn))*ss(0.26,0.32,yn);   // 只在手臂高度带，上下软边
-    const gL=hy*ss(0.30,0.54,-xn);
-    const gR=hy*ss(0.30,0.54, xn);
-    const os=Math.max(0,1-gL-gR);
-    // 臂骨票=归属；非臂骨票按原距离权重并被手臂归属压缩（纯躯干处 os=1，完全同原逻辑）
-    const score=[ws[0]*os, ws[1]*os, ws[2]*os, gL, gR, ws[5]*os, ws[6]*os];
-    let tot=0; for(let bI=0;bI<7;bI++) tot+=score[bI];
-    if(tot<1e-4){
+    if(sum<1e-4){
       // 兜底：离哪根骨最近就全归它（理论上极少，半径都是按实测放宽的）
       fallbackCount++;
       for(let k=0;k<4;k++){ skinIdx[i*4+k]=best<0?0:best; skinW[i*4+k]=k===0?1:0; }
       continue;
     }
-    for(let bI=0;bI<7;bI++) score[bI]/=tot;   // 归一
-    // 取最大的 4 个
-    const order=score.map((w,bI)=>[w,bI]).sort((a,b)=>b[0]-a[0]).slice(0,4);
+    // 归一后取最大的 4 个
+    const order=ws.map((w,bI)=>[w/sum,bI]).sort((a,b)=>b[0]-a[0]).slice(0,4);
     for(let k=0;k<4;k++){
       skinIdx[i*4+k]=order[k][1];
       skinW[i*4+k]=order[k][0];
@@ -331,6 +319,10 @@ function build(gltf){
 
   // ---- 材质：唯一材质 + 顶点色（分部位涂装靠它）----
   const mat=srcMesh.material.clone();
+  // ★ rigged.glb 本身不密封（肩/胯等处有真实缺口），手臂一转缺口张开就会
+  //   "看穿到内部"形成黑色破洞。改双面渲染：缺口露出的内壁也是皮肤颜色，
+  //   任何姿势下都不会再出现黑色破洞/脱节。
+  mat.side=THREE.DoubleSide;
   mat.vertexColors=true;
   const vColor=new Float32Array(VN*3).fill(1);
   geo.setAttribute('color', new THREE.BufferAttribute(vColor,3));
