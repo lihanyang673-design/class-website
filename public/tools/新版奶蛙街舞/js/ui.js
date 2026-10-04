@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261104';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261104';
-import { Game, pauseGame } from './game.js?v=20261104';
+import { analyzeAudio } from './analyze.js?v=20261105';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261105';
+import { Game, pauseGame } from './game.js?v=20261105';
 
 // ============================================================
 // 存档（localStorage）
@@ -205,7 +205,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261104');
+    const r=await fetch('charts.json?v=20261105');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -1436,24 +1436,18 @@ function refreshPlayerId(){
 function bindThemeUpload(){
   const $=id=>document.getElementById(id);
   const ov=$('themeUploadOv'), fileIn=$('themeUpFile'), stage=$('themeUpStage'),
-        nameIn=$('themeUpName'), submit=$('themeUpSubmit'),
-        editor=$('themeCrop'), img=$('themeCropImg'), frame=$('cropFrame'), handle=$('cropHandle');
-  let picked=null;          // {blob:正方形jpeg}
+        nameIn=$('themeUpName'), nextBtn=$('themeUpSubmit'), pickedLine=$('themeUpPicked'),
+        cropOv=$('cropOv'), editor=$('themeCrop'), img=$('themeCropImg'),
+        frame=$('cropFrame'), handle=$('cropHandle'),
+        backBtn=$('cropBack'), confirmBtn=$('cropConfirm'), cropStage=$('cropStage');
   let crop=null;            // {x,y,s} 显示像素（相对图片左上角）
-  let imgURL=null;
+  let imgURL=null, imgReady=false;
 
   // 把裁剪框位置写进 DOM（图片在编辑器里居中，坐标要加上图片左上角的留白偏移）
   function paintFrame(){
     frame.style.left=(img.offsetLeft+crop.x)+'px';
     frame.style.top=(img.offsetTop+crop.y)+'px';
     frame.style.width=crop.s+'px'; frame.style.height=crop.s+'px';
-  }
-  // 弹窗里其他控件要占地方：按"整张图都在屏幕内"限制图片显示区高度，横图竖图都能看全
-  function fitEditor(){
-    editor.style.maxHeight='none';
-    const box=ov.querySelector('.up-box');
-    const others=box.scrollHeight-editor.offsetHeight;   // 其他控件+padding+间距
-    editor.style.maxHeight=Math.max(120, box.clientHeight-others-2)+'px';
   }
   // 显示尺寸变化后，把超出图片范围的裁剪框夹回来
   function clampCrop(){
@@ -1463,11 +1457,13 @@ function bindThemeUpload(){
     crop.y=Math.min(ih-crop.s, Math.max(0,crop.y));
   }
   function reset(){
-    picked=null; crop=null; fileIn.value='';
+    crop=null; imgReady=false; fileIn.value='';
     stage.textContent='支持 jpg / png / webp / gif，10MB 以内';
     editor.classList.remove('on');
+    cropOv.classList.remove('on');
+    pickedLine.hidden=true; pickedLine.textContent='';
     if(imgURL){ URL.revokeObjectURL(imgURL); imgURL=null; img.removeAttribute('src'); }
-    submit.disabled=true; nameIn.value='';
+    nextBtn.disabled=true; confirmBtn.disabled=true; nameIn.value='';
   }
   // 按当前裁剪框输出正方形 jpeg（最长边封顶 1080，和手机实际显示像素相当，文件小）
   async function renderCropBlob(){
@@ -1488,38 +1484,51 @@ function bindThemeUpload(){
     $('themeUpTip').textContent=serverOn
       ? '选一张图片 → 框选要展示的部分 → 存进班级曲库，背景不会变形'
       : '选一张图片 → 框选要展示的部分 → 保存到本地，背景不会变形';
-    submit.textContent=serverOn ? '⬆️ 上传到班级曲库' : '🎮 保存并使用';
+    confirmBtn.textContent=serverOn ? '✓ 确认上传' : '✓ 保存并使用';
     ov.classList.add('on');
   });
   $('themeUpCancel').addEventListener('click',()=>{ sfxClick(); ov.classList.remove('on'); });
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('on'); });
 
-  // 选好图片 → 显示裁剪编辑器，默认框取中间 90% 的正方形
-  fileIn.addEventListener('change', async()=>{
+  // 选好图片：弹窗里只记住文件并提示；点"下一步"才进全屏框选
+  fileIn.addEventListener('change',()=>{
     const f=fileIn.files[0];
     if(!f) return;
-    submit.disabled=true; picked=null;
     if(imgURL) URL.revokeObjectURL(imgURL);
     imgURL=URL.createObjectURL(f);
-    stage.textContent='正在读取图片…';
-    img.onload=()=>{
-      editor.classList.add('on');
-      fitEditor();
-      const iw=img.clientWidth, ih=img.clientHeight;
-      const s=Math.min(iw,ih)*0.9;
-      crop={x:(iw-s)/2, y:(ih-s)/2, s};
-      paintFrame();
-      nameIn.value=f.name.replace(/\.[^.]+$/,'').slice(0,30);
-      submit.disabled=false;   // 图片就绪、框已就位 → 允许点"上传/保存"
-      stage.textContent='✅ 拖动方框选位置，拖右下角调大小（框里🕺处会被奶蛙挡住）';
-    };
-    img.src=imgURL;
+    imgReady=false; crop=null; img.removeAttribute('src');
+    pickedLine.textContent='✅ 已选图片：'+f.name+'（点上面按钮可重新选择）';
+    pickedLine.hidden=false;
+    if(!nameIn.value.trim()) nameIn.value=f.name.replace(/\.[^.]+$/,'').slice(0,30);
+    stage.textContent='';
+    nextBtn.disabled=false;
   });
 
-  // 旋转屏幕 / 调整窗口：重新限高并夹正裁剪框
+  // 打开全屏框选：图片在整屏空间里完整显示，首次默认框取中间 90% 的正方形
+  function openCropScreen(){
+    cropOv.classList.add('on');
+    const init=()=>{
+      editor.classList.add('on');
+      const iw=img.clientWidth, ih=img.clientHeight;
+      if(!crop){
+        const s=Math.min(iw,ih)*0.9;
+        crop={x:(iw-s)/2, y:(ih-s)/2, s};
+      } else clampCrop();
+      paintFrame();
+      confirmBtn.disabled=false;
+    };
+    requestAnimationFrame(()=>{
+      if(imgReady) init();
+      else { img.onload=()=>{ imgReady=true; init(); }; img.src=imgURL; }
+    });
+  }
+  nextBtn.addEventListener('click',()=>{ sfxClick(); openCropScreen(); });
+  backBtn.addEventListener('click',()=>{ sfxClick(); cropOv.classList.remove('on'); });
+
+  // 旋转屏幕 / 调整窗口：夹正裁剪框并重绘
   window.addEventListener('resize',()=>{
     if(!crop) return;
-    fitEditor(); clampCrop(); paintFrame();
+    clampCrop(); paintFrame();
   });
 
   // ---- 拖动裁剪框（pointer 事件，手指/鼠标通用）----
@@ -1559,13 +1568,13 @@ function bindThemeUpload(){
     handle.addEventListener('pointerup',up);
   });
 
-  submit.addEventListener('click', async()=>{
+  // 全屏里点"确认上传/保存"：输出正方形 jpeg → 本地保存或入库
+  confirmBtn.addEventListener('click', async()=>{
     if(!crop) return;
-    submit.disabled=true;
+    confirmBtn.disabled=true;
     let blob;
     try{ blob=await renderCropBlob(); }
-    catch(e){ stage.textContent='❌ '+(e.message||'裁剪失败，重试一下'); submit.disabled=false; return; }
-    picked={blob};
+    catch(e){ cropStage.textContent='❌ '+(e.message||'裁剪失败，重试一下'); confirmBtn.disabled=false; return; }
     const name=nameIn.value.trim()||'我的舞池';
     // ===== 离线模式：存本地（IndexedDB + localStorage）=====
     if(!serverOn){
@@ -1575,13 +1584,13 @@ function bindThemeUpload(){
       try{ await putTempBlob(t.id, blob); saveTempThemeMeta(TEMP_THEMES); }
       catch(e){ console.warn('[本地舞池] 保存失败（仍可临时使用）', e); }
       sel.theme=t.id;
-      ov.classList.remove('on'); reset();
+      reset();
       toast('🖼 《'+name+'》已保存到本地，下次打开还在！');
       mainRef.switchTheme(t.id); renderPlay();
       return;
     }
     // ===== 服务器模式：POST 入库 =====
-    stage.textContent='正在上传到班级曲库…';
+    cropStage.textContent='正在上传到班级曲库…';
     try{
       const fd=new FormData();
       fd.append('image', blob, 'theme.jpg');
@@ -1590,13 +1599,13 @@ function bindThemeUpload(){
       const data=await r.json().catch(()=>({}));
       if(!r.ok) throw new Error(data.error||('上传失败('+r.status+')'));
       toast('🎉 《'+name+'》已入库，全班都能用来当背景！');
-      ov.classList.remove('on'); reset();
+      reset();
       await refreshUserThemes();
       sel.theme='ut'+data.id;
       mainRef.switchTheme(sel.theme); renderPlay();
     }catch(e){
-      stage.textContent='❌ '+(e.message||'上传失败');
-      submit.disabled=false; sfxMiss();
+      cropStage.textContent='❌ '+(e.message||'上传失败');
+      confirmBtn.disabled=false; sfxMiss();
     }
   });
 }
