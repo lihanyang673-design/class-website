@@ -4,8 +4,8 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261059';
-import { doAction, stumble } from './dancer.js?v=20261059';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261060';
+import { doAction, stumble } from './dancer.js?v=20261060';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
 // ---------- 判定窗口（秒） ----------
@@ -13,6 +13,16 @@ const WIN_GOOD = 0.15, WIN_PERFECT = 0.07, WIN_MISS = 0.19;
 const LANE_HEX = [0xff3b6b, 0x36d1ff, 0xffe17a, 0x7a4dff];  // 四轨道主题色
 // 相邻方块最小间隔（秒）：高 BPM 歌曲的半拍会密到看不清，统一卡一个下限（同时点的双押不受限）
 const MIN_GAP = 0.22;
+
+// ---------- 可见窗口（音符提前多少秒开始显示） ----------
+// 普通模式恒为 VIS_BASE；无尽模式随倍速线性扩大，补偿高速下变短的反应时间。
+// 锚点：1.1×=0.9s(5行) · 1.4×=1.08s(6行) · 1.7×=1.26s(7行) · 2.0×=1.44s(8行)
+// 拟合直线 k=1+(rate-1.1)×2/3，窗口 = VIS_BASE×k。只放宽显示阈值，不碰方块大小/间距/下落速度。
+const VIS_BASE = 0.9;
+function endlessVisTarget(rate){
+  const r = Math.min(2, Math.max(1.1, rate));
+  return VIS_BASE * (1 + (r - 1.1) * (2/3));
+}
 
 export const Game = {
   playing:false, paused:false,
@@ -24,6 +34,9 @@ export const Game = {
   _raf:0, _lastY:0,
   _head:0, _hitY:0,                  // 滑动窗口头指针 + 缓存的判定线位置
   _lastRaw:0,                        // 无尽用：上一帧的音频原始时钟（检测循环回绕）
+  _visWin:VIS_BASE,                  // 当前可见窗口（秒）：帧间向 _visTarget 平滑靠拢
+  _visTarget:VIS_BASE,
+  _lastFrameMs:0,
 };
 if(typeof window!=='undefined') window.__game=Game;   // 调试只读钩子（同 __music/__danceParts 风格）
 
@@ -197,6 +210,7 @@ export function startGame(cfg, defer){
   }
   Game.playing=true; Game.paused=false;
   Game._head=0; Game._lastRaw=0;
+  Game._visWin=VIS_BASE; Game._visTarget=VIS_BASE; Game._lastFrameMs=0;   // 每局视野从基准开始
   // 判定线位置缓存：开局算一次，窗口尺寸变化时更新（避免主循环每帧读 offsetTop 强制重排）
   Game._hitY=document.getElementById('hitLine').offsetTop;
   if(!Game._onResize){
@@ -289,6 +303,14 @@ function loop(){
   const hitY = Game._hitY;                     // 判定线位置（开局/窗口变化时才算，避免每帧强制重排）
   const pps = Game.endless ? 340 : 340 * Game.cfg.speed;  // 像素/秒（无尽固定基准，不吃自定义速度；它靠 playbackRate 提速）
 
+  // 可见窗口：无尽随倍速平滑扩大（补偿反应时间）；其他模式恒为基准
+  const nowMs=performance.now();
+  const fdt=Game._lastFrameMs ? Math.min(0.05,(nowMs-Game._lastFrameMs)/1000) : 0.016;
+  Game._lastFrameMs=nowMs;
+  Game._visTarget = Game.endless ? endlessVisTarget(Music.el.playbackRate) : VIS_BASE;
+  Game._visWin += (Game._visTarget-Game._visWin)*Math.min(1,fdt*6);
+  const visWin=Game._visWin;
+
   // 滑动窗口头指针：已终结的音符（hit/miss）永久跳过，不再每帧从头扫
   const ns = Game.notes;
   while(Game._head < ns.length && ns[Game._head].state !== 0) Game._head++;
@@ -301,13 +323,14 @@ function loop(){
       if(n.el && n.el.dataset.done!=='2' && dt < -WIN_MISS){ n.el.remove(); n.el.dataset.done='2'; }
       continue;
     }
-    if(dt > 1.8) break;                        // 提前1.8秒开始准备（比以前的1.4秒略早，给分摊留时间）
+    const spawnAhead=Math.max(1.8, visWin+0.4);  // 提前建方块：保证扩大后的窗口内音符都已就位
+    if(dt > spawnAhead) break;
     // 延迟创建：每帧最多2个；但0.6秒内就要可见的必须立即建（兜底，任何情况都不会漏方块）
     if(!n.el && (spawnLeft>0 || dt<=0.6)){ spawnNoteEl(n); spawnLeft--; }
     if(!n.el) continue;                        // 本帧还没轮到建它 → 下帧再说
     // 位置：判定线上方 dt 秒 × 速度（y 为相对轨道顶端的绝对坐标）
     const y = hitY - dt*pps - 26;              // -26 让箭头中心对准判定线
-    if(dt > 0.9){ n.el.style.display='none'; continue; }
+    if(dt > visWin){ n.el.style.display='none'; continue; }
     if(n.el.style.display==='none') n.el.style.display='';
     n.el.style.transform = `translateY(${y}px)`;
     // 过线未按 → Miss
