@@ -4,8 +4,8 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261094';
-import { doAction, stumble } from './dancer.js?v=20261094';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261095';
+import { doAction, stumble } from './dancer.js?v=20261095';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
 // ---------- 判定窗口（秒） ----------
@@ -471,17 +471,19 @@ function finishGame(natural){
 
   const total = Game.cnt.perfect+Game.cnt.good+Game.cnt.miss;
   const acc = total ? (Game.cnt.perfect + Game.cnt.good*0.5)/total : 0;
-  let rank='C';
-  if(acc>=0.98 && Game.cnt.miss===0) rank='SS';
-  else if(acc>=0.92) rank='S';
-  else if(acc>=0.80) rank='A';
-  else if(acc>=0.65) rank='B';
-  const coin = Math.floor(Game.score/400);
 
   // 相对分：100000 × 绝对分 / 该曲满分（不同歌曲、不同音符数也能公平比较）
   const noteN=Game.notes.length;
   const maxScore=maxPossibleScore(noteN);
   const rel=maxScore?Math.round(100000*Game.score/maxScore):0;
+
+  // 评级按相对分（满分 100000）
+  let rank='C';
+  if(rel>=98000) rank='SS';
+  else if(rel>=90000) rank='S';
+  else if(rel>=80000) rank='A';
+  else if(rel>=70000) rank='B';
+  const coin = Math.floor(Game.score/400);
 
   Game.hooks.onEnd && Game.hooks.onEnd({
     score:Game.score, maxCombo:Game.maxCombo, cnt:{...Game.cnt},
