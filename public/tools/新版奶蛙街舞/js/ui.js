@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261098';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261098';
-import { Game, pauseGame } from './game.js?v=20261098';
+import { analyzeAudio } from './analyze.js?v=20261099';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261099';
+import { Game, pauseGame } from './game.js?v=20261099';
 
 // ============================================================
 // 存档（localStorage）
@@ -143,31 +143,31 @@ export const THEMES=[
 //   想听别的歌，用「上传歌曲」把音频连自动谱面一起存进班级曲库即可）
 // stars = 难度星级（离线按「音符密度+双押/连续双押」评好直接写死，用户端不再计算）
 export const SONGS=[
-  {id:'default', name:'默认曲目', artist:'内置BGM', file:'music.mp3', bpm:104, desc:'游戏自带的节奏曲', cat:'builtin', stars:2},
-  {id:'u14', name:'小半', artist:'陈粒', file:'1790904961734_529237489.mp3', bpm:165, desc:'165 BPM · 约5分钟', cat:'builtin', staticChart:true, stars:5},
-  {id:'u15', name:'玻璃', artist:'Gareth.T', file:'1790905313361_805251406.mp3', bpm:146, desc:'146 BPM · 约3分钟', cat:'builtin', staticChart:true, stars:3},
-  {id:'u16', name:'晴天', artist:'周杰伦', file:'1790905913537_81414028.mp3', bpm:137, desc:'137 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:4},
-  {id:'u17', name:'甲乙丙丁', artist:'李佳薇', file:'1790906408562_96433968.mp3', bpm:130, desc:'130 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:3},
-  {id:'u18', name:'雨天', artist:'孙燕姿', file:'1790921439546_533325666.mp3', bpm:114, desc:'114 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:2},
-  {id:'u19', name:'一见如故', artist:'同学上传', file:'1790930389175_193904487.mp3', bpm:118, desc:'118 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:3},
-  {id:'u20', name:'女骑士', artist:'徐良', file:'1790935598626_920508153.mp3', bpm:110, desc:'110 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:2},
-  {id:'u21', name:'河山大好', artist:'许嵩', file:'1790937139158_104059326.mp3', bpm:175, desc:'175 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:5},
-  {id:'u22', name:'渲染离别', artist:'许嵩', file:'1790940036039_422108884.mp3', bpm:120, desc:'120 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:2},
-  {id:'u23', name:'那时雨', artist:'徐良', file:'1790997804951_1054170.mp3', bpm:119, desc:'119 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:2},
-  {id:'u24', name:'下完这场雨', artist:'后弦', file:'1790997815955_933366348.mp3', bpm:146, desc:'146 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:4},
-  {id:'u25', name:'玫瑰花的葬礼', artist:'许嵩', file:'1790997826227_330567208.mp3', bpm:164, desc:'164 BPM · 约4.3分钟', cat:'builtin', staticChart:true, stars:4},
-  {id:'u26', name:'画风', artist:'后弦', file:'1790997851988_318725934.mp3', bpm:146, desc:'146 BPM · 约4.1分钟', cat:'builtin', staticChart:true, stars:4},
-  {id:'u30', name:'出雨林记', artist:'许嵩', file:'1791030610756_931040190.mp3', bpm:134, desc:'134 BPM · 约4.6分钟', cat:'builtin', staticChart:true, stars:3},
-  {id:'u31', name:'有何不可', artist:'许嵩', file:'1791030705432_931125239.mp3', bpm:101, desc:'101 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:1},
-  {id:'u32', name:'幻听', artist:'许嵩', file:'1791086294114_816942499.mp3', bpm:118, desc:'118 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:2},
-  {id:'u33', name:'温泉', artist:'许嵩', file:'1791086359450_54004606.mp3', bpm:96, desc:'96 BPM · 约4.7分钟', cat:'builtin', staticChart:true, stars:1},
-  {id:'u34', name:'卡农', artist:'帕赫贝尔', file:'1791091543262_943294308.mp3', bpm:120, desc:'120 BPM · 约4.8分钟', cat:'builtin', staticChart:true, stars:3},
-  {id:'u35', name:'青石巷', artist:'魏琮霏', file:'1791092175093_984330658.mp3', bpm:173, desc:'173 BPM · 约2分钟', cat:'builtin', staticChart:true, stars:5},
-  {id:'u36', name:'Love Story', artist:'Taylor Swift', file:'1791092496030_452131566.mp3', bpm:119, desc:'119 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:3},
-  {id:'u37', name:'九九八十一', artist:'乐正绫', file:'1791092773223_119670223.mp3', bpm:149, desc:'149 BPM · 约4.7分钟', cat:'builtin', staticChart:true, stars:4},
-  {id:'u38', name:'忘情牛肉面', artist:'马健涛', file:'1791099498004_292032976.mp3', bpm:130, desc:'130 BPM · 约3分钟', cat:'builtin', staticChart:true, stars:4},
-  {id:'u39', name:'雨爱', artist:'泡泡心', file:'1791113581381_316393854.mp3', bpm:162, desc:'162 BPM · 约3.9分钟', cat:'builtin', staticChart:true, stars:5},
-  {id:'u40', name:'坏女孩', artist:'徐良&小凌', file:'1791116189863_102373838.mp3', bpm:127, desc:'127 BPM · 约4.1分钟', cat:'builtin', staticChart:true, stars:3},
+  {id:'default', name:'默认曲目', artist:'内置BGM', file:'music.mp3', bpm:104, desc:'游戏自带的节奏曲', cat:'builtin', stars:2, diff:7.1},
+  {id:'u14', name:'小半', artist:'陈粒', file:'1790904961734_529237489.mp3', bpm:165, desc:'165 BPM · 约5分钟', cat:'builtin', staticChart:true, stars:5, diff:10.87},
+  {id:'u15', name:'玻璃', artist:'Gareth.T', file:'1790905313361_805251406.mp3', bpm:146, desc:'146 BPM · 约3分钟', cat:'builtin', staticChart:true, stars:3, diff:9.71},
+  {id:'u16', name:'晴天', artist:'周杰伦', file:'1790905913537_81414028.mp3', bpm:137, desc:'137 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:4, diff:9.14},
+  {id:'u17', name:'甲乙丙丁', artist:'李佳薇', file:'1790906408562_96433968.mp3', bpm:130, desc:'130 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:3, diff:8.52},
+  {id:'u18', name:'雨天', artist:'孙燕姿', file:'1790921439546_533325666.mp3', bpm:114, desc:'114 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:2, diff:7.55},
+  {id:'u19', name:'一见如故', artist:'同学上传', file:'1790930389175_193904487.mp3', bpm:118, desc:'118 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:3, diff:7.74},
+  {id:'u20', name:'女骑士', artist:'徐良', file:'1790935598626_920508153.mp3', bpm:110, desc:'110 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:2, diff:7.27},
+  {id:'u21', name:'河山大好', artist:'许嵩', file:'1790937139158_104059326.mp3', bpm:175, desc:'175 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:5, diff:11.46},
+  {id:'u22', name:'渲染离别', artist:'许嵩', file:'1790940036039_422108884.mp3', bpm:120, desc:'120 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:2, diff:7.97},
+  {id:'u23', name:'那时雨', artist:'徐良', file:'1790997804951_1054170.mp3', bpm:119, desc:'119 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:2, diff:7.79},
+  {id:'u24', name:'下完这场雨', artist:'后弦', file:'1790997815955_933366348.mp3', bpm:146, desc:'146 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:4, diff:9.6},
+  {id:'u25', name:'玫瑰花的葬礼', artist:'许嵩', file:'1790997826227_330567208.mp3', bpm:164, desc:'164 BPM · 约4.3分钟', cat:'builtin', staticChart:true, stars:4, diff:10.87},
+  {id:'u26', name:'画风', artist:'后弦', file:'1790997851988_318725934.mp3', bpm:146, desc:'146 BPM · 约4.1分钟', cat:'builtin', staticChart:true, stars:4, diff:9.67},
+  {id:'u30', name:'出雨林记', artist:'许嵩', file:'1791030610756_931040190.mp3', bpm:134, desc:'134 BPM · 约4.6分钟', cat:'builtin', staticChart:true, stars:3, diff:8.85},
+  {id:'u31', name:'有何不可', artist:'许嵩', file:'1791030705432_931125239.mp3', bpm:101, desc:'101 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:1, diff:6.67},
+  {id:'u32', name:'幻听', artist:'许嵩', file:'1791086294114_816942499.mp3', bpm:118, desc:'118 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:2, diff:7.8},
+  {id:'u33', name:'温泉', artist:'许嵩', file:'1791086359450_54004606.mp3', bpm:96, desc:'96 BPM · 约4.7分钟', cat:'builtin', staticChart:true, stars:1, diff:6.34},
+  {id:'u34', name:'卡农', artist:'帕赫贝尔', file:'1791091543262_943294308.mp3', bpm:120, desc:'120 BPM · 约4.8分钟', cat:'builtin', staticChart:true, stars:3, diff:7.97},
+  {id:'u35', name:'青石巷', artist:'魏琮霏', file:'1791092175093_984330658.mp3', bpm:173, desc:'173 BPM · 约2分钟', cat:'builtin', staticChart:true, stars:5, diff:11.17},
+  {id:'u36', name:'Love Story', artist:'Taylor Swift', file:'1791092496030_452131566.mp3', bpm:119, desc:'119 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:3, diff:7.95},
+  {id:'u37', name:'九九八十一', artist:'乐正绫', file:'1791092773223_119670223.mp3', bpm:149, desc:'149 BPM · 约4.7分钟', cat:'builtin', staticChart:true, stars:4, diff:9.95},
+  {id:'u38', name:'忘情牛肉面', artist:'马健涛', file:'1791099498004_292032976.mp3', bpm:130, desc:'130 BPM · 约3分钟', cat:'builtin', staticChart:true, stars:4, diff:8.54},
+  {id:'u39', name:'雨爱', artist:'泡泡心', file:'1791113581381_316393854.mp3', bpm:162, desc:'162 BPM · 约3.9分钟', cat:'builtin', staticChart:true, stars:5, diff:10.68},
+  {id:'u40', name:'坏女孩', artist:'徐良&小凌', file:'1791116189863_102373838.mp3', bpm:127, desc:'127 BPM · 约4.1分钟', cat:'builtin', staticChart:true, stars:3, diff:8.42},
 ];
 
 // 歌曲分类（渲染时每组带小标题；空的分组会自动跳过）
@@ -185,12 +185,20 @@ export const STAR_TIERS=[
   {stars:5, name:'⭐⭐⭐⭐⭐ 5 星 · 地狱', tip:'极限密度 · 连续双押'},
 ];
 
+// 歌曲难度系数（同星级内排序用）：优先用写死/已算好的 diff，没有则按现有字段兜底
+function songDiff(s){
+  if(typeof s.diff==='number') return s.diff;
+  if(s.noteCount>0 && s.duration>0) return s.noteCount/s.duration;
+  if(s.chart && s.duration>0) return s.chart.length/s.duration;
+  return (s.bpm||100)/15;
+}
+
 // 静态版预置谱面（从 charts.json 加载）
 export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261098');
+    const r=await fetch('charts.json?v=20261099');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -264,7 +272,7 @@ async function delTempBlob(id){
 function saveTempMeta(list){
   try{ localStorage.setItem(TEMP_META_KEY, JSON.stringify(list.map(s=>({
     id:s.id, name:s.name, artist:s.artist, bpm:s.bpm, duration:s.duration,
-    desc:s.desc, chart:s.chart, stars:s.stars, createdAt:s.createdAt||Date.now(),
+    desc:s.desc, chart:s.chart, stars:s.stars, diff:s.diff, createdAt:s.createdAt||Date.now(),
   })))); }catch(e){ console.warn('[临时歌曲] 元数据保存失败', e); }
 }
 function loadTempMeta(){
@@ -283,6 +291,7 @@ async function loadTempSongs(){
       ok.push({
         id:m.id, name:m.name, artist:m.artist, bpm:m.bpm, duration:m.duration,
         desc:m.desc, chart:m.chart, stars:m.stars||3,
+        diff:(typeof m.diff==='number')?m.diff:(m.chart?+(m.chart.length/m.duration).toFixed(2):undefined),
         file:url, cat:'user', user:true, temp:true, createdAt:m.createdAt,
       });
     }catch(e){ console.warn('[临时歌曲] 恢复失败', m.id, e); }
@@ -312,6 +321,8 @@ export async function refreshUserSongs(){
       duration:row.duration||0, noteCount:row.note_count||0,
       // 星级沿用离线评好的写死值；以后新上传的歌默认 3 星，待我评完再补
       stars:SONGS.find(s=>s.id==='u'+row.id)?.stars||3,
+      // 难度系数（密度）：优先沿用写死值，新歌用 note_count/duration 实时算
+      diff:SONGS.find(s=>s.id==='u'+row.id)?.diff ?? ((row.note_count||0)/(row.duration||1)),
     }));
     USER_SONGS.loaded=true; USER_SONGS.loadError=false;
     serverOn=true;
@@ -788,7 +799,8 @@ async function renderPlay(){
       ? [...TEMP_SONGS, ...USER_SONGS.list, SONGS.find(s=>s.id==='default')]
       : [...TEMP_SONGS, ...SONGS];
     STAR_TIERS.forEach(tier=>{
-      const list=allSongs.filter(s=>s.stars===tier.stars);
+      // 同星级内按难度系数（音符密度）从易到难排列，不再按上传时间
+      const list=allSongs.filter(s=>s.stars===tier.stars).sort((a,b)=>songDiff(a)-songDiff(b));
       if(!list.length) return;
       const head=document.createElement('div');
       head.className='song-cat-head';
@@ -1383,6 +1395,7 @@ function bindUpload(){
         cat:'user', user:true, temp:true,
         chart:analyzed.notes, duration:analyzed.duration,
         stars:3,   // 临时本地歌：默认 3 星（不现场评估）
+        diff:+(analyzed.notes.length/analyzed.duration).toFixed(2),
         createdAt:Date.now(),
       };
       TEMP_SONGS.push(song);
