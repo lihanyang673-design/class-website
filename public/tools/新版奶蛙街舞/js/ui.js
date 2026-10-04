@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261102';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261102';
-import { Game, pauseGame } from './game.js?v=20261102';
+import { analyzeAudio } from './analyze.js?v=20261103';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261103';
+import { Game, pauseGame } from './game.js?v=20261103';
 
 // ============================================================
 // 存档（localStorage）
@@ -136,7 +136,6 @@ export const THEMES=[
   {id:'space',  name:'太空蹦迪', desc:'失重节拍，银河打碟',
    bg:0x050514, fog:[14,44], floor:0x101028, ring:0x7a4dff, c1:0x7a4dff, c2:0x36ffc2,
    lampA:1, lampB:1, sky:'stars'},
-  {id:'it1', name:'奶蛙1', desc:'自定义图片背景', bgImage:'1791118340835_844508194.jpg', fromDb:1},
 ];
 
 // 歌曲库：只保留真实存在的内置曲 music.mp3。
@@ -206,7 +205,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261102');
+    const r=await fetch('charts.json?v=20261103');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -1443,10 +1442,25 @@ function bindThemeUpload(){
   let crop=null;            // {x,y,s} 显示像素（相对图片左上角）
   let imgURL=null;
 
-  // 把裁剪框位置写进 DOM
+  // 把裁剪框位置写进 DOM（图片在编辑器里居中，坐标要加上图片左上角的留白偏移）
   function paintFrame(){
-    frame.style.left=crop.x+'px'; frame.style.top=crop.y+'px';
+    frame.style.left=(img.offsetLeft+crop.x)+'px';
+    frame.style.top=(img.offsetTop+crop.y)+'px';
     frame.style.width=crop.s+'px'; frame.style.height=crop.s+'px';
+  }
+  // 弹窗里其他控件要占地方：按"整张图都在屏幕内"限制图片显示区高度，横图竖图都能看全
+  function fitEditor(){
+    editor.style.maxHeight='none';
+    const box=ov.querySelector('.up-box');
+    const others=box.scrollHeight-editor.offsetHeight;   // 其他控件+padding+间距
+    editor.style.maxHeight=Math.max(120, box.clientHeight-others-2)+'px';
+  }
+  // 显示尺寸变化后，把超出图片范围的裁剪框夹回来
+  function clampCrop(){
+    const iw=img.clientWidth, ih=img.clientHeight;
+    crop.s=Math.min(crop.s, Math.min(iw,ih));
+    crop.x=Math.min(iw-crop.s, Math.max(0,crop.x));
+    crop.y=Math.min(ih-crop.s, Math.max(0,crop.y));
   }
   function reset(){
     picked=null; crop=null; fileIn.value='';
@@ -1490,6 +1504,7 @@ function bindThemeUpload(){
     stage.textContent='正在读取图片…';
     img.onload=()=>{
       editor.classList.add('on');
+      fitEditor();
       const iw=img.clientWidth, ih=img.clientHeight;
       const s=Math.min(iw,ih)*0.9;
       crop={x:(iw-s)/2, y:(ih-s)/2, s};
@@ -1498,6 +1513,12 @@ function bindThemeUpload(){
       stage.textContent='✅ 拖动方框选位置，拖右下角调大小（框里🕺处会被奶蛙挡住）';
     };
     img.src=imgURL;
+  });
+
+  // 旋转屏幕 / 调整窗口：重新限高并夹正裁剪框
+  window.addEventListener('resize',()=>{
+    if(!crop) return;
+    fitEditor(); clampCrop(); paintFrame();
   });
 
   // ---- 拖动裁剪框（pointer 事件，手指/鼠标通用）----
