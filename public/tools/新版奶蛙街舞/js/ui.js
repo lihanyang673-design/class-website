@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261103';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261103';
-import { Game, pauseGame } from './game.js?v=20261103';
+import { analyzeAudio } from './analyze.js?v=20261104';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261104';
+import { Game, pauseGame } from './game.js?v=20261104';
 
 // ============================================================
 // 存档（localStorage）
@@ -205,7 +205,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261103');
+    const r=await fetch('charts.json?v=20261104');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -1510,6 +1510,7 @@ function bindThemeUpload(){
       crop={x:(iw-s)/2, y:(ih-s)/2, s};
       paintFrame();
       nameIn.value=f.name.replace(/\.[^.]+$/,'').slice(0,30);
+      submit.disabled=false;   // 图片就绪、框已就位 → 允许点"上传/保存"
       stage.textContent='✅ 拖动方框选位置，拖右下角调大小（框里🕺处会被奶蛙挡住）';
     };
     img.src=imgURL;
