@@ -3,7 +3,7 @@
 //
 // 模型 rigged.glb 是【单块网格、无骨骼、无蒙皮、无动画】。
 //
-// ★ 根治版方案（v20261113 起）：不再把模型切成 6 块——
+// ★ 根治版方案（v20261114 起）：不再把模型切成 6 块——
 //   切块方案的关节两边各转各的，交界穿模只能靠"收角度"压制，治标不治本。
 //   现在在代码里【程序化造一副骨骼】，并按"每个顶点到每根骨的距离"
 //   自动算出平滑的蒙皮权重：关节附近的顶点同时受多根骨牵引，像橡皮一样
@@ -122,21 +122,46 @@ function build(gltf){
   gltf.scene.traverse(n=>{ if(!srcMesh && n.isMesh) srcMesh = n; });
   if(!srcMesh) throw new Error('rigged.glb 里没找到网格');
 
-  srcMesh.updateWorldMatrix(true, false);
-  const mw = srcMesh.matrixWorld;                        // 把节点自带的旋转烤进顶点
-
   // ---- 总包围盒（世界系）----
   const box = new THREE.Box3().setFromObject(gltf.scene);
+
+  // setFromObject 的遍历会触碰场景里各节点共享的 matrixWorld；
+  // 在它之后强制重算一次，并【克隆】矩阵再用于烤顶点，
+  // 避免拿到被遍历过程改写的 matrixWorld 引用（否则几何和骨骼会落在两套坐标）
+  srcMesh.updateWorldMatrix(true, false);
+  const mw = srcMesh.matrixWorld.clone();
+
   const size = box.getSize(new THREE.Vector3());
   const H = size.y, W = size.x;
   const cx = (box.min.x+box.max.x)/2;
   const midz = (box.min.z+box.max.z)/2;
 
-  // ---- 克隆整块几何并烤掉节点矩阵（保持一整块，不切割）----
-  const geo = srcMesh.geometry.clone();
-  geo.applyMatrix4(mw);
+  // ---- 整块几何：该模型 POSITION 是【交错缓冲】(stride≠3)，
+  // 直接 geo.clone().applyMatrix4 会写错顶点分量；
+  // 改为从原始 position 逐顶点读取（已验证正确），手动烤成独立紧密 Float32 属性 ----
+  const srcGeo = srcMesh.geometry;
+  const sp = srcGeo.attributes.position;
+  const VN = sp.count;
+  const bakedArr = new Float32Array(VN*3);
+  const _v = new THREE.Vector3();
+  for(let i=0;i<VN;i++){
+    _v.fromBufferAttribute(sp,i).applyMatrix4(mw);
+    bakedArr[i*3]=_v.x; bakedArr[i*3+1]=_v.y; bakedArr[i*3+2]=_v.z;
+  }
+  const geo = srcGeo.clone();
+  geo.setAttribute('position', new THREE.BufferAttribute(bakedArr,3));
+  // 法线同步旋转（均匀缩放下只需应用同一旋转），否则光照方向错位
+  const _sn = srcGeo.attributes.normal;
+  if(_sn){
+    const normArr = new Float32Array(VN*3);
+    const _nv = new THREE.Vector3();
+    for(let i=0;i<VN;i++){
+      _nv.fromBufferAttribute(_sn,i).applyQuaternion(srcMesh.quaternion).normalize();
+      normArr[i*3]=_nv.x; normArr[i*3+1]=_nv.y; normArr[i*3+2]=_nv.z;
+    }
+    geo.setAttribute('normal', new THREE.BufferAttribute(normArr,3));
+  }
   const pos = geo.attributes.position;
-  const VN = pos.count;
 
   // ---- 每个顶点的归一化坐标 + 部位标签（皮肤涂装只染头/肚）----
   const labels = new Array(VN);
@@ -331,6 +356,7 @@ function build(gltf){
   Dancer._baseY=body.position.y;
 
   console.log(`%c[奶蛙绑骨] 完成：顶点 ${VN}，7 根骨，兜底顶点 ${fallbackCount} 个`, 'color:#ffe17a');
+  if(typeof window!=='undefined') window.__dancer=Dancer;   // 调试只读钩子（同 __game/__music 风格）
 }
 
 // ============================================================
