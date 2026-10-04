@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261086';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261086';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261086';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261087';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261087';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261087';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261086';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261087';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart, stopPreview } from './ui.js?v=20261086';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart, stopPreview } from './ui.js?v=20261087';
 
 const $=id=>document.getElementById(id);
 
@@ -225,6 +225,7 @@ const main={
     startCountdown();
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },
+  showNotice(){ showNoticeIfNeeded(true); },   // 帮助页强制展示公告
   quitShow(){
     stopGame(false);
     showStageUI(false);
@@ -416,10 +417,10 @@ $('noticeOv').addEventListener('click', async e=>{
   setTimeout(()=>{ b.textContent=old; }, 1600);
 });
 
-function showNoticeIfNeeded(){
+function showNoticeIfNeeded(force){
   const n=new Date();
   const today=n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate();
-  if(localStorage.getItem('naiwa_notice_hide')===today+'|'+NOTICE_VER) return;  // 当天+同版本已关闭 → 不弹
+  if(!force && localStorage.getItem('naiwa_notice_hide')===today+'|'+NOTICE_VER) return;  // 当天+同版本已关闭 → 不弹
   const ov=$('noticeOv');
   $('noticeHideToday').checked=false;
   ov.classList.add('on');
