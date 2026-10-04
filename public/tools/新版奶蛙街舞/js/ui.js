@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261081';
-import { Game, pauseGame } from './game.js?v=20261081';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261082';
+import { Game, pauseGame } from './game.js?v=20261082';
 
 // ============================================================
 // 存档（localStorage）
@@ -188,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261081');
+    const r=await fetch('charts.json?v=20261082');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -607,6 +607,27 @@ async function renderPlay(){
       <span class="tag" style="background:#3a1f00;color:#ffe17a">${serverOn?'AUTO CHART':'TEMP CHART'}</span>`;
     upCard.onclick=()=>{ ensureCtx(); sfxClick(); document.getElementById('btnUploadSong').click(); };
     sg.appendChild(upCard);
+    // 更新曲库按钮：清理浏览器缓存 + 强制刷新，确保拿到最新歌曲和代码
+    const refreshCard=document.createElement('button');
+    refreshCard.className='theme-card song-refresh-card';
+    refreshCard.style.background='linear-gradient(135deg,#36d1ffcc,#7a4dffcc)';
+    refreshCard.innerHTML=`<div class="tname" style="color:#fff">🔄 更新曲库</div>
+      <div class="tdesc" style="color:#e0e0ff">点这里清理缓存并刷新，获取最新歌曲和功能</div>
+      <span class="tag" style="background:#fff;color:#7a4dff">REFRESH</span>`;
+    refreshCard.onclick=async ()=>{
+      sfxClick();
+      toast('🔄 正在清理缓存并刷新…');
+      // 清理可能缓存的曲库数据
+      try{
+        const keys=Object.keys(localStorage).filter(k=>k.includes('chart')||k.includes('song')||k.includes('naiwa')||k.includes('dance'));
+        keys.forEach(k=>localStorage.removeItem(k));
+      }catch(_){}
+      // 强制刷新：加时间戳参数绕过所有缓存
+      const url=new URL(location.href);
+      url.searchParams.set('_v', Date.now().toString(36));
+      location.replace(url.toString());
+    };
+    sg.appendChild(refreshCard);
     // 去重后的全部歌曲：连着服务器时数据库版与内置版是同一首，只留数据库版；默认曲目数据库没有，单独保留
     const allSongs=serverOn
       ? [...TEMP_SONGS, ...USER_SONGS.list, SONGS.find(s=>s.id==='default')]
