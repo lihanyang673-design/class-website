@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>奶娃街舞 · Dance Baby</title>
-<link rel="stylesheet" href="style.css?v=20261055">
+<link rel="stylesheet" href="style.css?v=20261056">
 </head>
 <body>
 
@@ -21,6 +21,17 @@
   <!-- 初始化就绪前隐藏；就绪后由 main.js 点亮，点击解锁音频并开始开场 -->
   <button class="gate-btn hidden" id="loadStart" disabled>🎵 开 跳 🎵</button>
   <div class="load-sub" id="loadSub">首次加载需下载 3D 模型，请稍候…</div>
+</div>
+
+<!-- 公告弹窗：进入主界面后按「日期 + 公告版本」检查；勾选今日不再弹出则当天隐藏。
+     更新公告内容时由 js 里的 NOTICE_VER 控制：版本一变，即使当天勾选过也会重新弹出 -->
+<div id="noticeOv">
+  <div class="notice-box">
+    <div class="notice-hd">📢 公告</div>
+    <div class="notice-bd" id="noticeBody">（公告内容待填写）</div>
+    <label class="notice-chk"><input type="checkbox" id="noticeHideToday"> 今日内不再弹出</label>
+    <button class="notice-btn" id="noticeOk">我知道了</button>
+  </div>
 </div>
 
 <!-- 开局加载进度条：点「开始表演」后显示，音频/谱面/方块就绪再开演 -->
@@ -378,7 +389,7 @@
 }
 </script>
 <script src="js/codec.js?v=20260929l"></script>
-<script type="module" src="js/main.js?v=20261055"></script>
+<script type="module" src="js/main.js?v=20261056"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';

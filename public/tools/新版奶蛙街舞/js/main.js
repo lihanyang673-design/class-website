@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261055';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261055';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261055';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261056';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261056';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261056';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261055';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261056';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261055';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261056';
 
 const $=id=>document.getElementById(id);
 let stageGateBound=false;    // 「点我开演」闸门按钮只绑定一次
@@ -395,6 +395,7 @@ function enterHome(){
     showUIRoot(true);
     showScreen('scr-home');
     renderHome();
+    setTimeout(showNoticeIfNeeded, 600);  // ★ 主界面出来后弹公告（延迟一点更自然）
     setMenuBgmVolume(Store.data.set.vol);
     startMenuBgm();                   // ★ 进入主界面：启动菜单 BGM
     if(ok) burst(new THREE.Vector3(0,1.2,0.5), 0xffe17a, 70);
@@ -402,6 +403,21 @@ function enterHome(){
     // ★ 进主界面 2.5~5 秒后随机来一声搞怪语音
     setTimeout(()=>sfxRandomVoice(), 2500 + Math.random()*2500);
   });
+}
+
+// ---------- 公告弹窗 ----------
+const NOTICE_VER='1';   // 公告版本号：每次更换公告内容就 +1，当天勾选过「不再弹出」的同学也会重新看到新公告
+function showNoticeIfNeeded(){
+  const n=new Date();
+  const today=n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate();
+  if(localStorage.getItem('naiwa_notice_hide')===today+'|'+NOTICE_VER) return;  // 当天+同版本已关闭 → 不弹
+  const ov=$('noticeOv');
+  $('noticeHideToday').checked=false;
+  ov.classList.add('on');
+  $('noticeOk').onclick=()=>{
+    if($('noticeHideToday').checked) localStorage.setItem('naiwa_notice_hide', today+'|'+NOTICE_VER);
+    ov.classList.remove('on');
+  };
 }
 
 // ============================================================
