@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261101';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261101';
-import { Game, pauseGame } from './game.js?v=20261101';
+import { analyzeAudio } from './analyze.js?v=20261102';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261102';
+import { Game, pauseGame } from './game.js?v=20261102';
 
 // ============================================================
 // 存档（localStorage）
@@ -206,7 +206,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261101');
+    const r=await fetch('charts.json?v=20261102');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -337,16 +337,6 @@ async function loadTempThemes(){
   if(ok.length!==metas.length) saveTempThemeMeta(ok);
   TEMP_THEMES.push(...ok);
   console.log('%c[本地舞池] 已恢复 '+ok.length+' 个', 'color:#ff9a3c;font-weight:bold');
-}
-// 图片压缩：最长边 1920px，统一转 jpeg 0.85（背景足够清晰，文件小加载快）
-async function compressImage(file){
-  const bitmap=await createImageBitmap(file);
-  const scale=Math.min(1, 1920/Math.max(bitmap.width,bitmap.height));
-  const w=Math.max(1,Math.round(bitmap.width*scale)), h=Math.max(1,Math.round(bitmap.height*scale));
-  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-  cv.getContext('2d').drawImage(bitmap,0,0,w,h);
-  try{ bitmap.close&&bitmap.close(); }catch{}
-  return await new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('压缩失败')),'image/jpeg',0.85));
 }
 
 function fmtDur(s){
@@ -1443,57 +1433,124 @@ function refreshPlayerId(){
 // ============================================================
 // 上传歌曲弹窗：选文件 → 本地分析生成谱面 → 连音频一起传到班级曲库
 // ============================================================
-// ---------- 舞池背景上传（服务器→入库；离线→本地保存）----------
+// ---------- 舞池背景上传（服务器→入库；离线→本地保存；上传时正方形框选，避免拉伸变形）----------
 function bindThemeUpload(){
   const $=id=>document.getElementById(id);
   const ov=$('themeUploadOv'), fileIn=$('themeUpFile'), stage=$('themeUpStage'),
-        nameIn=$('themeUpName'), submit=$('themeUpSubmit'), preview=$('themeUpPreview');
-  let picked=null;   // {compressed:Blob}
+        nameIn=$('themeUpName'), submit=$('themeUpSubmit'),
+        editor=$('themeCrop'), img=$('themeCropImg'), frame=$('cropFrame'), handle=$('cropHandle');
+  let picked=null;          // {blob:正方形jpeg}
+  let crop=null;            // {x,y,s} 显示像素（相对图片左上角）
+  let imgURL=null;
+
+  // 把裁剪框位置写进 DOM
+  function paintFrame(){
+    frame.style.left=crop.x+'px'; frame.style.top=crop.y+'px';
+    frame.style.width=crop.s+'px'; frame.style.height=crop.s+'px';
+  }
   function reset(){
-    picked=null; fileIn.value='';
+    picked=null; crop=null; fileIn.value='';
     stage.textContent='支持 jpg / png / webp / gif，10MB 以内';
-    preview.classList.remove('on'); preview.innerHTML='';
+    editor.classList.remove('on');
+    if(imgURL){ URL.revokeObjectURL(imgURL); imgURL=null; img.removeAttribute('src'); }
     submit.disabled=true; nameIn.value='';
   }
+  // 按当前裁剪框输出正方形 jpeg（最长边封顶 1080，和手机实际显示像素相当，文件小）
+  async function renderCropBlob(){
+    const iw=img.clientWidth, ih=img.clientHeight;
+    const k=img.naturalWidth/iw;
+    let out=Math.round(crop.s*k);
+    const cap=Math.min(out,1080);
+    const cv=document.createElement('canvas'); cv.width=cap; cv.height=cap;
+    cv.getContext('2d').drawImage(img,
+      crop.x*k, crop.y*k, crop.s*k, crop.s*k,
+      0,0,cap,cap);
+    return await new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('生成失败')),'image/jpeg',0.9));
+  }
+
   $('btnThemeUpOpen').addEventListener('click',()=>{
     ensureCtx(); sfxClick(); reset();
     $('themeUpHead').innerHTML=serverOn ? '⬆️ 上传舞池背景 <small>CUSTOM FLOOR</small>' : '🎲 我的舞池 <small>MY FLOOR</small>';
     $('themeUpTip').textContent=serverOn
-      ? '选一张图片 → 自动压缩 → 存进班级曲库，全班都能用来当背景'
-      : '选一张图片 → 自动压缩 → 保存到本地，下次打开还能当背景';
+      ? '选一张图片 → 框选要展示的部分 → 存进班级曲库，背景不会变形'
+      : '选一张图片 → 框选要展示的部分 → 保存到本地，背景不会变形';
     submit.textContent=serverOn ? '⬆️ 上传到班级曲库' : '🎮 保存并使用';
     ov.classList.add('on');
   });
   $('themeUpCancel').addEventListener('click',()=>{ sfxClick(); ov.classList.remove('on'); });
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('on'); });
 
-  // 选好图片 → 本地预览 + 压缩
+  // 选好图片 → 显示裁剪编辑器，默认框取中间 90% 的正方形
   fileIn.addEventListener('change', async()=>{
     const f=fileIn.files[0];
     if(!f) return;
-    stage.textContent='正在读取并压缩图片…'; submit.disabled=true;
-    try{
-      preview.innerHTML=`<img src="${URL.createObjectURL(f)}">`; preview.classList.add('on');
+    submit.disabled=true; picked=null;
+    if(imgURL) URL.revokeObjectURL(imgURL);
+    imgURL=URL.createObjectURL(f);
+    stage.textContent='正在读取图片…';
+    img.onload=()=>{
+      editor.classList.add('on');
+      const iw=img.clientWidth, ih=img.clientHeight;
+      const s=Math.min(iw,ih)*0.9;
+      crop={x:(iw-s)/2, y:(ih-s)/2, s};
+      paintFrame();
       nameIn.value=f.name.replace(/\.[^.]+$/,'').slice(0,30);
-      const compressed=await compressImage(f);
-      picked={compressed};
-      stage.textContent=`✅ 压缩完成：${(compressed.size/1024/1024).toFixed(2)}MB，可以上传了`;
-      submit.disabled=false; sfxCoin();
-    }catch(e){
-      stage.textContent='❌ '+(e.message||'图片处理失败，换一张试试'); sfxMiss();
-    }
+      stage.textContent='✅ 拖动方框选位置，拖右下角调大小（框里🕺处会被奶蛙挡住）';
+    };
+    img.src=imgURL;
+  });
+
+  // ---- 拖动裁剪框（pointer 事件，手指/鼠标通用）----
+  frame.addEventListener('pointerdown',ev=>{
+    if(!crop || ev.target===handle) return;
+    ev.preventDefault();
+    frame.setPointerCapture(ev.pointerId);
+    const iw=img.clientWidth, ih=img.clientHeight;
+    const sx=ev.clientX, sy=ev.clientY, ox=crop.x, oy=crop.y;
+    const move=e=>{
+      crop.x=Math.min(iw-crop.s, Math.max(0, ox+e.clientX-sx));
+      crop.y=Math.min(ih-crop.s, Math.max(0, oy+e.clientY-sy));
+      paintFrame();
+    };
+    const up=()=>{ frame.removeEventListener('pointermove',move); frame.removeEventListener('pointerup',up); };
+    frame.addEventListener('pointermove',move);
+    frame.addEventListener('pointerup',up);
+  });
+  // ---- 右下角手柄：等比缩放，框中心不动 ----
+  handle.addEventListener('pointerdown',ev=>{
+    if(!crop) return;
+    ev.preventDefault(); ev.stopPropagation();
+    handle.setPointerCapture(ev.pointerId);
+    const iw=img.clientWidth, ih=img.clientHeight;
+    const start=ev.clientX, s0=crop.s, cx=crop.x+crop.s/2, cy=crop.y+crop.s/2;
+    const maxS=Math.min(iw,ih), minS=Math.min(70,maxS*0.35);
+    const move=e=>{
+      let s=s0+(e.clientX-start);
+      s=Math.min(maxS, Math.max(minS,s));
+      crop.s=s;
+      crop.x=Math.min(iw-s, Math.max(0, cx-s/2));
+      crop.y=Math.min(ih-s, Math.max(0, cy-s/2));
+      paintFrame();
+    };
+    const up=()=>{ handle.removeEventListener('pointermove',move); handle.removeEventListener('pointerup',up); };
+    handle.addEventListener('pointermove',move);
+    handle.addEventListener('pointerup',up);
   });
 
   submit.addEventListener('click', async()=>{
-    if(!picked) return;
+    if(!crop) return;
     submit.disabled=true;
+    let blob;
+    try{ blob=await renderCropBlob(); }
+    catch(e){ stage.textContent='❌ '+(e.message||'裁剪失败，重试一下'); submit.disabled=false; return; }
+    picked={blob};
     const name=nameIn.value.trim()||'我的舞池';
     // ===== 离线模式：存本地（IndexedDB + localStorage）=====
     if(!serverOn){
-      const t={ id:'tt'+Date.now(), name, bgImage:URL.createObjectURL(picked.compressed),
+      const t={ id:'tt'+Date.now(), name, bgImage:URL.createObjectURL(blob),
                 custom:true, temp:true, createdAt:Date.now() };
       TEMP_THEMES.push(t);
-      try{ await putTempBlob(t.id, picked.compressed); saveTempThemeMeta(TEMP_THEMES); }
+      try{ await putTempBlob(t.id, blob); saveTempThemeMeta(TEMP_THEMES); }
       catch(e){ console.warn('[本地舞池] 保存失败（仍可临时使用）', e); }
       sel.theme=t.id;
       ov.classList.remove('on'); reset();
@@ -1505,7 +1562,7 @@ function bindThemeUpload(){
     stage.textContent='正在上传到班级曲库…';
     try{
       const fd=new FormData();
-      fd.append('image', picked.compressed, 'theme.jpg');
+      fd.append('image', blob, 'theme.jpg');
       fd.append('name', name);
       const r=await fetch('/api/dance/themes',{method:'POST',body:fd,credentials:'same-origin'});
       const data=await r.json().catch(()=>({}));

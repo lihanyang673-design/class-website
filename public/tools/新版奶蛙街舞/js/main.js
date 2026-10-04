@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261101';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261101';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261101';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261101';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261101';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261102';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261102';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261102';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261102';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261102';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261101';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261102';
 
 const $=id=>document.getElementById(id);
 
@@ -38,6 +38,22 @@ let stageGroup=null, curTheme=THEMES[0];
 let keyLight=null, lampL=null, lampR=null, floorMesh=null, ringMesh=null;
 let _stageToken=0, _bgTex=null;   // 图片背景：异步加载令牌（防旧回调覆盖）+ 当前背景贴图（用于释放）
 
+// 图片背景布局：宽度优先、顶部对齐的 cover 适配 —— 图片永远不变形。
+// 手机竖屏（sa<1）时正方形图片刚好铺满屏幕上部，下半部（舞台区）采样图片边缘色，被舞台遮住。
+function layoutBgTex(tex){
+  const ia=tex.image.width/tex.image.height;        // 图片宽高比
+  const sa=innerWidth/innerHeight;                  // 屏幕宽高比
+  const ry=sa/ia;
+  if(ry<=1){
+    // 图片比屏幕更"宽"：横向铺满，纵向只用上部
+    tex.repeat.set(1,ry); tex.offset.set(0,1-ry);
+  }else{
+    // 屏幕更宽：纵向铺满，横向居中裁剪
+    const rx=ia/sa;
+    tex.repeat.set(rx,1); tex.offset.set((1-rx)/2,0);
+  }
+}
+
 function buildStage(theme){
   curTheme=theme;
   const token=++_stageToken;
@@ -62,6 +78,7 @@ function buildStage(theme){
     new THREE.TextureLoader().load(curTheme.bgImage, tex=>{
       if(token!==_stageToken){ tex.dispose(); return; }
       tex.colorSpace=THREE.SRGBColorSpace;
+      layoutBgTex(tex);
       _bgTex=tex; scene.background=tex;
     });
     scene.fog=new THREE.Fog(THEMES[0].bg, THEMES[0].fog[0], THEMES[0].fog[1]);
@@ -349,6 +366,8 @@ addEventListener('resize',()=>{
   camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
+  // 当前是图片背景：按新的屏幕比例重新布局，保持不变形
+  if(_bgTex) layoutBgTex(_bgTex);
 });
 
 // 主界面点击奶娃 → 随机搞怪语音 + 轻微弹跳

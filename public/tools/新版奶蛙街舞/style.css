@@ -794,9 +794,51 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .up-bar i{display:block;height:100%;width:0;border-radius:99px;
   background:linear-gradient(90deg,var(--purple),var(--cyan));transition:width .25s}
 .up-stage{font-size:12.5px;color:var(--sub);min-height:18px}
-.theme-up-preview{display:none;justify-content:center;margin:6px 0 2px}
-.theme-up-preview.on{display:flex}
-.theme-up-preview img{max-width:100%;max-height:150px;border-radius:10px;border:1px solid #ffffff33}
+/* 舞池背景裁剪编辑器 */
+.crop-editor{
+  position:relative; margin:6px 0 2px; display:none;
+  width:100%; border-radius:10px; overflow:hidden;
+  background:#0a0618; user-select:none; touch-action:none; min-height:120px;
+}
+.crop-editor.on{display:block}
+.crop-editor img{display:block;width:100%;height:auto;pointer-events:none}
+.crop-empty{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:var(--sub);font-size:13px;
+}
+.crop-editor.on .crop-empty{display:none}
+/* 裁剪框：方框 + 外部压暗 + 三分线 */
+.crop-frame{
+  position:absolute; box-sizing:border-box;
+  border:1.5px solid #ffffff;
+  border-radius:4px;
+  box-shadow:0 0 0 9999px rgba(5,3,15,.58);
+  cursor:grab; touch-action:none;
+}
+.crop-frame:active{cursor:grabbing}
+.crop-grid{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    linear-gradient(90deg,transparent 33.2%,rgba(255,255,255,.55) 33.2% 33.6%,transparent 33.6% 66.4%,rgba(255,255,255,.55) 66.4% 66.8%,transparent 66.8%),
+    linear-gradient(0deg,transparent 33.2%,rgba(255,255,255,.55) 33.2% 33.6%,transparent 33.6% 66.4%,rgba(255,255,255,.55) 66.4% 66.8%,transparent 66.8%);
+}
+/* 奶蛙占位提示：框内下方居中（舞者头顶大约在框的一半处）*/
+.crop-dancer{
+  position:absolute;left:50%;bottom:2px;transform:translateX(-50%);
+  font-size:13px;color:#fff;opacity:.85;pointer-events:none;white-space:nowrap;
+  text-shadow:0 0 4px #000,0 0 4px #000;
+}
+.crop-dancer::before{
+  content:'';position:absolute;left:50%;top:-15px;transform:translateX(-50%);
+  width:14px;height:14px;border-radius:50% 50% 45% 45%;
+  border:1.5px dashed #ffffffcc;
+}
+/* 右下角缩放手柄 */
+.crop-handle{
+  position:absolute;right:-7px;bottom:-7px;width:16px;height:16px;
+  border-radius:50%;background:var(--cyan);
+  border:2px solid #0a0618;cursor:nwse-resize;touch-action:none;
+}
 .up-info{font-size:14px;font-weight:800;color:var(--cyan);min-height:18px}
 
 /* 歌名 / 歌手输入框 */
