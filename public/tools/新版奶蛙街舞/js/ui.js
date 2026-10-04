@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261082';
-import { Game, pauseGame } from './game.js?v=20261082';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261083';
+import { Game, pauseGame } from './game.js?v=20261083';
 
 // ============================================================
 // 存档（localStorage）
@@ -188,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261082');
+    const r=await fetch('charts.json?v=20261083');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -437,6 +437,7 @@ const ACHS=[
 // 界面初始化
 // ============================================================
 let sel={theme:'street', diff:'normal', song:'default'};
+let playStep=1;   // 选曲页分步：1=舞池 2=歌曲 3=难度
 let mainRef=null;   // main.js 注入 { startShow, switchTheme, applyQuality }
 
 export function initUI(main){
@@ -448,7 +449,7 @@ export function initUI(main){
     btn.addEventListener('click',()=>{
       sfxClick();
       const id=btn.dataset.scr;
-      if(id==='scr-play') renderPlay();
+      if(id==='scr-play'){ playStep=1; renderPlay(); }
       if(id==='scr-shop') renderShop();
       if(id==='scr-codex') renderCodex();
       if(id==='scr-ach')  renderAch();
@@ -462,7 +463,7 @@ export function initUI(main){
     });
   });
   document.getElementById('btnGoPlay').addEventListener('click',()=>{
-    sfxClick(); renderPlay(); showScreen('scr-play');
+    sfxClick(); playStep=1; renderPlay(); showScreen('scr-play');
   });
 
   // ---- 首页编号徽章：点击复制 ----
@@ -498,17 +499,19 @@ export function initUI(main){
     sfxClick(); showScreen('scr-home'); renderHome();
   });
 
-  // ---- ★ 选舞池页「开始表演」按钮（之前漏绑，导致点不动）----
-  document.getElementById('btnStart').addEventListener('click',()=>{
+  // ---- ★ 选曲页底部按钮：分步推进（我选好了 → 我选好了 → 开始表演）----
+  document.getElementById('btnNextStep').addEventListener('click',()=>{
     sfxClick();
-    ensureCtx();          // 确保 AudioContext 已解锁（首次点击触发）
-    startShow();
+    if(playStep<3){ playStep++; renderPlay(); }
+    else{ ensureCtx(); startShow(); }   // 第3步：开演
   });
 
-  // ---- ★ 选舞池页返回按钮（窄屏导航隐藏时保证能退回主界面）----
+  // ---- ★ 选曲页返回按钮：第1步回主界面，第2/3步回上一步 ----
   const btnPlayBack=document.getElementById('btnPlayBack');
   if(btnPlayBack) btnPlayBack.addEventListener('click',()=>{
-    sfxClick(); showScreen('scr-home'); renderHome();
+    sfxClick();
+    if(playStep>1){ playStep--; renderPlay(); }
+    else{ showScreen('scr-home'); renderHome(); }
   });
 
   // ---- 暂停按钮 ----
@@ -579,6 +582,21 @@ export function renderHome(){
 
 // ---------- 开跳页 ----------
 async function renderPlay(){
+  // ---- 步骤指示器 + 分区显隐 ----
+  const stepTitles={1:'🎵 选择舞池 <small>DANCE FLOOR</small>',2:'🎵 选择歌曲 <small>SELECT SONG</small>',3:'🔥 选择难度 <small>DIFFICULTY</small>'};
+  document.getElementById('playStepTitle').innerHTML=stepTitles[playStep];
+  document.querySelectorAll('#stepIndicator .step').forEach(el=>{
+    const s=+el.dataset.step;
+    el.classList.toggle('active', s===playStep);
+    el.classList.toggle('done', s<playStep);
+  });
+  document.getElementById('stepTheme').style.display = playStep===1?'':'none';
+  document.getElementById('stepSong').style.display  = playStep===2?'':'none';
+  document.getElementById('stepDiff').style.display  = playStep===3?'':'none';
+  // 底部按钮：第3步显示「开始表演」，其余显示「我选好了」
+  const nextBtn=document.getElementById('btnNextStep');
+  nextBtn.textContent = playStep===3 ? '🚀 开始表演' : '我选好了';
+
   // 上传入口：有服务器→存班级曲库；网页版→临时歌曲（刷新就没）
   const upBtn=document.getElementById('btnUploadSong');
   if(upBtn) upBtn.style.display='none';   // 旧的小按钮隐藏，改用下方彩色卡片

@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>奶娃街舞 · Dance Baby</title>
-<link rel="stylesheet" href="style.css?v=20261082">
+<link rel="stylesheet" href="style.css?v=20261083">
 </head>
 <body>
 
@@ -140,21 +140,37 @@
     </div>
   </section>
 
-  <!-- 开跳：选舞池 + 难度 -->
+  <!-- 开跳：分步选择（舞池 → 歌曲 → 难度） -->
   <section class="screen" id="scr-play">
     <div class="play-head">
       <button class="btn-back" id="btnPlayBack">← 返回</button>
-      <div class="sec-title" style="margin:0">🎵 选择舞池 <small>DANCE FLOOR</small></div>
+      <div class="sec-title" id="playStepTitle" style="margin:0">🎵 选择舞池 <small>DANCE FLOOR</small></div>
     </div>
-    <div class="theme-grid" id="themeGrid"></div>
-    <div class="sec-title">🎵 选择歌曲 <small>SELECT SONG</small>
-      <button class="btn-ghost up-entry" id="btnUploadSong">⬆️ 上传歌曲</button>
+    <div class="step-indicator" id="stepIndicator">
+      <span class="step active" data-step="1">① 舞池</span>
+      <span class="step-arrow">›</span>
+      <span class="step" data-step="2">② 歌曲</span>
+      <span class="step-arrow">›</span>
+      <span class="step" data-step="3">③ 难度</span>
     </div>
-    <div class="theme-grid" id="songGrid"></div>
-    <div class="sec-title">🔥 选择难度 <small>DIFFICULTY</small></div>
-    <div class="diff-row" id="diffRow"></div>
+    <!-- 第 1 步：选舞池 -->
+    <div class="play-step" id="stepTheme">
+      <div class="theme-grid" id="themeGrid"></div>
+    </div>
+    <!-- 第 2 步：选歌曲 -->
+    <div class="play-step" id="stepSong" style="display:none">
+      <div class="sec-title">🎵 选择歌曲 <small>SELECT SONG</small>
+        <button class="btn-ghost up-entry" id="btnUploadSong">⬆️ 上传歌曲</button>
+      </div>
+      <div class="theme-grid" id="songGrid"></div>
+    </div>
+    <!-- 第 3 步：选难度 -->
+    <div class="play-step" id="stepDiff" style="display:none">
+      <div class="sec-title">🔥 选择难度 <small>DIFFICULTY</small></div>
+      <div class="diff-row" id="diffRow"></div>
+    </div>
     <div class="play-foot">
-      <button class="btn-main" id="btnStart">🚀 开始表演</button>
+      <button class="btn-main" id="btnNextStep">我选好了</button>
       <div class="tip">← ↓ ↑ → 方向键 hit 箭头 · 节拍不准？去设置里校准 BPM 和延迟</div>
     </div>
   </section>
@@ -420,7 +436,7 @@
 }
 </script>
 <script src="js/codec.js?v=20260929l"></script>
-<script type="module" src="js/main.js?v=20261082"></script>
+<script type="module" src="js/main.js?v=20261083"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';
