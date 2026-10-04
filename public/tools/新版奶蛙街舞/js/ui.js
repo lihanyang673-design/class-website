@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261084';
-import { Game, pauseGame } from './game.js?v=20261084';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261085';
+import { Game, pauseGame } from './game.js?v=20261085';
 
 // ============================================================
 // 存档（localStorage）
@@ -188,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261084');
+    const r=await fetch('charts.json?v=20261085');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -722,10 +722,18 @@ async function renderPlay(){
     refreshCard.onclick=async ()=>{
       sfxClick();
       toast('🔄 正在清理缓存并刷新…');
-      // 清理可能缓存的曲库数据
+      // 只清 Cache Storage 里的代码文件（.html/.js/.css/.json），绝不碰 localStorage 里的存档/金币/记录/本地歌曲
       try{
-        const keys=Object.keys(localStorage).filter(k=>k.includes('chart')||k.includes('song')||k.includes('naiwa')||k.includes('dance'));
-        keys.forEach(k=>localStorage.removeItem(k));
+        if('caches' in window){
+          const CODE=/\.(html|js|css|json)(\?.*)?$/i;
+          for(const name of await caches.keys()){
+            const cache=await caches.open(name);
+            for(const req of await cache.keys()){
+              const p=new URL(req.url).pathname;
+              if(CODE.test(p)) await cache.delete(req);
+            }
+          }
+        }
       }catch(_){}
       // 强制刷新：加时间戳参数绕过所有缓存
       const url=new URL(location.href);
