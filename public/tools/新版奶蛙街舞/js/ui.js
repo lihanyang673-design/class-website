@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261092';
-import { Game, pauseGame } from './game.js?v=20261092';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261093';
+import { Game, pauseGame } from './game.js?v=20261093';
 
 // ============================================================
 // 存档（localStorage）
@@ -188,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261092');
+    const r=await fetch('charts.json?v=20261093');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -768,9 +768,9 @@ async function renderPlay(){
     const upCard=document.createElement('button');
     upCard.className='theme-card song-upload-card';
     upCard.style.background='linear-gradient(135deg,#ff9a3ccc,#ffe17acc)';
-    upCard.innerHTML=`<div class="tname" style="color:#3a1f00">${serverOn?'⬆️ 上传歌曲':'🎲 临时歌曲'}</div>
+    upCard.innerHTML=`<div class="tname" style="color:#3a1f00">${serverOn?'⬆️ 上传歌曲':'🎲 我的歌曲'}</div>
       <div class="tdesc" style="color:#5c3300">${serverOn?'上传本地音乐，自动生成谱面，全班可玩':'选一首本地音乐，自动保存到本地，下次打开还能玩'}</div>
-      <span class="tag" style="background:#3a1f00;color:#ffe17a">${serverOn?'AUTO CHART':'TEMP CHART'}</span>`;
+      <span class="tag" style="background:#3a1f00;color:#ffe17a">${serverOn?'AUTO CHART':'MY CHART'}</span>`;
     upCard.onclick=()=>{ ensureCtx(); sfxClick(); document.getElementById('btnUploadSong').click(); };
     sg.appendChild(upCard);
     // 去重后的全部歌曲：连着服务器时数据库版与内置版是同一首，只留数据库版；默认曲目数据库没有，单独保留
@@ -1314,7 +1314,7 @@ function bindUpload(){
     const head=document.querySelector('#uploadOv .up-head');
     const tip=document.querySelector('#uploadOv .up-tip');
     const note=document.querySelector('#uploadOv .up-note');
-    if(head) head.innerHTML=serverOn ? '⬆️ 上传歌曲 <small>AUTO CHART</small>' : '🎲 临时歌曲 <small>TEMP CHART</small>';
+    if(head) head.innerHTML=serverOn ? '⬆️ 上传歌曲 <small>AUTO CHART</small>' : '🎲 我的歌曲 <small>MY CHART</small>';
     if(tip) tip.textContent=serverOn
       ? '选一首音乐 → 浏览器自动分析节奏生成谱面 → 存进班级曲库，全班都能跳'
       : '选一首本地音乐 → 浏览器自动分析节奏生成谱面 → 自动保存到本地，下次打开还能玩';
