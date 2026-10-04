@@ -113,7 +113,7 @@ function ask(q){
   const start=uiCode.indexOf(marker)+marker.length;
   const end=uiCode.indexOf('];',start);
   const lines=prepared.map(p=>
-    `  {id:${q('u'+p.r.id)}, name:${q(p.name)}, artist:${q(p.artist)}, file:${q(p.fname)}, bpm:${p.r.bpm}, desc:${q(p.r.bpm+' BPM · 约'+minsOf(p.r.duration)+'分钟')}, cat:'builtin', staticChart:true, stars:${p.stars}},`
+    `  {id:${q('u'+p.r.id)}, name:${q(p.name)}, artist:${q(p.artist)}, file:${q(p.fname)}, bpm:${p.r.bpm}, desc:${q(p.r.bpm+' BPM · 约'+minsOf(p.r.duration)+'分钟')}, cat:'builtin', staticChart:true, stars:${p.stars}, diff:${p.density.toFixed(2)}},`
   );
   uiCode=uiCode.slice(0,end)+lines.join('\n')+'\n'+uiCode.slice(end);
 
