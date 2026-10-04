@@ -4,8 +4,8 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261060';
-import { doAction, stumble } from './dancer.js?v=20261060';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261070';
+import { doAction, stumble } from './dancer.js?v=20261070';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
 // ---------- 判定窗口（秒） ----------
@@ -68,8 +68,9 @@ function strSeed(s){
 //      → 方块在轨道间跳散，同轨永远不会连续紧挨（这是音游手感的关键）
 // 当前四档参数由用户拍板：地狱=旧狂热（无碎拍），狂热再下调。
 // 时间点全部取自存库密谱（对齐音乐），随机走 mulberry32 固定种子 → 同一首歌每次一样。
-function chartNotes(chart, diff, durSec, seedStr){
+export function chartNotes(chart, diff, durSec, seedStr, minGap){
   const end = Math.max(4, durSec - 0.5);
+  const gap = minGap || MIN_GAP;   // 无尽模式放宽到 0.18s（视野扩大后大空隙现形）；其他难度沿用 0.22s
   const P = {
     easy  : {cand:4, rest:0.25, dbl:0.00, burst:0.00},
     casual: {cand:2, rest:0.55, dbl:0.02, burst:0.00},
@@ -92,7 +93,7 @@ function chartNotes(chart, diff, durSec, seedStr){
     const t=+chart[i].t;
     if(t<1.0 || t>end) continue;
     if(rnd() < P.rest) continue;                    // 原版：按概率休息（休息不换道）
-    if(t - lastT < MIN_GAP) continue;               // 与上一个方块太近（高 BPM 半拍）→ 强制休息
+    if(t - lastT < gap) continue;               // 与上一个方块太近（高 BPM 半拍）→ 强制休息
     add(t, lane); lastT=t;
     if(P.dbl && rnd() < P.dbl){                     // 原版：按概率双押（第二轨必不同于本轨）
       add(t, (lane + 1 + ((rnd()*3)|0)) % 4);
@@ -191,7 +192,7 @@ export function startGame(cfg, defer){
   const endless = cfg.diff==='endless';
   const gdiff = endless ? 'hard' : cfg.diff;    // 无尽谱面密度 = 地狱
   Game.notes = cfg.chart && cfg.chart.length
-    ? chartNotes(cfg.chart, gdiff, cfg.duration, cfg.songId||'')
+    ? chartNotes(cfg.chart, gdiff, cfg.duration, cfg.songId||'', endless?0.18:MIN_GAP)
     : genChart(gdiff, cfg.bpm, cfg.duration, cfg.offset/1000, cfg.songId||'');
   Game.score=0; Game.combo=0; Game.maxCombo=0;  // 任何难度（含无尽）计分都从 0 开始
   Game.cnt={perfect:0,good:0,miss:0};
@@ -498,7 +499,7 @@ function nextRound(wrap){
     E.nextBoundary = E.segLen;    // 段界在新圈内重新计
     // 重新生成同一圈谱面并平移追加（notes 保持有序，滑动窗口/判定逻辑全部无感复用）
     let seg;
-    if(cfg.chart && cfg.chart.length) seg=chartNotes(cfg.chart,'hard',cfg.duration,cfg.songId||'');
+    if(cfg.chart && cfg.chart.length) seg=chartNotes(cfg.chart,'hard',cfg.duration,cfg.songId||'',0.18);
     else seg=genChart('hard',cfg.bpm,cfg.duration,cfg.offset/1000,cfg.songId||'');
     // 只追加音符数据，不建DOM（延迟创建会在它们进场前逐个建，避免一圈结束时顿卡）
     for(const n of seg){ n.t += E.base; Game.notes.push(n); }
