@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261111';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261111';
-import { Game, pauseGame } from './game.js?v=20261111';
+import { analyzeAudio } from './analyze.js?v=20261112';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261112';
+import { Game, pauseGame } from './game.js?v=20261112';
 
 // ============================================================
 // 存档（localStorage）
@@ -136,6 +136,9 @@ export const THEMES=[
   {id:'space',  name:'太空蹦迪', desc:'失重节拍，银河打碟',
    bg:0x050514, fog:[14,44], floor:0x101028, ring:0x7a4dff, c1:0x7a4dff, c2:0x36ffc2,
    lampA:1, lampB:1, sky:'stars'},
+  {id:'it6', name:'奶蛙1', desc:'自定义图片背景', bgImage:'1791122474781_871541451.jpg', fromDb:6},
+  {id:'it7', name:'奶蛙2', desc:'自定义图片背景', bgImage:'1791122485709_216242919.jpg', fromDb:7},
+  {id:'it8', name:'奶蛙3', desc:'自定义图片背景', bgImage:'1791122502789_885100847.jpg', fromDb:8},
 ];
 
 // 歌曲库：只保留真实存在的内置曲 music.mp3。
@@ -205,7 +208,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261111');
+    const r=await fetch('charts.json?v=20261112');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
