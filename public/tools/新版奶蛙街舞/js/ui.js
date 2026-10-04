@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261109';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261109';
-import { Game, pauseGame } from './game.js?v=20261109';
+import { analyzeAudio } from './analyze.js?v=20261110';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261110';
+import { Game, pauseGame } from './game.js?v=20261110';
 
 // ============================================================
 // 存档（localStorage）
@@ -205,7 +205,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261109');
+    const r=await fetch('charts.json?v=20261110');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -1461,6 +1461,7 @@ function bindThemeUpload(){
     stage.textContent='支持 jpg / png / webp / gif，10MB 以内';
     editor.classList.remove('on');
     cropOv.classList.remove('on');
+    ov.classList.remove('on');   // 上传成功后回到选舞池界面，别把选图弹窗留在屏幕上
     pickedLine.hidden=true; pickedLine.textContent='';
     if(imgURL){ URL.revokeObjectURL(imgURL); imgURL=null; img.removeAttribute('src'); }
     nextBtn.disabled=true; confirmBtn.disabled=true; nameIn.value='';

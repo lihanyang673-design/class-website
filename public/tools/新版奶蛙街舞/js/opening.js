@@ -8,7 +8,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { ensureCtx, sfxWhoosh, sfxBoop, sfxBoing, sfxOutro } from './audio.js?v=20261109';
+import { ensureCtx, sfxWhoosh, sfxBoop, sfxBoing, sfxOutro } from './audio.js?v=20261110';
 
 export const Opening = { active:false };
 
