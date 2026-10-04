@@ -39,8 +39,21 @@ export const Dancer = {
 };
 
 // 小补间工具：把 obj[axis] 从当前值补到 to
+// 【动作分组 tag】同一次 doAction/stumble/celebrate 里推的补间同组；
+// 新动作开始时，把同一关节(obj+axis)上"别的组"的补间全部撤掉——
+// 否则上一动作的回程动画还在跑、新动作又写这个关节，两批补间每帧互相覆盖，
+// 关节数值瞬移，看起来就是肢体错位、抽一下。
+let _curTag = null, _tagSeq = 0;
+function beginGroup(name){ _curTag = name + (++_tagSeq); }
 function tw(obj, axis, to, dur, ease='outQuad', delay=0, amp=1){
-  Dancer._tweens.push({ obj, axis, from:null, to:to*amp, t0:performance.now()+delay, dur, ease });
+  const tag = _curTag;
+  if(tag!==null){
+    for(let i=Dancer._tweens.length-1;i>=0;i--){
+      const w = Dancer._tweens[i];
+      if(w.obj===obj && w.axis===axis && w.tag!==tag) Dancer._tweens.splice(i,1);
+    }
+  }
+  Dancer._tweens.push({ obj, axis, from:null, to:to*amp, t0:performance.now()+delay, dur, ease, tag });
 }
 const EASE = {
   outQuad  : t=>1-(1-t)*(1-t),
@@ -258,6 +271,7 @@ const P = ()=>Dancer.parts;
 export function doAction(dir, quality='good'){
   const amp = quality==='perfect' ? 1.28 : 1.0;
   const parts = P(); if(!parts.armL) return;
+  beginGroup('act');   // 本次所有 tw 同组，组内"去程+回程"不互相取消；旧动作的补间被清掉
 
   if(dir === 0){                       // ← 甩左手（大回环鞭手）
     tw(parts.armL.pose,'z', -2.6, 130, 'outQuad', 0, amp);
@@ -285,7 +299,10 @@ export function doAction(dir, quality='good'){
   else if(dir === 3){                  // → 整体大回旋 360°
     const b = Dancer.body;
     tw(b.rotation,'y', Math.PI*2, 420, 'inOutCubic', 0, amp);
-    setTimeout(()=>{ if(Dancer.body===b) b.rotation.y = 0; }, 460);  // 转完归零（360°≡0）
+    // 转完归零（360°≡0）；若这 460ms 内又有新的转身补间，就别硬归零打断它
+    setTimeout(()=>{
+      if(Dancer.body===b && !Dancer._tweens.some(w=>w.obj===b.rotation && w.axis==='y')) b.rotation.y = 0;
+    }, 460);
     tw(b.scale,'x', 0.82, 150, 'outQuad', 0, amp);
     tw(b.scale,'x', 1,  460, 'outElastic', 160);
     if(parts.armR){ tw(parts.armR.pose,'z', 2.6, 140, 'outQuad', 0, amp); tw(parts.armR.pose,'z', 0, 500, 'outElastic', 150); }
@@ -298,6 +315,7 @@ export function stumble(){
   const now = performance.now();
   if(now - _stumbleT < 320) return;    // 节流，连 miss 不至于抽搐
   _stumbleT = now;
+  beginGroup('miss');
   const b = Dancer.body;
   if(!b) return;   // ★ 舞者尚未加载就位时忽略（防止游戏循环刷空引用错误）
   tw(b.rotation,'z',  0.3, 90, 'outQuad');
@@ -317,12 +335,13 @@ export function stumble(){
 // 结算庆祝：蹦跳 + 挥双手 + 转圈
 export function celebrate(){
   const parts = P(); const b = Dancer.body;
+  beginGroup('cel');
   for(let i=0;i<3;i++){
     tw(b.position,'y', 0.55, 180, 'outQuad', i*420);
     tw(b.position,'y', 0,    240, 'outQuad', i*420+190);
   }
   tw(b.rotation,'y', Math.PI*2, 700, 'inOutCubic', 200);
-  setTimeout(()=>{ b.rotation.y = 0; }, 950);
+  setTimeout(()=>{ if(!Dancer._tweens.some(w=>w.obj===b.rotation && w.axis==='y')) b.rotation.y = 0; }, 950);
   if(parts.armL){ tw(parts.armL.pose,'z', -2.8, 200, 'outBack');  tw(parts.armL.pose,'z', 0, 600, 'outElastic', 800); }
   if(parts.armR){ tw(parts.armR.pose,'z',  2.8, 200, 'outBack');  tw(parts.armR.pose,'z', 0, 600, 'outElastic', 800); }
 }
@@ -331,6 +350,7 @@ export function celebrate(){
 export function lieDown(){
   const b = Dancer.body; if(!b) return;
   const parts = P();
+  beginGroup('lie');
   tw(b.rotation,'x', -Math.PI*0.46, 520, 'outQuad');   // 向后倒下接近躺平
   tw(b.position,'y', (Dancer._baseY||0) - 0.35, 520, 'outQuad');
   if(parts.armL){ tw(parts.armL.pose,'z', -0.55, 420, 'outQuad'); }
@@ -396,21 +416,21 @@ export function updateDancer(dt, bpm, dancing){
       b.scale.x = 1 + s * 0.04 * e;
       b.scale.y = 1 - s * 0.04 * e;
     }
-    // 整体左右大幅摇摆
+    // 整体左右摇摆（动作补间占用 rotation 时不抢）
     if(!Dancer._tweens.some(w=>w.obj===b.rotation)){
-      b.rotation.z = s * 0.12 * e;
-      b.rotation.y = c * 0.15 * e;
+      b.rotation.z = s * 0.09 * e;
+      b.rotation.y = c * 0.13 * e;
     }
-    // 手臂：大幅上下甩动（左右交替）
-    if(parts.armL){ parts.armL.idle.x = s * 0.9 * e; parts.armL.idle.z = s2 * 0.4 * e; }
-    if(parts.armR){ parts.armR.idle.x = -s * 0.9 * e; parts.armR.idle.z = -s2 * 0.4 * e; }
-    // 肚子：左右扭
-    if(parts.belly){ parts.belly.idle.y = s * 0.35 * e; parts.belly.idle.z = c * 0.12 * e; }
-    // 腿：左右交替踏步
-    if(parts.legL){ parts.legL.idle.x = Math.max(0,s) * 0.7 * e; parts.legL.idle.z = s2 * 0.2 * e; }
-    if(parts.legR){ parts.legR.idle.x = Math.max(0,-s) * 0.7 * e; parts.legR.idle.z = -s2 * 0.2 * e; }
-    // 头：跟节拍点头
-    if(parts.head){ parts.head.idle.x = c * 0.25 * e; parts.head.idle.z = s * 0.15 * e; }
+    // 手臂：跟随节拍甩动（幅度收一档，给 doAction 的大动作留空间，两轴叠加不拧麻花）
+    if(parts.armL){ parts.armL.idle.x = s * 0.55 * e; parts.armL.idle.z = s2 * 0.22 * e; }
+    if(parts.armR){ parts.armR.idle.x = -s * 0.55 * e; parts.armR.idle.z = -s2 * 0.22 * e; }
+    // 肚子：左右扭（幅度小一点，重叠带边界三角不会和手臂错开成碎片）
+    if(parts.belly){ parts.belly.idle.y = s * 0.20 * e; parts.belly.idle.z = c * 0.08 * e; }
+    // 腿：左右交替踏步（收一档，踢腿动作时脚不穿进身体）
+    if(parts.legL){ parts.legL.idle.x = Math.max(0,s) * 0.45 * e; parts.legL.idle.z = s2 * 0.1 * e; }
+    if(parts.legR){ parts.legR.idle.x = Math.max(0,-s) * 0.45 * e; parts.legR.idle.z = -s2 * 0.1 * e; }
+    // 头：跟节拍轻点
+    if(parts.head){ parts.head.idle.x = c * 0.18 * e; parts.head.idle.z = s * 0.1 * e; }
   }else{
     // ========== 待机：整体轻微扭动 + 呼吸，局部几乎不动（防撕裂）==========
     const e = 0.55;
