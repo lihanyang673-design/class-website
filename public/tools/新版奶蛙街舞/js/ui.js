@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261088';
-import { Game, pauseGame } from './game.js?v=20261088';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261089';
+import { Game, pauseGame } from './game.js?v=20261089';
 
 // ============================================================
 // 存档（localStorage）
@@ -188,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261088');
+    const r=await fetch('charts.json?v=20261089');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -1130,35 +1130,12 @@ function bindSettings(){
   off.value=d.offset;  $('setOffsetV').textContent=d.offset+'ms';
   bpm.value=d.bpm;     $('setBpmV').textContent=d.bpm;
   $('setSfx').value=String(d.sfx);
-  // 箭头速度：下拉快捷档位 + 数字框自定义，双向联动
-  const speedSel=$('setSpeed'), speedNum=$('setSpeedNum');
-  speedNum.value=d.speed;
-  const syncSpeedSel=()=>{
-    let opt=[...speedSel.options].find(o=>Math.abs(+o.value-d.speed)<1e-9);
-    if(!opt){   // 不在四个档位里 → 补一个临时的「自定义」选项
-      opt=speedSel.querySelector('option[data-c]');
-      if(!opt){ opt=new Option('自定义 '+d.speed+'×', String(d.speed)); opt.dataset.c='1'; speedSel.add(opt); }
-      else{ opt.value=String(d.speed); opt.textContent='自定义 '+d.speed+'×'; }
-    }
-    speedSel.value=opt.value;
-  };
-  syncSpeedSel();
   $('setQuality').value=String(d.quality);
 
   vol.oninput=()=>{ d.vol=vol.value/100; $('setVolV').textContent=vol.value+'%'; applyVolume(); Store.save(); };
   off.oninput=()=>{ d.offset=+off.value; $('setOffsetV').textContent=off.value+'ms'; Store.save(); };
   bpm.oninput=()=>{ d.bpm=+bpm.value; $('setBpmV').textContent=bpm.value; Store.save(); };
   $('setSfx').onchange=e=>{ d.sfx=+e.target.value; setSfxEnabled(!!d.sfx); Store.save(); };
-  speedSel.onchange=()=>{ d.speed=+speedSel.value; speedNum.value=d.speed; Store.save(); };
-  speedNum.onchange=()=>{
-    let v=parseFloat(speedNum.value);
-    if(isNaN(v)){ speedNum.value=d.speed; return; }
-    v=Math.min(3, Math.max(0.5, v));          // 允许 0.5~3.0
-    d.speed=Math.round(v*100)/100;
-    speedNum.value=d.speed;
-    syncSpeedSel();
-    Store.save();
-  };
   $('setQuality').onchange=e=>{ d.quality=+e.target.value; mainRef.applyQuality(d.quality); Store.save(); };
 
   // 跟拍测 BPM：连续点击间隔取平均

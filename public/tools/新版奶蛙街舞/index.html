@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>奶娃街舞 · Dance Baby</title>
-<link rel="stylesheet" href="style.css?v=20261088">
+<link rel="stylesheet" href="style.css?v=20261089">
 </head>
 <body>
 
@@ -125,13 +125,13 @@
     <div class="home-grid">
       <button class="home-card" data-scr="scr-play"><span class="ic">🎵</span>选舞池开跳</button>
       <button class="home-card" data-scr="scr-shop"><span class="ic">👕</span>涂装工坊</button>
-      <button class="home-card" data-scr="scr-codex"><span class="ic">📖</span>舞步图鉴</button>
+      <button class="home-card" data-scr="scr-help"><span class="ic">❓</span>帮助</button>
       <button class="home-card" data-scr="scr-rank"><span class="ic">🏆</span>我的纪录</button>
       <button class="home-card" data-scr="scr-board" id="homeBtnBoard"><span class="ic">📊</span>排行榜</button>
       <button class="home-card" data-scr="scr-endless" id="homeBtnEndless"><span class="ic">♾</span>无尽榜</button>
       <button class="home-card" data-scr="scr-ach"><span class="ic">🎯</span>挑战之路</button>
       <button class="home-card" data-scr="scr-set"><span class="ic">⚙️</span>游戏设置</button>
-      <button class="home-card" data-scr="scr-help"><span class="ic">❓</span>帮助</button>
+      <button class="home-card" data-scr="scr-codex"><span class="ic">📖</span>舞步图鉴</button>
     </div>
     <div class="home-stats">
       <div class="st">累计开跳<b id="stPlays">0</b>次</div>
@@ -276,17 +276,6 @@
       <span class="sv" id="setBpmV">104</span>
       <button class="btn-ghost" id="btnTap">👆 跟着节奏点我</button>
       <span class="mini-tip">跟着音乐鼓点连点这个按钮，自动测出 BPM（点 4 下以上生效）</span>
-    </div>
-    <div class="set-item">
-      <span class="sl">🚀 箭头速度</span>
-      <select id="setSpeed">
-        <option value="0.7">悠闲 0.7×</option>
-        <option value="1" selected>标准 1.0×</option>
-        <option value="1.3">疾风 1.3×</option>
-        <option value="1.6">闪电 1.6×</option>
-      </select>
-      <input type="number" id="setSpeedNum" class="speed-num" min="0.5" max="3" step="0.1" value="1">
-      <span class="mini-tip">数字越大方块飞得越快，可手动输入 0.5~3.0（标准 1.0）；只影响四个普通模式，无尽模式不受影响</span>
     </div>
     <div class="set-item">
       <span class="sl">🖥️ 画面质量</span>
@@ -465,7 +454,7 @@
 }
 </script>
 <script src="js/codec.js?v=20260929l"></script>
-<script type="module" src="js/main.js?v=20261088"></script>
+<script type="module" src="js/main.js?v=20261089"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';
