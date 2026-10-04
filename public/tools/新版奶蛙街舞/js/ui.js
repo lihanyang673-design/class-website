@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261097';
-import { Game, pauseGame } from './game.js?v=20261097';
+import { analyzeAudio } from './analyze.js?v=20261105';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261107';
+import { Game, pauseGame } from './game.js?v=20261107';
 
 // ============================================================
 // 存档（localStorage）
@@ -167,6 +167,7 @@ export const SONGS=[
   {id:'u37', name:'九九八十一', artist:'乐正绫', file:'1791092773223_119670223.mp3', bpm:149, desc:'149 BPM · 约4.7分钟', cat:'builtin', staticChart:true, stars:4},
   {id:'u38', name:'忘情牛肉面', artist:'马健涛', file:'1791099498004_292032976.mp3', bpm:130, desc:'130 BPM · 约3分钟', cat:'builtin', staticChart:true, stars:4},
   {id:'u39', name:'雨爱', artist:'泡泡心', file:'1791113581381_316393854.mp3', bpm:162, desc:'162 BPM · 约3.9分钟', cat:'builtin', staticChart:true, stars:5},
+  {id:'u40', name:'坏女孩', artist:'徐良&小凌', file:'1791116189863_102373838.mp3', bpm:127, desc:'127 BPM · 约4.1分钟', cat:'builtin', staticChart:true, stars:3},
 ];
 
 // 歌曲分类（渲染时每组带小标题；空的分组会自动跳过）
@@ -189,7 +190,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261097');
+    const r=await fetch('charts.json?v=20261107');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
