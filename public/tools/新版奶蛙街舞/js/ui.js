@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261085';
-import { Game, pauseGame } from './game.js?v=20261085';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261086';
+import { Game, pauseGame } from './game.js?v=20261086';
 
 // ============================================================
 // 存档（localStorage）
@@ -188,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261085');
+    const r=await fetch('charts.json?v=20261086');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -656,6 +656,12 @@ export function showStageUI(on){
 
 // ---------- 主界面 ----------
 export function renderHome(){
+  // GitHub 静态版：排行榜和无尽榜需要班级服务器，直接隐藏入口
+  const isStatic = location.hostname.includes('github.io') || location.protocol==='file:';
+  const bBoard=document.getElementById('homeBtnBoard');
+  const bEndless=document.getElementById('homeBtnEndless');
+  if(bBoard) bBoard.style.display = isStatic ? 'none' : '';
+  if(bEndless) bEndless.style.display = isStatic ? 'none' : '';
   const s=Store.data.stats;
   document.getElementById('stPlays').textContent=s.plays;
   document.getElementById('stBest').textContent=(s.bestRel||0).toLocaleString();
@@ -928,7 +934,7 @@ function renderRankList(diff){
   const help=document.querySelector('#scr-rank .rank-help');
   // ★ 无尽页签：本地记录按绝对分排，结构与普通难度不同
   if(diff==='endless'){
-    help.innerHTML='💡 <b>无尽记录只看绝对分。</b>无尽模式计分从 0 开始，看你在 ❤×10 打光之前能攒下多少总分。每条记录都备注了<b>曲目、坚持段数、连击和日期</b>，只保存在你这台设备上（全班排名请看「♾ 无尽榜」）。';
+    help.innerHTML='💡 <b>无尽记录只看绝对分。</b>无尽模式计分从 0 开始，看你在 ❤×10 打光之前能攒下多少总分。每条记录都备注了<b>曲目、坚持段数、连击和日期</b>，只保存在你这台设备上（全班排名需在校园网版查看）。';
     const arr=[...(Store.data.scores.endless||[])].sort((a,b)=>b.score-a.score).slice(0,5);
     if(!arr.length){ list.innerHTML='<div class="rank-empty">暂无无尽纪录 —— 去撑一波！</div>'; return; }
     arr.forEach((r,i)=>{
