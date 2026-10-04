@@ -289,8 +289,8 @@ export function doAction(dir, quality='good'){
     tw(Dancer.body.position,'y',  0,  430, 'outElastic', 140);
   }
   else if(dir === 2){                  // ↑ 扭肚子 + 抬头
-    tw(parts.belly.pose,'y',  0.62, 140, 'outQuad', 0, amp);
-    tw(parts.belly.pose,'y', -0.42, 240, 'inOutCubic', 150);
+    tw(parts.belly.pose,'y',  0.5, 140, 'outQuad', 0, amp);
+    tw(parts.belly.pose,'y', -0.32, 240, 'inOutCubic', 150);
     tw(parts.belly.pose,'y',  0,   420, 'outElastic', 400);
     if(parts.head){ tw(parts.head.pose,'x', -0.62, 150, 'outBack', 0, amp); tw(parts.head.pose,'x', 0, 520, 'outElastic', 180); }
     tw(Dancer.body.scale,'x', 0.9, 130, 'outQuad', 0, amp);
@@ -425,7 +425,7 @@ export function updateDancer(dt, bpm, dancing){
     if(parts.armL){ parts.armL.idle.x = s * 0.55 * e; parts.armL.idle.z = s2 * 0.22 * e; }
     if(parts.armR){ parts.armR.idle.x = -s * 0.55 * e; parts.armR.idle.z = -s2 * 0.22 * e; }
     // 肚子：左右扭（幅度小一点，重叠带边界三角不会和手臂错开成碎片）
-    if(parts.belly){ parts.belly.idle.y = s * 0.20 * e; parts.belly.idle.z = c * 0.08 * e; }
+    if(parts.belly){ parts.belly.idle.y = s * 0.14 * e; parts.belly.idle.z = c * 0.06 * e; }
     // 腿：左右交替踏步（收一档，踢腿动作时脚不穿进身体）
     if(parts.legL){ parts.legL.idle.x = Math.max(0,s) * 0.45 * e; parts.legL.idle.z = s2 * 0.1 * e; }
     if(parts.legR){ parts.legR.idle.x = Math.max(0,-s) * 0.45 * e; parts.legR.idle.z = -s2 * 0.1 * e; }
