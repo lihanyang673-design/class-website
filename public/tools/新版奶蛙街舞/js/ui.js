@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261093';
-import { Game, pauseGame } from './game.js?v=20261093';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261094';
+import { Game, pauseGame } from './game.js?v=20261094';
 
 // ============================================================
 // 存档（localStorage）
@@ -188,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261093');
+    const r=await fetch('charts.json?v=20261094');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -764,13 +764,21 @@ async function renderPlay(){
   const sg=document.getElementById('songGrid');
   if(sg){
     sg.innerHTML='';
-    // 上传/临时歌曲卡片：放在所有星级分区的最上面，颜色醒目（暖黄渐变，和歌曲卡片区分）
+    // 上传/我的歌曲卡片：放在所有星级分区的最上面；上传歌曲用暖黄渐变，我的歌曲用紫蓝渐变，两者区分
     const upCard=document.createElement('button');
     upCard.className='theme-card song-upload-card';
-    upCard.style.background='linear-gradient(135deg,#ff9a3ccc,#ffe17acc)';
-    upCard.innerHTML=`<div class="tname" style="color:#3a1f00">${serverOn?'⬆️ 上传歌曲':'🎲 我的歌曲'}</div>
-      <div class="tdesc" style="color:#5c3300">${serverOn?'上传本地音乐，自动生成谱面，全班可玩':'选一首本地音乐，自动保存到本地，下次打开还能玩'}</div>
-      <span class="tag" style="background:#3a1f00;color:#ffe17a">${serverOn?'AUTO CHART':'MY CHART'}</span>`;
+    if(serverOn){
+      upCard.style.background='linear-gradient(135deg,#ff9a3ccc,#ffe17acc)';
+      upCard.innerHTML=`<div class="tname" style="color:#3a1f00">⬆️ 上传歌曲</div>
+        <div class="tdesc" style="color:#5c3300">上传本地音乐，自动生成谱面，全班可玩</div>
+        <span class="tag" style="background:#3a1f00;color:#ffe17a">AUTO CHART</span>`;
+    }else{
+      upCard.className='theme-card song-upload-card my-song-card';
+      upCard.style.background='linear-gradient(135deg,#7a4dffcc,#36d1ffcc)';
+      upCard.innerHTML=`<div class="tname" style="color:#fff">🎲 我的歌曲</div>
+        <div class="tdesc" style="color:#e0e0ff">选一首本地音乐，自动保存到本地，下次打开还能玩</div>
+        <span class="tag" style="background:#fff;color:#7a4dff">MY CHART</span>`;
+    }
     upCard.onclick=()=>{ ensureCtx(); sfxClick(); document.getElementById('btnUploadSong').click(); };
     sg.appendChild(upCard);
     // 去重后的全部歌曲：连着服务器时数据库版与内置版是同一首，只留数据库版；默认曲目数据库没有，单独保留
