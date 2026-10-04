@@ -262,6 +262,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .step-indicator .step.done{
   color:var(--cyan);border-color:var(--cyan);
 }
+.step-indicator .step.disabled{
+  opacity:.4;
+}
 .step-indicator .step-arrow{color:var(--sub);font-size:16px;font-weight:900}
 .play-step{animation:stepFade .3s ease}
 @keyframes stepFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}

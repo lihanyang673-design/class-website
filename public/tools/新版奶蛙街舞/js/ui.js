@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261091';
-import { Game, pauseGame } from './game.js?v=20261091';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261092';
+import { Game, pauseGame } from './game.js?v=20261092';
 
 // ============================================================
 // 存档（localStorage）
@@ -188,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261091');
+    const r=await fetch('charts.json?v=20261092');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -548,6 +548,14 @@ export function initUI(main){
   document.getElementById('btnGoPlay').addEventListener('click',()=>{
     sfxClick(); playStep=1; renderPlay(); showScreen('scr-play');
   });
+  // ---- ★ 步骤指示器：点击已完成/当前步骤可跳转（未到达的步骤不可点）----
+  document.querySelectorAll('#stepIndicator .step').forEach(el=>{
+    el.style.cursor='pointer';
+    el.addEventListener('click',()=>{
+      const s=+el.dataset.step;
+      if(s<=playStep){ sfxClick(); playStep=s; renderPlay(); }
+    });
+  });
 
   // ---- 首页编号徽章：点击复制 ----
   document.getElementById('btnHomeCopyId').addEventListener('click',async ()=>{
@@ -724,6 +732,8 @@ async function renderPlay(){
     const s=+el.dataset.step;
     el.classList.toggle('active', s===playStep);
     el.classList.toggle('done', s<playStep);
+    el.classList.toggle('disabled', s>playStep);
+    el.style.cursor = s<=playStep ? 'pointer' : 'not-allowed';
   });
   document.getElementById('stepTheme').style.display = playStep===1?'':'none';
   document.getElementById('stepSong').style.display  = playStep===2?'':'none';
