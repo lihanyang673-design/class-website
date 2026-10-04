@@ -651,7 +651,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* 歌卡上的删除角标 */
 .song-del{
-  position:absolute;bottom:8px;right:8px;z-index:2;
+  position:absolute;bottom:8px;right:100px;z-index:2;
   width:28px;height:28px;line-height:28px;border-radius:50%;
   background:#00000066;font-size:14px;text-align:center;
   opacity:0;transition:.15s;
@@ -659,7 +659,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .theme-card:hover .song-del{opacity:1}
 .song-del:hover{background:var(--pink);transform:scale(1.12)}
 .song-regen{
-  position:absolute;bottom:8px;right:42px;z-index:2;
+  position:absolute;bottom:8px;right:64px;z-index:2;
   width:28px;height:28px;line-height:28px;border-radius:50%;
   background:#00000066;font-size:14px;text-align:center;
   opacity:0;transition:.15s;
@@ -667,11 +667,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .theme-card:hover .song-regen{opacity:1}
 .song-regen:hover{background:var(--cyan);transform:scale(1.12)}
 
-/* 歌卡试听角标（左下角）：播放中变绿并轻微跳动 */
+/* 歌卡试听按钮（右下角）：显示汉字"试听"，播放中变"暂停"并轻微跳动 */
 .song-preview{
-  position:absolute;bottom:8px;left:8px;z-index:2;
-  width:28px;height:28px;line-height:28px;border-radius:50%;
-  background:#00000066;font-size:13px;text-align:center;
+  position:absolute;bottom:8px;right:8px;z-index:2;
+  padding:0 10px;height:28px;line-height:28px;border-radius:14px;
+  background:#00000066;font-size:13px;text-align:center;white-space:nowrap;
   opacity:0;transition:.15s;cursor:pointer;
 }
 .theme-card:hover .song-preview{opacity:1}
