@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261099';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261099';
-import { Game, pauseGame } from './game.js?v=20261099';
+import { analyzeAudio } from './analyze.js?v=20261100';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261100';
+import { Game, pauseGame } from './game.js?v=20261100';
 
 // ============================================================
 // 存档（localStorage）
@@ -192,13 +192,20 @@ function songDiff(s){
   if(s.chart && s.duration>0) return s.chart.length/s.duration;
   return (s.bpm||100)/15;
 }
+// 自定义舞池删除权限：本地舞池自己随便删；服务器舞池仅上传者本人或管理员
+function canDeleteTheme(t){
+  if(!t.custom) return false;
+  if(t.temp) return true;
+  if(!myIdentity) return false;
+  return t.uploaderId===myIdentity.id || myIdentity.isAdmin;
+}
 
 // 静态版预置谱面（从 charts.json 加载）
 export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261099');
+    const r=await fetch('charts.json?v=20261100');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -213,16 +220,21 @@ export async function loadStaticCharts(){
 // 玩家上传歌曲（存班级网站数据库，全班共享）
 // ============================================================
 export const USER_SONGS={ list:[], loaded:false, loadError:false };
+
 // 临时歌曲（网页版专用）：选本地文件→浏览器分析→直接玩
 // 音频 Blob 存 IndexedDB，元数据存 localStorage，刷新页面后仍可恢复
 export const TEMP_SONGS=[];
+// 自定义舞池：服务器版 → USER_THEMES（全班共享）；离线版 → TEMP_THEMES（本地保存）
+export const USER_THEMES={ list:[] };
+export const TEMP_THEMES=[];
 let myIdentity=null;   // /api/me：{id, isAdmin}，用于判断能否删除
 let serverOn=false;    // 是否连着班级服务器（静态版为 false → 上传走临时模式，在线排行不可用）
 
-// ===== 本地持久化：IndexedDB 存音频 Blob，localStorage 存元数据 =====
+// ===== 本地持久化：IndexedDB 存音频/图片 Blob，localStorage 存元数据 =====
 const TEMP_DB='naiwa_dance_local';     // IndexedDB 数据库名
-const TEMP_STORE='songs';              // objectStore 名
+const TEMP_STORE='songs';              // objectStore 名（歌曲和舞池图片共用，id 前缀区分）
 const TEMP_META_KEY='naiwa_dance_tempsongs_v1';  // localStorage 元数据 key
+const TEMP_THEME_META_KEY='naiwa_dance_tempthemes_v1';  // 本地舞池元数据 key
 // 打开/初始化 IndexedDB（异步单例 Promise）
 let _dbP=null;
 function openDB(){
@@ -302,6 +314,40 @@ async function loadTempSongs(){
   console.log('%c[临时歌曲] 已恢复 '+ok.length+' 首', 'color:#36d1ff;font-weight:bold');
 }
 
+// ===== 自定义舞池：本地持久化（和临时歌曲同一套 IndexedDB，id 用 'tt' 前缀）=====
+function saveTempThemeMeta(list){
+  try{ localStorage.setItem(TEMP_THEME_META_KEY, JSON.stringify(list.map(t=>({
+    id:t.id, name:t.name, createdAt:t.createdAt||Date.now(),
+  })))); }catch(e){ console.warn('[本地舞池] 元数据保存失败', e); }
+}
+async function loadTempThemes(){
+  let metas=[];
+  try{ metas=JSON.parse(localStorage.getItem(TEMP_THEME_META_KEY))||[]; }catch{ metas=[]; }
+  if(!metas.length) return;
+  const ok=[];
+  for(const m of metas){
+    try{
+      const blob=await getTempBlob(m.id);
+      if(!blob) continue;   // 图片 Blob 丢了就跳过
+      ok.push({ id:m.id, name:m.name, bgImage:URL.createObjectURL(blob),
+                custom:true, temp:true, createdAt:m.createdAt });
+    }catch(e){ console.warn('[本地舞池] 恢复失败', m.id, e); }
+  }
+  if(ok.length!==metas.length) saveTempThemeMeta(ok);
+  TEMP_THEMES.push(...ok);
+  console.log('%c[本地舞池] 已恢复 '+ok.length+' 个', 'color:#ff9a3c;font-weight:bold');
+}
+// 图片压缩：最长边 1920px，统一转 jpeg 0.85（背景足够清晰，文件小加载快）
+async function compressImage(file){
+  const bitmap=await createImageBitmap(file);
+  const scale=Math.min(1, 1920/Math.max(bitmap.width,bitmap.height));
+  const w=Math.max(1,Math.round(bitmap.width*scale)), h=Math.max(1,Math.round(bitmap.height*scale));
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  cv.getContext('2d').drawImage(bitmap,0,0,w,h);
+  try{ bitmap.close&&bitmap.close(); }catch{}
+  return await new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error('压缩失败')),'image/jpeg',0.85));
+}
+
 function fmtDur(s){
   s=Math.round(s||0);
   return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
@@ -346,6 +392,27 @@ export function getSongById(id){
   return TEMP_SONGS.find(s=>s.id===id)
     || USER_SONGS.list.find(s=>s.id===id)
     || SONGS.find(s=>s.id===id);
+}
+
+// 拉取服务器自定义舞池列表（serverOn 之后调用）
+export async function refreshUserThemes(){
+  if(!serverOn) return;
+  try{
+    const r=await fetch('/api/dance/themes',{credentials:'same-origin'});
+    if(!r.ok) return;
+    const rows=await r.json();
+    USER_THEMES.list=rows.map(row=>({
+      id:'ut'+row.id, dbId:row.id, name:row.name,
+      bgImage:row.image, custom:true, uploaderId:row.uploader_id,
+    }));
+  }catch(e){ console.warn('[舞池] 自定义列表加载失败', e); }
+}
+// 按 id 找舞池（内置 + 服务器自定义 + 本地），找不到时回退到第一个内置舞池
+export function getThemeById(id){
+  return THEMES.find(t=>t.id===id)
+    || USER_THEMES.list.find(t=>t.id===id)
+    || TEMP_THEMES.find(t=>t.id===id)
+    || THEMES[0];
 }
 // 拉取玩家歌曲的谱面（选歌后缓存到歌曲对象上）
 export async function ensureChart(song){
@@ -592,6 +659,8 @@ export function initUI(main){
 
   // ---- 玩家歌曲：上传弹窗 + 曲库拉取 ----
   bindUpload();
+  // ---- 舞池背景：上传弹窗（服务器入库 / 离线本地保存）----
+  bindThemeUpload();
   // ---- 帮助页：公告 + 一键更新 ----
   const helpNotice=document.getElementById('helpNotice');
   if(helpNotice) helpNotice.addEventListener('click',()=>{ sfxClick(); mainRef.showNotice&&mainRef.showNotice(); });
@@ -615,11 +684,11 @@ export function initUI(main){
     url.searchParams.set('_v', Date.now().toString(36));
     location.replace(url.toString());
   });
-  // 恢复本地临时歌曲（IndexedDB 音频 + localStorage 元数据），不阻塞曲库加载
-  loadTempSongs().then(()=>{
+  // 恢复本地临时歌曲和本地舞池（IndexedDB + localStorage），不阻塞曲库加载
+  Promise.all([loadTempSongs(), loadTempThemes()]).then(()=>{
     if(document.getElementById('scr-play').classList.contains('cur')) renderPlay();
   });
-  refreshUserSongs().then(()=>{
+  refreshUserSongs().then(()=>refreshUserThemes()).then(()=>{
     // 列表到位后，如果用户已停在选歌页，立即补渲染
     if(document.getElementById('scr-play').classList.contains('cur')) renderPlay();
   });
@@ -641,7 +710,8 @@ export function initUI(main){
   document.getElementById('btnRandom').addEventListener('click',()=>{
     sfxClick();
     if(playStep===1){
-      const t=THEMES[Math.floor(Math.random()*THEMES.length)];
+      const allThemes=[...(serverOn?USER_THEMES.list:TEMP_THEMES), ...THEMES];
+      const t=allThemes[Math.floor(Math.random()*allThemes.length)];
       sel.theme=t.id; mainRef.switchTheme(t.id);
     }else if(playStep===2){
       const all=serverOn
@@ -764,13 +834,65 @@ async function renderPlay(){
   // 舞池
   const tg=document.getElementById('themeGrid');
   tg.innerHTML='';
-  THEMES.forEach(t=>{
+  // 上传舞池卡片：服务器版→上传全班曲库（暖黄）；离线版→本地舞池（紫蓝）
+  const upTheme=document.createElement('button');
+  upTheme.className='theme-card song-upload-card'+(serverOn?'':' my-song-card');
+  if(serverOn){
+    upTheme.style.background='linear-gradient(135deg,#ff9a3ccc,#ffe17acc)';
+    upTheme.innerHTML=`<div class="tname" style="color:#3a1f00">⬆️ 上传舞池</div>
+      <div class="tdesc" style="color:#5c3300">上传一张图片当背景，全班都能用</div>
+      <span class="tag" style="background:#3a1f00;color:#ffe17a">CUSTOM FLOOR</span>`;
+  }else{
+    upTheme.style.background='linear-gradient(135deg,#7a4dffcc,#36d1ffcc)';
+    upTheme.innerHTML=`<div class="tname" style="color:#fff">🎲 我的舞池</div>
+      <div class="tdesc" style="color:#e0e0ff">选一张本地图片当背景，自动保存，下次还在</div>
+      <span class="tag" style="background:#fff;color:#7a4dff">MY FLOOR</span>`;
+  }
+  upTheme.onclick=()=>{ ensureCtx(); sfxClick(); document.getElementById('btnThemeUpOpen').click(); };
+  tg.appendChild(upTheme);
+  // 全部舞池：自定义的排在前面，再排内置 4 个
+  const customThemeList=serverOn?USER_THEMES.list:TEMP_THEMES;
+  [...customThemeList, ...THEMES].forEach(t=>{
     const b=document.createElement('button');
     b.className='theme-card'+(sel.theme===t.id?' sel':'');
-    b.style.background=`linear-gradient(135deg, #${t.c1.toString(16).padStart(6,'0')}cc, #${t.c2.toString(16).padStart(6,'0')}cc)`;
-    b.innerHTML=`<div class="tname">${t.name}</div><div class="tdesc">${t.desc}</div>
-      ${sel.theme===t.id?'<span class="tag">✓ 已选</span>':''}`;
+    if(t.bgImage){
+      // 图片主题：卡片用缩略图铺底 + 暗色压层保证文字清晰
+      b.style.background=`linear-gradient(135deg,#00000055,#000000aa), url('${t.bgImage}') center/cover`;
+    }else{
+      b.style.background=`linear-gradient(135deg, #${t.c1.toString(16).padStart(6,'0')}cc, #${t.c2.toString(16).padStart(6,'0')}cc)`;
+    }
+    b.innerHTML=`<div class="tname">${t.custom?'🖼 ':''}${t.name}</div><div class="tdesc">${t.desc||'自定义图片背景'}</div>
+      ${sel.theme===t.id?'<span class="tag">✓ 已选</span>':''}
+      ${canDeleteTheme(t)?'<span class="song-del" title="删除这个舞池">🗑</span>':''}`;
     b.onclick=()=>{ sfxClick(); sel.theme=t.id; renderPlay(); mainRef.switchTheme(t.id); };
+    if(canDeleteTheme(t)){
+      b.querySelector('.song-del').addEventListener('click',async ev=>{
+        ev.stopPropagation();
+        // 本地舞池：内存 + IndexedDB + localStorage 一并移除
+        if(t.temp){
+          const yes=await askConfirm(`确定删除本地舞池《${t.name}》吗？`,{yesText:'删除'});
+          if(!yes) return;
+          URL.revokeObjectURL(t.bgImage);
+          const i=TEMP_THEMES.indexOf(t); if(i>=0) TEMP_THEMES.splice(i,1);
+          saveTempThemeMeta(TEMP_THEMES);
+          delTempBlob(t.id).catch(()=>{});
+          if(sel.theme===t.id){ sel.theme='street'; mainRef.switchTheme('street'); }
+          renderPlay();
+          return;
+        }
+        // 服务器舞池：调 DELETE（本人或管理员）
+        const yes=await askConfirm(`确定删除舞池《${t.name}》吗？全班都无法再用`,{yesText:'删除'});
+        if(!yes) return;
+        try{
+          const r=await fetch(`/api/dance/themes/${t.dbId}`,{method:'DELETE',credentials:'same-origin'});
+          const data=await r.json().catch(()=>({}));
+          if(!r.ok) throw new Error(data.error||'删除失败');
+          toast('🗑 已删除舞池《'+t.name+'》');
+          if(sel.theme===t.id){ sel.theme='street'; mainRef.switchTheme('street'); }
+          await refreshUserThemes(); renderPlay();
+        }catch(e){ toast('❌ '+(e.message||'删除失败')); }
+      });
+    }
     tg.appendChild(b);
   });
   // 歌曲 —— 按难度星级分组（stars 离线评好写死，直接同步渲染，无需等待）
@@ -1316,6 +1438,85 @@ function refreshPlayerId(){
 // ============================================================
 // 上传歌曲弹窗：选文件 → 本地分析生成谱面 → 连音频一起传到班级曲库
 // ============================================================
+// ---------- 舞池背景上传（服务器→入库；离线→本地保存）----------
+function bindThemeUpload(){
+  const $=id=>document.getElementById(id);
+  const ov=$('themeUploadOv'), fileIn=$('themeUpFile'), stage=$('themeUpStage'),
+        nameIn=$('themeUpName'), submit=$('themeUpSubmit'), preview=$('themeUpPreview');
+  let picked=null;   // {compressed:Blob}
+  function reset(){
+    picked=null; fileIn.value='';
+    stage.textContent='支持 jpg / png / webp / gif，10MB 以内';
+    preview.classList.remove('on'); preview.innerHTML='';
+    submit.disabled=true; nameIn.value='';
+  }
+  $('btnThemeUpOpen').addEventListener('click',()=>{
+    ensureCtx(); sfxClick(); reset();
+    $('themeUpHead').innerHTML=serverOn ? '⬆️ 上传舞池背景 <small>CUSTOM FLOOR</small>' : '🎲 我的舞池 <small>MY FLOOR</small>';
+    $('themeUpTip').textContent=serverOn
+      ? '选一张图片 → 自动压缩 → 存进班级曲库，全班都能用来当背景'
+      : '选一张图片 → 自动压缩 → 保存到本地，下次打开还能当背景';
+    submit.textContent=serverOn ? '⬆️ 上传到班级曲库' : '🎮 保存并使用';
+    ov.classList.add('on');
+  });
+  $('themeUpCancel').addEventListener('click',()=>{ sfxClick(); ov.classList.remove('on'); });
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('on'); });
+
+  // 选好图片 → 本地预览 + 压缩
+  fileIn.addEventListener('change', async()=>{
+    const f=fileIn.files[0];
+    if(!f) return;
+    stage.textContent='正在读取并压缩图片…'; submit.disabled=true;
+    try{
+      preview.innerHTML=`<img src="${URL.createObjectURL(f)}">`; preview.classList.add('on');
+      nameIn.value=f.name.replace(/\.[^.]+$/,'').slice(0,30);
+      const compressed=await compressImage(f);
+      picked={compressed};
+      stage.textContent=`✅ 压缩完成：${(compressed.size/1024/1024).toFixed(2)}MB，可以上传了`;
+      submit.disabled=false; sfxCoin();
+    }catch(e){
+      stage.textContent='❌ '+(e.message||'图片处理失败，换一张试试'); sfxMiss();
+    }
+  });
+
+  submit.addEventListener('click', async()=>{
+    if(!picked) return;
+    submit.disabled=true;
+    const name=nameIn.value.trim()||'我的舞池';
+    // ===== 离线模式：存本地（IndexedDB + localStorage）=====
+    if(!serverOn){
+      const t={ id:'tt'+Date.now(), name, bgImage:URL.createObjectURL(picked.compressed),
+                custom:true, temp:true, createdAt:Date.now() };
+      TEMP_THEMES.push(t);
+      try{ await putTempBlob(t.id, picked.compressed); saveTempThemeMeta(TEMP_THEMES); }
+      catch(e){ console.warn('[本地舞池] 保存失败（仍可临时使用）', e); }
+      sel.theme=t.id;
+      ov.classList.remove('on'); reset();
+      toast('🖼 《'+name+'》已保存到本地，下次打开还在！');
+      mainRef.switchTheme(t.id); renderPlay();
+      return;
+    }
+    // ===== 服务器模式：POST 入库 =====
+    stage.textContent='正在上传到班级曲库…';
+    try{
+      const fd=new FormData();
+      fd.append('image', picked.compressed, 'theme.jpg');
+      fd.append('name', name);
+      const r=await fetch('/api/dance/themes',{method:'POST',body:fd,credentials:'same-origin'});
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(data.error||('上传失败('+r.status+')'));
+      toast('🎉 《'+name+'》已入库，全班都能用来当背景！');
+      ov.classList.remove('on'); reset();
+      await refreshUserThemes();
+      sel.theme='ut'+data.id;
+      mainRef.switchTheme(sel.theme); renderPlay();
+    }catch(e){
+      stage.textContent='❌ '+(e.message||'上传失败');
+      submit.disabled=false; sfxMiss();
+    }
+  });
+}
+
 function bindUpload(){
   const $=id=>document.getElementById(id);
   const ov=$('uploadOv'), fileIn=$('upFile'), stage=$('upStage'), bar=$('upBar'),

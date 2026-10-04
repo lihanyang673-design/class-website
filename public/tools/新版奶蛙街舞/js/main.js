@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261099';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261099';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261099';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261099';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261099';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261100';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261100';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261100';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261100';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261100';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart, stopPreview } from './ui.js?v=20261099';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261100';
 
 const $=id=>document.getElementById(id);
 
@@ -36,9 +36,14 @@ const camTarget=new THREE.Vector3(0,1.05,0);
 // ============================================================
 let stageGroup=null, curTheme=THEMES[0];
 let keyLight=null, lampL=null, lampR=null, floorMesh=null, ringMesh=null;
+let _stageToken=0, _bgTex=null;   // 图片背景：异步加载令牌（防旧回调覆盖）+ 当前背景贴图（用于释放）
 
 function buildStage(theme){
   curTheme=theme;
+  const token=++_stageToken;
+  const hasImg=!!theme.bgImage;
+  // 图片主题：只换背景，地板/灯光/背景板等缺失字段沿用默认舞池（街头篮球场）
+  if(hasImg) theme={...THEMES[0], ...theme};
   // 清理旧舞台
   if(stageGroup){
     stageGroup.traverse(n=>{
@@ -50,8 +55,20 @@ function buildStage(theme){
   scene.add(stageGroup);
 
   // 背景与雾
-  scene.background=new THREE.Color(theme.bg);
-  scene.fog=new THREE.Fog(theme.bg, theme.fog[0], theme.fog[1]);
+  if(_bgTex){ _bgTex.dispose(); _bgTex=null; }
+  if(hasImg){
+    scene.background=null;
+    // 图片异步加载；令牌过期（已切换到别的舞池）就直接丢弃，不覆盖
+    new THREE.TextureLoader().load(curTheme.bgImage, tex=>{
+      if(token!==_stageToken){ tex.dispose(); return; }
+      tex.colorSpace=THREE.SRGBColorSpace;
+      _bgTex=tex; scene.background=tex;
+    });
+    scene.fog=new THREE.Fog(THEMES[0].bg, THEMES[0].fog[0], THEMES[0].fog[1]);
+  }else{
+    scene.background=new THREE.Color(theme.bg);
+    scene.fog=new THREE.Fog(theme.bg, theme.fog[0], theme.fog[1]);
+  }
 
   // ---- 圆形舞池地板 ----
   floorMesh=new THREE.Mesh(
@@ -188,7 +205,7 @@ Music.el.addEventListener('error', ()=>console.warn('[启动] ⚠ 背景音乐 m
 // ============================================================
 const main={
   switchTheme(id){
-    const t=THEMES.find(t=>t.id===id); if(t) buildStage(t);
+    buildStage(getThemeById(id));
   },
   applySkin(sk){ setSkin(sk); },
   applyQuality(q){
@@ -200,8 +217,8 @@ const main={
     // 点开始后舞台中央倒计时 3、2、1，归零才开演（这3秒浏览器顺便缓冲歌曲）
     const song=getSongById(songId)||SONGS[0];
     Music.setSong(song.file);
-    const theme=THEMES.find(t=>t.id===themeId);
-    if(theme && theme.id!==curTheme.id) buildStage(theme);
+    const theme=getThemeById(themeId);
+    if(theme.id!==curTheme.id) buildStage(theme);
     const set=Store.data.set;
     const bpm=song.bpm||set.bpm;          // 优先用歌曲自带 BPM
     showUIRoot(false);

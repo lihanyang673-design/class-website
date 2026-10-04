@@ -406,6 +406,15 @@ async function initDB() {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(song_key, user_key)        -- 同一玩家同一首歌只留最高总分
   )`);
+  // ===== 奶蛙街舞：自定义舞池背景（同学上传图片，全班可用；以后由管理员同步成内置背景）=====
+  db.run(`CREATE TABLE IF NOT EXISTS dance_themes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    image TEXT NOT NULL,              -- /uploads/dance/xxx.jpg
+    uploader_id INTEGER DEFAULT 0,
+    uploader_name TEXT DEFAULT '',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
   saveDB();
 }
 
@@ -2401,6 +2410,62 @@ app.post('/api/dance/songs/:id/regenerate', authRequired, (req, res) => {
   } catch (e) {
     res.status(500).json({ error: '更新失败：' + e.message });
   }
+});
+
+// ===== 自定义舞池背景 =====
+const danceThemeUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, DANCE_DIR),
+    filename: (req, file, cb) => {
+      const ext = (path.extname(file.originalname) || '.jpg').toLowerCase();
+      cb(null, Date.now() + '_' + Math.round(Math.random() * 1e9) + ext);
+    }
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },   // 图片最大 10MB（前端会先压缩到 1920px）
+  fileFilter: (req, file, cb) => {
+    if (/^image\//.test(file.mimetype) || /\.(jpg|jpeg|png|webp|gif)$/i.test(file.originalname)) cb(null, true);
+    else cb(new Error('只支持图片文件（jpg / png / webp / gif）'));
+  }
+});
+
+// 舞池背景列表
+app.get('/api/dance/themes', (req, res) => {
+  const rows = query(`SELECT id, name, image, uploader_id, uploader_name, created_at
+                      FROM dance_themes ORDER BY id DESC`);
+  res.json(rows);
+});
+
+// 上传舞池背景（不强制登录，和歌曲一样：游客记 0 / "游客"）
+app.post('/api/dance/themes', danceThemeUpload.single('image'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: '缺少图片文件' });
+    const name = String(req.body.name || '').trim().slice(0, 30) || '我的舞池';
+    const uid = req.session.userId || 0;
+    let uploaderName = '游客';
+    if (uid) {
+      const me = query('SELECT nickname FROM users WHERE id = ?', [uid])[0];
+      if (me) uploaderName = me.nickname;
+    }
+    const id = insert(
+      `INSERT INTO dance_themes (name, image, uploader_id, uploader_name) VALUES (?, ?, ?, ?)`,
+      [name, '/uploads/dance/' + req.file.filename, uid, uploaderName]);
+    res.json({ ok: true, id, image: '/uploads/dance/' + req.file.filename });
+  } catch (e) {
+    try { if (req.file) fs.unlinkSync(req.file.path); } catch {}
+    res.status(500).json({ error: '保存失败：' + e.message });
+  }
+});
+
+// 删除舞池背景：仅上传者本人或管理员
+app.delete('/api/dance/themes/:id', authRequired, (req, res) => {
+  const row = query('SELECT * FROM dance_themes WHERE id = ?', [+req.params.id || 0])[0];
+  if (!row) return res.status(404).json({ error: '舞池背景不存在' });
+  const me = query('SELECT role FROM users WHERE id = ?', [req.session.userId])[0];
+  const isAdmin = !!req.session.adminMode || !!(me && me.role === 'admin');
+  if (row.uploader_id !== req.session.userId && !isAdmin) return res.status(403).json({ error: '只能删除自己上传的舞池' });
+  run('DELETE FROM dance_themes WHERE id = ?', [row.id]);
+  try { fs.unlinkSync(path.join(__dirname, String(row.image).replace(/^\//, '').replace(/\//g, path.sep))); } catch {}
+  res.json({ ok: true });
 });
 
 // ===== 多人排行榜 =====

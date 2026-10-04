@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>奶娃街舞 · Dance Baby</title>
-<link rel="stylesheet" href="style.css?v=20261099">
+<link rel="stylesheet" href="style.css?v=20261100">
 </head>
 <body>
 
@@ -445,6 +445,28 @@
   </div>
 </div>
 
+<!-- 舞池背景上传弹窗 -->
+<button id="btnThemeUpOpen" hidden></button>
+<div id="themeUploadOv" class="up-mask">
+  <div class="up-box">
+    <div class="up-head" id="themeUpHead">🖼 上传舞池背景 <small>CUSTOM FLOOR</small></div>
+    <div class="up-tip" id="themeUpTip">选一张图片 → 自动压缩 → 存进班级曲库，全班都能用来当背景</div>
+    <label class="up-drop" for="themeUpFile">
+      <span class="up-ic">🖼</span>
+      <span>点击选择图片文件</span>
+      <input type="file" id="themeUpFile" accept="image/*,.jpg,.jpeg,.png,.webp,.gif" hidden>
+    </label>
+    <div class="theme-up-preview" id="themeUpPreview"></div>
+    <div class="up-stage" id="themeUpStage">支持 jpg / png / webp / gif，10MB 以内</div>
+    <input type="text" id="themeUpName" class="up-input" maxlength="30" placeholder="舞池名称（默认取文件名）">
+    <div class="up-btns">
+      <button class="btn-ghost" id="themeUpCancel">取消</button>
+      <button class="btn-main" id="themeUpSubmit" disabled>⬆️ 上传到班级曲库</button>
+    </div>
+    <div class="up-note" id="themeUpNote">图片会自动压缩到 1920px 以内 · 请上传有版权使用权的图片哦</div>
+  </div>
+</div>
+
 <div id="toast"></div>
 <div id="modelTip"></div>
 
@@ -457,8 +479,8 @@
   }
 }
 </script>
-<script src="js/codec.js?v=20261099"></script>
-<script type="module" src="js/main.js?v=20261099"></script>
+<script src="js/codec.js?v=20261100"></script>
+<script type="module" src="js/main.js?v=20261100"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';
