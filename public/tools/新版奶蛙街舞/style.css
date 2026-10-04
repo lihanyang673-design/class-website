@@ -452,7 +452,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #stageUI.on{display:block}
 
 /* 开局倒计时：全屏居中大数字（3、2、1），纯显示不接收点击，归零自动开播 */
-#countOverlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:50;pointer-events:none}
+#countOverlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:24px;z-index:50;pointer-events:none}
 #countOverlay.on{display:flex}
 #countNum{
   width:150px;height:150px;border-radius:50%;
@@ -462,6 +462,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   animation:countPop 1s ease-out;
 }
 @keyframes countPop{0%{transform:scale(1.7);opacity:.25}100%{transform:scale(1);opacity:1}}
+#countInfo{
+  max-width:90%;padding:14px 22px;border-radius:14px;
+  background:rgba(22,26,64,.7);border:1px solid rgba(255,255,255,.15);
+  backdrop-filter:blur(10px);text-align:center;line-height:1.7;
+  box-shadow:0 8px 30px #0006;
+}
+#countInfo .ci-line{font-size:15px;color:#e0e0ff;margin:2px 0}
+#countInfo .ci-song{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px}
+#countInfo .ci-meta{font-size:13px;color:#9eb0ff}
+#countInfo .ci-meta b{color:#7cf}
 
 /* 分数/连击 */
 #hud{position:absolute;top:70px;left:20px;text-shadow:0 2px 8px #000a}

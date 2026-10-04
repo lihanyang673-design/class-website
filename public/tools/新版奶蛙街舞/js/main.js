@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261090';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261090';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261090';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261091';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261091';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261091';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261090';
-import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart, stopPreview } from './ui.js?v=20261090';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261091';
+import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart, stopPreview } from './ui.js?v=20261091';
 
 const $=id=>document.getElementById(id);
 
@@ -222,6 +222,14 @@ const main={
     stopPreview();   // 正在试听就先停掉、进度归零，避免和演出音乐冲突
     // 只搭台不开播；startCountdown 倒计时归零后自动开播
     startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart});
+    // 倒计时界面显示本场信息
+    const diff=DIFFS.find(d=>d.id===diffId);
+    const notes=chart&&chart.notes?chart.notes.length:0;
+    const mm=Math.floor(dur/60), ss=Math.floor(dur%60).toString().padStart(2,'0');
+    $('countInfo').innerHTML=
+      `<div class="ci-song">${song.name}${song.artist?` · ${song.artist}`:''}</div>
+       <div class="ci-line">🎵 ${theme?theme.name:'默认舞池'}　🎯 ${diff?diff.name:diffId}</div>
+       <div class="ci-meta">BPM <b>${bpm}</b>　时长 <b>${mm}:${ss}</b>　音符 <b>${notes}</b></div>`;
     startCountdown();
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },

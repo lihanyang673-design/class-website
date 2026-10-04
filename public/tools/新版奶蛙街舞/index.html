@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>奶娃街舞 · Dance Baby</title>
-<link rel="stylesheet" href="style.css?v=20261090">
+<link rel="stylesheet" href="style.css?v=20261091">
 </head>
 <body>
 
@@ -374,7 +374,10 @@
 <!-- ===================== 游戏进行中 ===================== -->
 <div id="stageUI">
   <!-- 开局倒计时：3、2、1，归零自动开播（纯显示，无需点击） -->
-  <div id="countOverlay"><div id="countNum">3</div></div>
+  <div id="countOverlay">
+    <div id="countNum">3</div>
+    <div id="countInfo"></div>
+  </div>
   <!-- ★ 暂停/退出按钮（触屏用户也能点到，不依赖键盘 ESC）-->
   <div class="stage-top-btns">
     <button id="btnPause" class="pause-btn" title="暂停">⏸</button>
@@ -455,7 +458,7 @@
 }
 </script>
 <script src="js/codec.js?v=20260929l"></script>
-<script type="module" src="js/main.js?v=20261090"></script>
+<script type="module" src="js/main.js?v=20261091"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';
