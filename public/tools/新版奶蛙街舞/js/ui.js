@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261074';
-import { Game, pauseGame } from './game.js?v=20261074';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261075';
+import { Game, pauseGame } from './game.js?v=20261075';
 
 // ============================================================
 // 存档（localStorage）
@@ -187,7 +187,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261074');
+    const r=await fetch('charts.json?v=20261075');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -580,12 +580,7 @@ export function renderHome(){
 async function renderPlay(){
   // 上传入口：有服务器→存班级曲库；网页版→临时歌曲（刷新就没）
   const upBtn=document.getElementById('btnUploadSong');
-  if(upBtn){
-    upBtn.style.display='';
-    upBtn.innerHTML=serverOn
-      ? '⬆️ 上传歌曲 <small>AUTO CHART</small>'
-      : '🎲 临时歌曲 <small>选本地音乐直接玩</small>';
-  }
+  if(upBtn) upBtn.style.display='none';   // 旧的小按钮隐藏，改用下方彩色卡片
   // 舞池
   const tg=document.getElementById('themeGrid');
   tg.innerHTML='';
@@ -602,6 +597,15 @@ async function renderPlay(){
   const sg=document.getElementById('songGrid');
   if(sg){
     sg.innerHTML='';
+    // 上传/临时歌曲卡片：放在所有星级分区的最上面，颜色醒目（暖黄渐变，和歌曲卡片区分）
+    const upCard=document.createElement('button');
+    upCard.className='theme-card song-upload-card';
+    upCard.style.background='linear-gradient(135deg,#ff9a3ccc,#ffe17acc)';
+    upCard.innerHTML=`<div class="tname" style="color:#3a1f00">${serverOn?'⬆️ 上传歌曲':'🎲 临时歌曲'}</div>
+      <div class="tdesc" style="color:#5c3300">${serverOn?'上传本地音乐，自动生成谱面，全班可玩':'选一首本地音乐，分析完直接玩（刷新页面会消失）'}</div>
+      <span class="tag" style="background:#3a1f00;color:#ffe17a">${serverOn?'AUTO CHART':'TEMP CHART'}</span>`;
+    upCard.onclick=()=>{ ensureCtx(); sfxClick(); document.getElementById('btnUploadSong').click(); };
+    sg.appendChild(upCard);
     // 去重后的全部歌曲：连着服务器时数据库版与内置版是同一首，只留数据库版；默认曲目数据库没有，单独保留
     const allSongs=serverOn
       ? [...TEMP_SONGS, ...USER_SONGS.list, SONGS.find(s=>s.id==='default')]
@@ -660,8 +664,8 @@ async function renderPlay(){
     if(!TEMP_SONGS.length && !USER_SONGS.list.length){
       const h=document.createElement('div');
       h.className='song-cat-head';
-      const tip=!serverOn ? '点上方「临时歌曲」选一首本地音乐，分析完就能玩（刷新页面会消失）'
-        : (USER_SONGS.loadError ? '未连接班级服务器，暂时读不到曲库' : '⭐ 还没有班级自制作品，点上方「上传歌曲」当第一个 DJ！');
+      const tip=!serverOn ? '还没有临时歌曲，点上方卡片选一首本地音乐，分析完就能玩（刷新页面会消失）'
+        : (USER_SONGS.loadError ? '未连接班级服务器，暂时读不到曲库' : '还没有班级自制作品，点上方卡片当第一个 DJ！');
       h.innerHTML=`<span class="sc-tip">${tip}</span>`;
       sg.appendChild(h);
     }

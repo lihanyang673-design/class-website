@@ -295,6 +295,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .theme-card.sel{border-color:var(--yellow);box-shadow:0 0 0 3px #ffe17a44,0 10px 30px #0006}
 .theme-card .tag{position:absolute;right:12px;top:12px;font-size:11px;background:#0007;
   padding:3px 10px;border-radius:99px}
+/* 上传/临时歌曲卡片：暖黄渐变 + 发光边框 + 悬停上浮，比普通歌曲卡更醒目 */
+.song-upload-card{
+  border-color:#ffe17a;
+  box-shadow:0 0 24px #ffe17a44,0 8px 24px #0006;
+  animation:upGlow 2.4s ease-in-out infinite;
+}
+.song-upload-card:hover{transform:translateY(-3px);box-shadow:0 0 32px #ffe17a77,0 12px 32px #0008}
+@keyframes upGlow{0%,100%{box-shadow:0 0 18px #ffe17a33,0 8px 24px #0006}50%{box-shadow:0 0 30px #ffe17a66,0 8px 24px #0006}}
 .diff-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
 .diff-card{
   flex:1;min-width:130px;border-radius:16px;padding:14px;text-align:center;

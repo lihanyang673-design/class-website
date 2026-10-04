@@ -95,8 +95,9 @@ app.use(express.static(path.join(__dirname, 'public'), {
     // 【自动更新规则】2026-10-03 起：
     // ① 代码文件(html/js/css)：每次打开都向服务器验证一次——没改版返回304秒过(几乎不耗流量)，
     //    改了版自动下载新文件。同学进游戏永远是最新代码，再也不用手动清缓存。
-    if(/\.(html|js|css|mjs)$/.test(f)){
-      res.setHeader('Cache-Control', 'no-cache');
+    if(/\.(html|js|css|mjs|json)$/.test(f)){
+      // 代码/配置文件：每次打开都向服务器验证，改版自动下载新版，不变返回304不耗流量
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
     } else if(/\.(mp3|wav|ogg|m4a|aac|png|jpg|jpeg|gif|webp|bmp|svg|glb|gltf|bin|ktx2|obj|fbx|babylon)$/.test(f)){
       // ② 歌曲/图片/3D模型：长期缓存30天，不重复下载（这些文件基本不会变）
       res.setHeader('Cache-Control', 'public, max-age=2592000');
