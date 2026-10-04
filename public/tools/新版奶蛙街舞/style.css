@@ -537,11 +537,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .lane[data-l="1"]{left:25%}
 .lane[data-l="2"]{left:50%}
 .lane[data-l="3"]{left:75%}
-.lane::before{ /* 轨道底色 */
-  content:"";position:absolute;inset:0;
-  background:linear-gradient(180deg,#ffffff00 4%,#ffffff0d 60%,#ffffff1c 100%);
-  border-radius:14px 14px 0 0;
-}
 /* 判定线 + 接收器 */
 #hitLine{
   position:absolute;left:0;right:0;bottom:12vh;height:3px;
