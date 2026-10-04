@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261071';
-import { Game, pauseGame } from './game.js?v=20261071';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261072';
+import { Game, pauseGame } from './game.js?v=20261072';
 
 // ============================================================
 // 存档（localStorage）
@@ -144,19 +144,19 @@ export const THEMES=[
 // stars = 难度星级（离线按「音符密度+双押/连续双押」评好直接写死，用户端不再计算）
 export const SONGS=[
   {id:'default', name:'默认曲目', artist:'内置BGM', file:'music.mp3', bpm:104, desc:'游戏自带的节奏曲', cat:'builtin', stars:2},
-  {id:'u14', name:'小半', artist:'陈粒', file:'1790904961734_529237489.mp3', bpm:165, desc:'165 BPM · 约5分钟', cat:'builtin', staticChart:true, stars:4},
+  {id:'u14', name:'小半', artist:'陈粒', file:'1790904961734_529237489.mp3', bpm:165, desc:'165 BPM · 约5分钟', cat:'builtin', staticChart:true, stars:5},
   {id:'u15', name:'玻璃', artist:'Gareth.T', file:'1790905313361_805251406.mp3', bpm:146, desc:'146 BPM · 约3分钟', cat:'builtin', staticChart:true, stars:3},
-  {id:'u16', name:'晴天', artist:'周杰伦', file:'1790905913537_81414028.mp3', bpm:137, desc:'137 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:3},
+  {id:'u16', name:'晴天', artist:'周杰伦', file:'1790905913537_81414028.mp3', bpm:137, desc:'137 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:4},
   {id:'u17', name:'甲乙丙丁', artist:'李佳薇', file:'1790906408562_96433968.mp3', bpm:130, desc:'130 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:3},
   {id:'u18', name:'雨天', artist:'孙燕姿', file:'1790921439546_533325666.mp3', bpm:114, desc:'114 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:2},
   {id:'u19', name:'一见如故', artist:'同学上传', file:'1790930389175_193904487.mp3', bpm:118, desc:'118 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:3},
   {id:'u20', name:'女骑士', artist:'徐良', file:'1790935598626_920508153.mp3', bpm:110, desc:'110 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:2},
-  {id:'u21', name:'河山大好', artist:'许嵩', file:'1790937139158_104059326.mp3', bpm:175, desc:'175 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:4},
+  {id:'u21', name:'河山大好', artist:'许嵩', file:'1790937139158_104059326.mp3', bpm:175, desc:'175 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:5},
   {id:'u22', name:'渲染离别', artist:'许嵩', file:'1790940036039_422108884.mp3', bpm:120, desc:'120 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:2},
   {id:'u23', name:'那时雨', artist:'徐良', file:'1790997804951_1054170.mp3', bpm:119, desc:'119 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:2},
-  {id:'u24', name:'下完这场雨', artist:'后弦', file:'1790997815955_933366348.mp3', bpm:146, desc:'146 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:3},
+  {id:'u24', name:'下完这场雨', artist:'后弦', file:'1790997815955_933366348.mp3', bpm:146, desc:'146 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:4},
   {id:'u25', name:'玫瑰花的葬礼', artist:'许嵩', file:'1790997826227_330567208.mp3', bpm:164, desc:'164 BPM · 约4.3分钟', cat:'builtin', staticChart:true, stars:4},
-  {id:'u26', name:'画风', artist:'后弦', file:'1790997851988_318725934.mp3', bpm:146, desc:'146 BPM · 约4.1分钟', cat:'builtin', staticChart:true, stars:3},
+  {id:'u26', name:'画风', artist:'后弦', file:'1790997851988_318725934.mp3', bpm:146, desc:'146 BPM · 约4.1分钟', cat:'builtin', staticChart:true, stars:4},
   {id:'u30', name:'出雨林记', artist:'许嵩', file:'1791030610756_931040190.mp3', bpm:134, desc:'134 BPM · 约4.6分钟', cat:'builtin', staticChart:true, stars:3},
   {id:'u31', name:'有何不可', artist:'许嵩', file:'1791030705432_931125239.mp3', bpm:101, desc:'101 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:1},
 ];
@@ -181,7 +181,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261071');
+    const r=await fetch('charts.json?v=20261072');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;

@@ -4,15 +4,17 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261071';
-import { doAction, stumble } from './dancer.js?v=20261071';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261072';
+import { doAction, stumble } from './dancer.js?v=20261072';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
 // ---------- 判定窗口（秒） ----------
 const WIN_GOOD = 0.15, WIN_PERFECT = 0.07, WIN_MISS = 0.19;
 const LANE_HEX = [0xff3b6b, 0x36d1ff, 0xffe17a, 0x7a4dff];  // 四轨道主题色
-// 相邻方块最小间隔（秒）：高 BPM 歌曲的半拍会密到看不清，统一卡一个下限（同时点的双押不受限）
-const MIN_GAP = 0.22;
+// 同轨相邻方块最小间隔（秒）：方块高 52px ÷ 下落 340px/s = 0.153s，加余量取 0.19s。
+// 只保护"同一条轨道"（不同轨道的音再近也不会重叠）；同轨太近时优先把音挪到别的空闲轨，
+// 四条轨都满才放弃该音。双押只额外加一个音 → 最多双押，不可能出现三押。
+const LANE_GAP = 0.19;
 
 // ---------- 可见窗口（音符提前多少秒开始显示） ----------
 // 普通模式恒为 VIS_BASE；无尽模式随倍速线性扩大，补偿高速下变短的反应时间。
@@ -68,9 +70,8 @@ function strSeed(s){
 //      → 方块在轨道间跳散，同轨永远不会连续紧挨（这是音游手感的关键）
 // 当前四档参数由用户拍板：地狱=旧狂热（无碎拍），狂热再下调。
 // 时间点全部取自存库密谱（对齐音乐），随机走 mulberry32 固定种子 → 同一首歌每次一样。
-export function chartNotes(chart, diff, durSec, seedStr, minGap){
+export function chartNotes(chart, diff, durSec, seedStr){
   const end = Math.max(4, durSec - 0.5);
-  const gap = minGap || MIN_GAP;   // 无尽模式放宽到 0.18s（视野扩大后大空隙现形）；其他难度沿用 0.22s
   const P = {
     easy  : {cand:4, rest:0.25, dbl:0.00, burst:0.00},
     casual: {cand:2, rest:0.55, dbl:0.02, burst:0.00},
@@ -80,36 +81,50 @@ export function chartNotes(chart, diff, durSec, seedStr, minGap){
   const rnd = mulberry32(strSeed((seedStr||'song')+'|'+diff));
   const seen=new Set();
   const out=[];
+  const lastLaneT=[-9,-9,-9,-9];        // 每条轨道上一次出音时间（按轨防重叠的依据）
   function add(t,lane){
     const key=t.toFixed(3)+'|'+lane;     // 同一时间点同一轨：只留一个（重叠方块合并）
-    if(seen.has(key)) return;
+    if(seen.has(key)) return false;
     seen.add(key);
     out.push({ t, lane, state:0 });
+    lastLaneT[lane]=t;
+    return true;
+  }
+  // 想落在 want 轨、但同轨太近 → 随机挪到任一空闲轨；四条轨都满返回 -1（放弃此音）
+  function pickLane(want,t){
+    if(t-lastLaneT[want]>=LANE_GAP) return want;
+    const free=[0,1,2,3].filter(x=>t-lastLaneT[x]>=LANE_GAP);
+    return free.length ? free[(rnd()*free.length)|0] : -1;
+  }
+  // 某时间点找一个"非排除轨道 + 不违反同轨间隔"的空闲轨（碎拍补音用）
+  function freeLaneAt(t,exclude){
+    const c=[0,1,2,3].filter(x=>!exclude.includes(x) && t-lastLaneT[x]>=LANE_GAP);
+    return c.length ? c[(rnd()*c.length)|0] : -1;
   }
   let lane=(rnd()*4)|0;                  // 起始轨道
-  let lastT=-9;                          // 上一个方块的时间（配合 MIN_GAP 防过密）
   // cand 个密谱格 = 一个候选位置（easy 每4格=整拍；其余每2格=半拍）
   for(let i=0; i<chart.length; i+=P.cand){
     const t=+chart[i].t;
     if(t<1.0 || t>end) continue;
     if(rnd() < P.rest) continue;                    // 原版：按概率休息（休息不换道）
-    if(t - lastT < gap) continue;               // 与上一个方块太近（高 BPM 半拍）→ 强制休息
-    add(t, lane); lastT=t;
-    if(P.dbl && rnd() < P.dbl){                     // 原版：按概率双押（第二轨必不同于本轨）
-      add(t, (lane + 1 + ((rnd()*3)|0)) % 4);
+    const L=pickLane(lane,t);                       // 同轨太近就挪轨，而不是删音
+    if(L<0) continue;                               // 四条轨此刻都太近：放弃此音（休息不换道）
+    add(t, L);
+    if(P.dbl && rnd() < P.dbl){                     // 原版：按概率双押（只加一个、必不同于本轨）
+      const c=[0,1,2,3].filter(x=>x!==L && t-lastLaneT[x]>=LANE_GAP);
+      if(c.length) add(t, c[(rnd()*c.length)|0]);
     }
     if(P.burst && rnd() < P.burst && i+2<chart.length && +chart[i+2].t<=end){
-      // hard 独有：beat/4、beat/2 后各补一音。
-      // 选轨让出 t 时间点已用轨道（基础音/双押），保证三个时间点两两不同轨、视觉不贴
-      const tk=t.toFixed(3);
-      const free=[0,1,2,3].filter(x=>!seen.has(tk+'|'+x));
-      if(free.length>=2){
-        add(+chart[i+1].t, free[0]);
-        add(+chart[i+2].t, free[1]);
-        i+=P.cand;   // beat/2 位置已被碎拍占用 → 跳过下一个常规候选，从根上杜绝同点重叠
+      // hard 独有：beat/4、beat/2 后各补一音；各自选空闲轨、受同轨间隔保护
+      const t1=+chart[i+1].t, t2=+chart[i+2].t;
+      const L1=freeLaneAt(t1,[]);
+      if(L1>=0){
+        add(t1,L1);
+        const L2=freeLaneAt(t2,[L1]);
+        if(L2>=0){ add(t2,L2); i+=P.cand; }   // beat/2 已被碎拍占用 → 跳过下一常规候选
       }
     }
-    lane = rnd()<0.7 ? (lane + 1 + ((rnd()*3)|0)) % 4 : lane;  // 原版：70% 强制换道
+    lane = rnd()<0.7 ? (L + 1 + ((rnd()*3)|0)) % 4 : L;  // 原版：70% 强制换道（基于实际落轨）
   }
   return out.sort((a,b)=>a.t-b.t||a.lane-b.lane);
 }
@@ -127,33 +142,49 @@ export function genChart(diff, bpm, durSec, offsetSec, seedStr=''){
   }[diff];
   let lane = (rnd()*4)|0;
   const step = beat/DIFF.div;
-  let lastT=-9;                          // 上一个方块的时间（配合 MIN_GAP 防过密）
+  const lastLaneT=[-9,-9,-9,-9];        // 每条轨道上一次出音时间（按轨防重叠）
 
   const seen=new Set();
   const reg=(t,l)=>seen.add(t.toFixed(3)+'|'+l);
   let b=first;
   while(b<last){
     if(rnd() < DIFF.rest){ b+=step; continue; }      // 随机休息拍
-    if(b - lastT < MIN_GAP){ b+=step; continue; }    // 与上一个方块太近（高 BPM 半拍）→ 强制休息
-    notes.push({ t:b, lane, state:0 });              // state: 0待 1hit 2miss
-    reg(b,lane); lastT=b;
-    // 双押
-    if(rnd() < DIFF.dbl){
-      const l2=(lane + 1 + ((rnd()*3)|0)) % 4;
-      notes.push({ t:b, lane:l2, state:0 });
-      reg(b,l2);
+    let L=lane;                                     // 同轨太近 → 挪到空闲轨，而不是删音
+    if(b-lastLaneT[L]<LANE_GAP){
+      const free=[0,1,2,3].filter(x=>b-lastLaneT[x]>=LANE_GAP);
+      if(!free.length){ b+=step; continue; }        // 四条轨此刻都太近：放弃此拍
+      L=free[(rnd()*free.length)|0];
     }
-    // 16 分小连打（困难）：让出 b 时间点已用轨道，三个时间点两两不同轨、视觉不贴
+    notes.push({ t:b, lane:L, state:0 });              // state: 0待 1hit 2miss
+    reg(b,L); lastLaneT[L]=b;
+    // 双押：只加一个、避开本轨和太近的轨 → 最多双押，不会三押
+    if(rnd() < DIFF.dbl){
+      const c=[0,1,2,3].filter(x=>x!==L && b-lastLaneT[x]>=LANE_GAP);
+      if(c.length){
+        const l2=c[(rnd()*c.length)|0];
+        notes.push({ t:b, lane:l2, state:0 });
+        reg(b,l2); lastLaneT[l2]=b;
+      }
+    }
+    // 16 分小连打（困难）：各自选空闲轨、受同轨间隔保护
     if(rnd() < DIFF.burst && b+beat/2<last){
-      const free=[0,1,2,3].filter(x=>!seen.has(b.toFixed(3)+'|'+x));
-      if(free.length>=2){
-        notes.push({ t:b+beat/4, lane:free[0], state:0 }); reg(b+beat/4,free[0]);
-        notes.push({ t:b+beat/2, lane:free[1], state:0 }); reg(b+beat/2,free[1]);
-        b += step;   // beat/2 已被碎拍占用 → 跳过下一个常规位置
+      const pick=(t,ex)=>{
+        const c=[0,1,2,3].filter(x=>!ex.includes(x) && t-lastLaneT[x]>=LANE_GAP);
+        return c.length ? c[(rnd()*c.length)|0] : -1;
+      };
+      const t1=b+beat/4, t2=b+beat/2;
+      const f1=pick(t1,[]);
+      if(f1>=0){
+        notes.push({ t:t1, lane:f1, state:0 }); reg(t1,f1); lastLaneT[f1]=t1;
+        const f2=pick(t2,[f1]);
+        if(f2>=0){
+          notes.push({ t:t2, lane:f2, state:0 }); reg(t2,f2); lastLaneT[f2]=t2;
+          b += step;
+        }   // beat/2 已被碎拍占用 → 跳过下一个常规位置
       }
     }
     // 随机游走换道（不重复上一次的概率高）
-    lane = rnd()<0.7 ? (lane + 1 + ((rnd()*3)|0))%4 : lane;
+    lane = rnd()<0.7 ? (L + 1 + ((rnd()*3)|0))%4 : L;
     b+=step;
   }
   // 出口兜底：同点同轨合并（任何残留原因都在此被兜住）
@@ -192,7 +223,7 @@ export function startGame(cfg){
   const endless = cfg.diff==='endless';
   const gdiff = endless ? 'hard' : cfg.diff;    // 无尽谱面密度 = 地狱
   Game.notes = cfg.chart && cfg.chart.length
-    ? chartNotes(cfg.chart, gdiff, cfg.duration, cfg.songId||'', endless?0.18:MIN_GAP)
+    ? chartNotes(cfg.chart, gdiff, cfg.duration, cfg.songId||'')
     : genChart(gdiff, cfg.bpm, cfg.duration, cfg.offset/1000, cfg.songId||'');
   Game.score=0; Game.combo=0; Game.maxCombo=0;  // 任何难度（含无尽）计分都从 0 开始
   Game.cnt={perfect:0,good:0,miss:0};
