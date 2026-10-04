@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261100';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261100';
-import { Game, pauseGame } from './game.js?v=20261100';
+import { analyzeAudio } from './analyze.js?v=20261101';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261101';
+import { Game, pauseGame } from './game.js?v=20261101';
 
 // ============================================================
 // 存档（localStorage）
@@ -136,6 +136,7 @@ export const THEMES=[
   {id:'space',  name:'太空蹦迪', desc:'失重节拍，银河打碟',
    bg:0x050514, fog:[14,44], floor:0x101028, ring:0x7a4dff, c1:0x7a4dff, c2:0x36ffc2,
    lampA:1, lampB:1, sky:'stars'},
+  {id:'it1', name:'奶蛙1', desc:'自定义图片背景', bgImage:'1791118340835_844508194.jpg', fromDb:1},
 ];
 
 // 歌曲库：只保留真实存在的内置曲 music.mp3。
@@ -205,7 +206,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261100');
+    const r=await fetch('charts.json?v=20261101');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -850,9 +851,13 @@ async function renderPlay(){
   }
   upTheme.onclick=()=>{ ensureCtx(); sfxClick(); document.getElementById('btnThemeUpOpen').click(); };
   tg.appendChild(upTheme);
-  // 全部舞池：自定义的排在前面，再排内置 4 个
+  // 全部舞池：自定义的排在前面，再排内置的。
+  // 去重：内置 THEMES 里同步自服务器的背景（带 fromDb），在服务器版已有同名自定义条目，隐藏掉
   const customThemeList=serverOn?USER_THEMES.list:TEMP_THEMES;
-  [...customThemeList, ...THEMES].forEach(t=>{
+  const builtinThemeList=serverOn
+    ? THEMES.filter(t=>!t.fromDb || !USER_THEMES.list.some(u=>u.dbId===t.fromDb))
+    : THEMES;
+  [...customThemeList, ...builtinThemeList].forEach(t=>{
     const b=document.createElement('button');
     b.className='theme-card'+(sel.theme===t.id?' sel':'');
     if(t.bgImage){
