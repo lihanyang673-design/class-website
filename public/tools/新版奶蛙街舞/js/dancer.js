@@ -1,28 +1,35 @@
 // ============================================================
 // dancer.js —— 奶娃舞者（核心模块）
 //
-// 模型 rigged.glb 是【单块网格、无骨骼、无蒙皮】，无法用骨骼做动作。
-// 解决方案：把整块网格按【三角面质心】切成 6 个独立部位 ——
-//   头 head / 肚子 belly / 左手 armL / 右手 armR / 左腿 legL / 右腿 legR
-// 每个部位挂在一个 Pivot（枢轴）上，旋转枢轴 = 关节动作。
+// 模型 rigged.glb 是【单块网格、无骨骼、无蒙皮、无动画】。
 //
-// 切分规则（可调常数在下方 SPLIT 区，跑起来不对就改这几个数）：
-//   头   ：质心高度 > 62% 身高（奶娃头大）
-//   腿   ：质心高度 < 30% 身高，按 x 正负分左右
-//   手臂 ：中段且 |x| > 42% 半身宽（在身体两侧）
-//   其余 ：肚子
+// ★ 根治版方案（v20261113 起）：不再把模型切成 6 块——
+//   切块方案的关节两边各转各的，交界穿模只能靠"收角度"压制，治标不治本。
+//   现在在代码里【程序化造一副骨骼】，并按"每个顶点到每根骨的距离"
+//   自动算出平滑的蒙皮权重：关节附近的顶点同时受多根骨牵引，像橡皮一样
+//   平滑弯折。网格始终是完整一块，结构上不可能再出现缝隙/撕裂/交界穿模。
+//
+// 骨骼树（绑定姿势全部不旋转）：
+//   pelvis 骨盆
+//    ├ spine 脊柱
+//    │   ├ head 头（颈处为枢轴）
+//    │   ├ armL 左臂（肩处为枢轴）
+//    │   └ armR 右臂
+//    ├ legL 左腿（胯处为枢轴）
+//    └ legR 右腿
+//
+// 可调常数在下方 SPLIT 区（关节高度比例等），跑起来不对就改这里。
 // ============================================================
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-// ---------------- 可调切分参数（看效果后微调这里） ----------------
-// 【重叠带 OVERLAP】：相邻部位在边界处各伸出 8% 身高的三角形，
-// 这样关节旋转时边界三角形被两个部位同时持有，不会出现"缝隙/撕裂"。
+// ---------------- 可调参数（看效果后微调这里） ----------------
 const SPLIT = {
-  HEAD_YN : 0.62,  // 头：质心高于身高的 62%（主边界）
-  LEG_YN  : 0.30,  // 腿：质心低于身高的 30%（主边界）
-  ARM_XN  : 0.42,  // 手臂：|归一化x| > 0.42（主边界）
-  OVERLAP : 0.08,  // ★ 重叠带 = 8% 身高（边界模糊区，三角形同时归属两边）
+  HEAD_YN : 0.62,  // 脖子高度：身高的 62%（奶蛙头大）
+  HIP_YN  : 0.33,  // 胯部高度
+  SPINE_YN: 0.50,  // 脊柱中节高度（手臂挂这里）
+  LEG_YN  : 0.30,  // 腿/身体分界
+  ARM_XN  : 0.42,  // 手臂/身体左右分界
   TARGET_H: 2.0,   // 舞者归一化后的目标身高（世界单位）
   YAW     : 0,     // 模型朝向微调（若背对镜头改成 Math.PI）
 };
@@ -31,8 +38,8 @@ const SPLIT = {
 export const Dancer = {
   root : null,        // 挂进场景的总根
   body : null,        // body 组（负责整体位移/旋转/挤压）
-  parts: {},          // { head:{pivot,mesh,base,pose,idle}, ... }
-  mats : [],          // 6 个部位材质（涂装/受击闪红用）
+  parts: {},          // { pelvis:{bone,pose,idle}, spine:..., head:..., armL..., armR..., legL..., legR... }
+  mats : [],          // [唯一材质]（保留数组形式，兼容旧代码遍历闪红）
   ready: false,
   _tweens: [],        // 动作补间队列
   _beatPhase: 0,      // 待机律动相位
@@ -63,7 +70,7 @@ const EASE = {
 };
 
 // ============================================================
-// 加载 + 切分
+// 加载
 // ============================================================
 export function loadDancer(url){
   return new Promise((resolve, reject)=>{
@@ -72,9 +79,9 @@ export function loadDancer(url){
     new GLTFLoader().load(url, (gltf)=>{
       try{
         build(gltf);
-        console.log(`%c  ✅ [加载] rigged.glb 解析+部位切分完成 (${((performance.now()-_t)/1000).toFixed(2)}s)`, 'color:#7fffd4');
+        console.log(`%c  ✅ [加载] rigged.glb 解析+自动绑骨蒙皮完成 (${((performance.now()-_t)/1000).toFixed(2)}s)`, 'color:#7fffd4');
         resolve(Dancer);
-      }catch(e){ console.error('  ❌ rigged.glb 切分失败：', e); reject(e); }
+      }catch(e){ console.error('  ❌ rigged.glb 自动绑骨失败：', e); reject(e); }
     }, (xhr)=>{
       if(xhr.total){
         // 封顶 100%：QQ/微信等浏览器经压缩代理传输时，loaded 可能大于 total（解压后字节），导致出现 131%
@@ -85,6 +92,30 @@ export function loadDancer(url){
   });
 }
 
+// ============================================================
+// 小工具：百分位数（从模型数据里估关节/手脚位置，比拍脑袋常量靠谱）
+// ============================================================
+function pct(arr, p){
+  if(!arr.length) return 0;
+  const a = arr.slice().sort((x,y)=>x-y);
+  return a[Math.min(a.length-1, Math.floor((a.length-1)*p))];
+}
+const _segTmp = new THREE.Vector3();
+// 点 p 到线段 a-b 的距离
+function distToSeg(px,py,pz, ax,ay,az, bx,by,bz){
+  _v1.set(bx-ax,by-ay,bz-az);
+  _v2.set(px-ax,py-ay,pz-az);
+  const len2 = _v1.lengthSq();
+  let t = len2>0 ? _v2.dot(_v1)/len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  _segTmp.copy(_v1).multiplyScalar(t);
+  return _v2.distanceTo(_segTmp);
+}
+const _v1=new THREE.Vector3(), _v2=new THREE.Vector3();
+
+// ============================================================
+// 构建：烤顶点 → 估关节 → 造骨骼 → 算权重 → 蒙皮
+// ============================================================
 function build(gltf){
   // ---- 找到模型里的第一个 Mesh ----
   let srcMesh = null;
@@ -92,174 +123,214 @@ function build(gltf){
   if(!srcMesh) throw new Error('rigged.glb 里没找到网格');
 
   srcMesh.updateWorldMatrix(true, false);
-  const mw   = srcMesh.matrixWorld;                       // 把节点自带的旋转烤进顶点
-  const nmat = new THREE.Matrix3().getNormalMatrix(mw);
+  const mw = srcMesh.matrixWorld;                        // 把节点自带的旋转烤进顶点
 
   // ---- 总包围盒（世界系）----
   const box = new THREE.Box3().setFromObject(gltf.scene);
   const size = box.getSize(new THREE.Vector3());
-  const H = size.y, W = size.x, cx = (box.min.x+box.max.x)/2;
+  const H = size.y, W = size.x;
+  const cx = (box.min.x+box.max.x)/2;
+  const midz = (box.min.z+box.max.z)/2;
 
-  // ---- 取源几何数据 ----
-  const g  = srcMesh.geometry;
-  const pos = g.attributes.position;
-  const nor = g.attributes.normal;
-  const uv  = g.attributes.uv;
-  const idx = g.index;
-  const triCount = (idx ? idx.count : pos.count) / 3;
+  // ---- 克隆整块几何并烤掉节点矩阵（保持一整块，不切割）----
+  const geo = srcMesh.geometry.clone();
+  geo.applyMatrix4(mw);
+  const pos = geo.attributes.position;
+  const VN = pos.count;
 
-  // ---- 分类桶：每个部位收集三角形顶点 ----
-  // 【重叠带方案】质心落在主边界 ±OVERLAP 模糊带内的三角形，同时归到相邻两个部位，
-  // 这样关节旋转时两边各有一份三角形覆盖边界，不会出现缝隙/撕裂。
-  const PARTS = ['head','belly','armL','armR','legL','legR'];
-  const buckets = {}; PARTS.forEach(p=>buckets[p]=[]);
-  const vA=new THREE.Vector3(), vB=new THREE.Vector3(), vC=new THREE.Vector3();
-  const cen=new THREE.Vector3(), nA=new THREE.Vector3(), nB=new THREE.Vector3(), nC=new THREE.Vector3();
-  const OL = SPLIT.OVERLAP;     // 重叠带半宽
+  // ---- 每个顶点的归一化坐标 + 部位标签（皮肤涂装只染头/肚）----
+  const labels = new Array(VN);
+  const xs=new Array(VN), ys=new Array(VN);
+  const armLVerts=[], armRVerts=[], legLVerts=[], legRVerts=[], headVerts=[], bellyVerts=[];
+  for(let i=0;i<VN;i++){
+    const x=pos.getX(i), y=pos.getY(i), z=pos.getZ(i);
+    const yn=(y-box.min.y)/H;
+    const xn=(x-cx)/(W/2);
+    let lb;
+    if(yn>=SPLIT.HEAD_YN) lb='head';
+    else if(yn<=SPLIT.LEG_YN) lb = xn<0?'legL':'legR';
+    else if(Math.abs(xn)>=SPLIT.ARM_XN) lb = xn<0?'armL':'armR';
+    else lb='belly';
+    labels[i]=lb;
+    xs[i]=x; ys[i]=y;
+    if(lb==='head') headVerts.push(i);
+    else if(lb==='belly') bellyVerts.push(i);
+    // 测量簇带一点容差，保证四肢根部的点也被量到
+    if(yn>SPLIT.LEG_YN-0.04 && yn<SPLIT.HEAD_YN+0.02){
+      if(xn< -SPLIT.ARM_XN+0.06) armLVerts.push(i);
+      if(xn>  SPLIT.ARM_XN-0.06) armRVerts.push(i);
+    }
+    if(yn<SPLIT.LEG_YN+0.06){
+      if(xn<0) legLVerts.push(i); else legRVerts.push(i);
+    }
+  }
 
-  // 把一个三角形推入指定部位桶（位置/法线/UV 各 8 个数）
-  // ★ i0/i1/i2 必须作为参数传入，因为 const 是块级作用域，函数定义在循环外无法直接访问循环内的 i0/i1/i2
-  function pushTri(part, i0, i1, i2){
-    buckets[part].push(
-      vA.x,vA.y,vA.z, nA.x,nA.y,nA.z, uv?uv.getX(i0):0, uv?uv.getY(i0):0,
-      vB.x,vB.y,vB.z, nB.x,nB.y,nB.z, uv?uv.getX(i1):0, uv?uv.getY(i1):0,
-      vC.x,vC.y,vC.z, nC.x,nC.y,nC.z, uv?uv.getX(i2):0, uv?uv.getY(i2):0,
+  // ---- 从数据估关节与四肢末端（绝对坐标）----
+  const hipY   = box.min.y + H*SPLIT.HIP_YN;
+  const spineY = box.min.y + H*SPLIT.SPINE_YN;
+  const neckY  = box.min.y + H*SPLIT.HEAD_YN;
+
+  function shoulderPoint(ids, side){
+    if(ids.length<4) return new THREE.Vector3(cx+side*H*0.16, neckY-H*0.06, midz);
+    const oxs=ids.map(i=>Math.abs(xs[i]-cx));
+    const yys=ids.map(i=>ys[i]);
+    const zzs=ids.map(i=>pos.getZ(i));
+    return new THREE.Vector3(
+      cx + side*pct(oxs,0.25),                 // 靠身体内侧 = 手臂根部
+      pct(yys,0.8),                            // 簇内偏上
+      zzs.reduce((a,b)=>a+b,0)/zzs.length
     );
   }
+  function handPoint(ids, side){
+    if(ids.length<4) return new THREE.Vector3(cx+side*H*0.3, spineY-H*0.22, midz);
+    const oxs=ids.map(i=>Math.abs(xs[i]-cx));
+    const yys=ids.map(i=>ys[i]);
+    return new THREE.Vector3(cx+side*pct(oxs,0.9), pct(yys,0.12), midz);
+  }
+  function footPoint(ids, side){
+    if(ids.length<4) return new THREE.Vector3(cx+side*H*0.07, box.min.y+0.01, midz);
+    const xxs=ids.map(i=>xs[i]);
+    return new THREE.Vector3(pct(xxs,0.5), pct(ids.map(i=>ys[i]),0.02), midz);
+  }
+  const shL=shoulderPoint(armLVerts,-1), shR=shoulderPoint(armRVerts, 1);
+  const handL=handPoint(armLVerts,-1), handR=handPoint(armRVerts, 1);
+  const footL=footPoint(legLVerts,-1), footR=footPoint(legRVerts, 1);
 
-  for(let t=0;t<triCount;t++){
-    const i0 = idx? idx.getX(t*3)   : t*3;
-    const i1 = idx? idx.getX(t*3+1) : t*3+1;
-    const i2 = idx? idx.getX(t*3+2) : t*3+2;
-    // 顶点 -> 世界系（烤掉节点矩阵）
-    vA.fromBufferAttribute(pos,i0).applyMatrix4(mw);
-    vB.fromBufferAttribute(pos,i1).applyMatrix4(mw);
-    vC.fromBufferAttribute(pos,i2).applyMatrix4(mw);
-    cen.copy(vA).add(vB).add(vC).divideScalar(3);
+  // ---- 造骨骼（绑定姿势全部零旋转；位置用绝对坐标，和几何体同一坐标系）----
+  const pelvis=new THREE.Bone(); pelvis.position.set(cx,hipY,midz);
+  const spine=new THREE.Bone();  spine.position.set(0, spineY-hipY, 0);
+  const head=new THREE.Bone();   head.position.set(0, neckY-spineY, 0);
+  const armL=new THREE.Bone();   armL.position.set(shL.x-cx, shL.y-spineY, shL.z-midz);
+  const armR=new THREE.Bone();   armR.position.set(shR.x-cx, shR.y-spineY, shR.z-midz);
+  const legL=new THREE.Bone();   legL.position.set(footL.x-cx, 0, footL.z-midz);
+  const legR=new THREE.Bone();   legR.position.set(footR.x-cx, 0, footR.z-midz);
+  pelvis.add(spine);
+  spine.add(head); spine.add(armL); spine.add(armR);
+  pelvis.add(legL); pelvis.add(legR);
+  const boneArr=[pelvis,spine,head,armL,armR,legL,legR];
+  const boneNames=['pelvis','spine','head','armL','armR','legL','legR'];
 
-    // ---- 质心分类（带重叠带）----
-    const yn = (cen.y - box.min.y) / H;              // 0=脚底 1=头顶
-    const xn = (cen.x - cx) / (W/2);                 // -1=左 1=右
+  // ---- 每根骨的"骨段"（a→b 绝对坐标）与影响半径 ----
+  // 半径从模型实测：四肢取簇内 70 百分位到骨段距离再放宽 1.5 倍
+  function limbRadius(ids, a, b){
+    if(ids.length<4) return H*0.06;
+    const ds=ids.map(i=>distToSeg(pos.getX(i),pos.getY(i),pos.getZ(i), a.x,a.y,a.z, b.x,b.y,b.z));
+    return Math.max(H*0.02, pct(ds,0.7)*1.5);
+  }
+  const rArmL=limbRadius(armLVerts,shL,handL);
+  const rArmR=limbRadius(armRVerts,shR,handR);
+  const rLegL=limbRadius(legLVerts,new THREE.Vector3(cx,hipY,midz),footL);
+  const rLegR=limbRadius(legRVerts,new THREE.Vector3(cx,hipY,midz),footR);
+  // 头半径
+  let rHead=H*0.16;
+  if(headVerts.length){
+    const ds=headVerts.map(i=>Math.max(Math.abs(pos.getX(i)-cx),Math.abs(pos.getZ(i)-midz)));
+    rHead=pct(ds,0.8)*1.3;   // 奶蛙头特别大，系数放宽保证整个头都在影响范围内
+  }
+  // 躯干半径（用肚子区域到中轴的横向距离）
+  let rBelly=H*0.22;
+  if(bellyVerts.length){
+    const ds=bellyVerts.map(i=>{
+      _v1.set(pos.getX(i)-cx,0,pos.getZ(i)-midz); return _v1.length();
+    });
+    rBelly=pct(ds,0.8)*1.2;
+  }
+  // 骨段表：[ax,ay,az, bx,by,bz, radius]
+  const segs=[
+    [cx,hipY,midz, cx,spineY,midz, rBelly*1.15],          // pelvis
+    [cx,spineY,midz, cx,neckY,midz, rBelly],              // spine
+    [cx,neckY,midz, cx,box.max.y,midz, rHead],            // head
+    [shL.x,shL.y,shL.z, handL.x,handL.y,handL.z, rArmL],  // armL
+    [shR.x,shR.y,shR.z, handR.x,handR.y,handR.z, rArmR],  // armR
+    [cx,hipY,midz, footL.x,footL.y,footL.z, rLegL],       // legL
+    [cx,hipY,midz, footR.x,footR.y,footR.z, rLegR],       // legR
+  ];
 
-    // 法线变换（用矩阵3）
-    if(nor){
-      nA.fromBufferAttribute(nor,i0).applyMatrix3(nmat).normalize();
-      nB.fromBufferAttribute(nor,i1).applyMatrix3(nmat).normalize();
-      nC.fromBufferAttribute(nor,i2).applyMatrix3(nmat).normalize();
+  // ---- 自动蒙皮权重：w = max(0, 1-d/r)^2，top4 归一 ----
+  const skinIdx=new Uint16Array(VN*4);
+  const skinW=new Float32Array(VN*4);
+  let fallbackCount=0;
+  const ws=new Array(boneArr.length);
+  for(let i=0;i<VN;i++){
+    const px=pos.getX(i), py=pos.getY(i), pz=pos.getZ(i);
+    let sum=0, best=-1, bestW=1e-6;
+    for(let bI=0;bI<boneArr.length;bI++){
+      const s=segs[bI];
+      const d=distToSeg(px,py,pz, s[0],s[1],s[2],s[3],s[4],s[5]);
+      let w=1-d/s[6]; if(w<0) w=0; w=w*w;
+      ws[bI]=w; sum+=w;
+      if(w>bestW){ bestW=w; best=bI; }
     }
-
-    // ---- 头 / 肚子 边界：HEAD_YN ± OL ----
-    const isHead = yn > SPLIT.HEAD_YN - OL;
-    const isBellyH = yn < SPLIT.HEAD_YN + OL;
-    // ---- 腿 / 肚子 边界：LEG_YN ± OL ----
-    const isLeg = yn < SPLIT.LEG_YN + OL;
-    const isBellyL = yn > SPLIT.LEG_YN - OL;
-    // ---- 手臂 / 肚子 边界：ARM_XN ± OL ----
-    const absX = Math.abs(xn);
-    const isArm = absX > SPLIT.ARM_XN - OL;
-    const isBellyX = absX < SPLIT.ARM_XN + OL;
-
-    // 腿分左右（只在腿区域内判断）
-    const legSide = xn < 0 ? 'legL' : 'legR';
-    // 手臂分左右
-    const armSide = xn < 0 ? 'armL' : 'armR';
-
-    // ---- 按区域归属（重叠带内三角形推入多个桶）----
-    if(isHead) pushTri('head', i0, i1, i2);
-    if(isLeg)  pushTri(legSide, i0, i1, i2);
-
-    // 中段（肚子/手臂）：需要同时满足"不是纯头区"和"不是纯腿区"
-    const midBelly = isBellyH && isBellyL;   // 在头腿之间
-    if(midBelly){
-      if(isArm) pushTri(armSide, i0, i1, i2);             // 手臂区域（含与肚子的重叠带）
-      if(isBellyX) pushTri('belly', i0, i1, i2);          // 肚子区域（含与手臂的重叠带）
+    if(sum<1e-4){
+      // 兜底：离哪根骨最近就全归它（理论上极少，半径都是按实测放宽的）
+      fallbackCount++;
+      for(let k=0;k<4;k++){ skinIdx[i*4+k]=best<0?0:best; skinW[i*4+k]=k===0?1:0; }
+      continue;
+    }
+    for(let bI=0;bI<boneArr.length;bI++) ws[bI]/=sum;   // 归一
+    // 取最大的 4 个
+    const order=ws.map((w,bI)=>[w,bI]).sort((a,b)=>b[0]-a[0]).slice(0,4);
+    for(let k=0;k<4;k++){
+      skinIdx[i*4+k]=order[k][1];
+      skinW[i*4+k]=order[k][0];
     }
   }
+  geo.setAttribute('skinIndex', new THREE.BufferAttribute(skinIdx,4));
+  geo.setAttribute('skinWeight', new THREE.BufferAttribute(skinW,4));
 
-  // ---- 源材质（贴图共享，材质克隆 6 份便于涂装/闪红）----
-  const srcMat = srcMesh.material;
+  // ---- 组装：root > body > rig >（SkinnedMesh + 骨骼）----
+  const root=new THREE.Group();
+  const body=new THREE.Group();
+  const rig=new THREE.Group();
+  root.add(body); body.add(rig);
+  // 顶点是绝对坐标：rig 平移让脚底贴 y=0、水平居中
+  rig.position.set(-cx, -box.min.y, -midz);
+  if(SPLIT.YAW) body.rotation.y=SPLIT.YAW;
 
-  // ---- 组装：root > body > 各部位 pivot ----
-  const root = new THREE.Group();                    // 总根
-  const body = new THREE.Group();                    // 整体动作组
-  root.add(body);
-  // 落地 + 居中：顶点已是世界系绝对坐标，body 平移让脚底贴 y=0、水平居中
-  body.position.set(-cx, -box.min.y, -(box.min.z+box.max.z)/2);
-  if(SPLIT.YAW) body.rotation.y = SPLIT.YAW;
+  // ---- 材质：唯一材质 + 顶点色（分部位涂装靠它）----
+  const mat=srcMesh.material.clone();
+  mat.vertexColors=true;
+  const vColor=new Float32Array(VN*3).fill(1);
+  geo.setAttribute('color', new THREE.BufferAttribute(vColor,3));
 
-  const srcBox = box.clone();
-  const parts = {};
-  const mats = [];
+  const mesh=new THREE.SkinnedMesh(geo, mat);
+  mesh.castShadow=true;
+  mesh.frustumCulled=false;   // 骨姿态变化后包围盒会偏，关掉裁剪保险
+  rig.add(mesh);
+  rig.add(pelvis);
 
-  // —— 三段数组（位置/法线/UV）拼装每个部位的几何体 ——
-  for(const p of PARTS){
-    const arr = buckets[p];
-    if(!arr.length) continue;
-    const P=[],N=[],U=[];
-    for(let i=0;i<arr.length;i+=8){
-      P.push(arr[i],arr[i+1],arr[i+2]);
-      N.push(arr[i+3],arr[i+4],arr[i+5]);
-      U.push(arr[i+6],arr[i+7]);
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(P,3));
-    geo.setAttribute('normal',   new THREE.Float32BufferAttribute(N,3));
-    geo.setAttribute('uv',       new THREE.Float32BufferAttribute(U,2));
-    geo.computeBoundingBox();
-    geo.computeBoundingSphere();
-
-    const mat = srcMat.clone();
-    mats.push(mat);
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = true;
-    mesh.frustumCulled = false;   // 部位旋转后包围盒会偏，关掉裁剪保险
-
-    // ---- 枢轴位置：各关节的世界坐标（转到 body 本地 = 世界坐标 - body.position）----
-    const bb = geo.boundingBox;
-    let pivotPos;
-    switch(p){
-      case 'head': pivotPos = new THREE.Vector3((bb.min.x+bb.max.x)/2, bb.min.y, (bb.min.z+bb.max.z)/2); break; // 脖子
-      case 'armL': pivotPos = new THREE.Vector3(bb.max.x*0.82, bb.max.y*0.92, (bb.min.z+bb.max.z)/2); break;    // 肩
-      case 'armR': pivotPos = new THREE.Vector3(bb.min.x*0.82, bb.max.y*0.92, (bb.min.z+bb.max.z)/2); break;    // 肩
-      case 'legL': pivotPos = new THREE.Vector3((bb.min.x+bb.max.x)/2, bb.max.y, (bb.min.z+bb.max.z)/2); break; // 胯
-      case 'legR': pivotPos = new THREE.Vector3((bb.min.x+bb.max.x)/2, bb.max.y, (bb.min.z+bb.max.z)/2); break; // 胯
-      default   : pivotPos = new THREE.Vector3(0, bb.min.y, (bb.min.z+bb.max.z)/2); break;                      // 脊柱底
-    }
-    pivotPos.sub(body.position);               // 世界坐标 → body 本地坐标
-    const pivot = new THREE.Group();
-    pivot.position.copy(pivotPos);
-    mesh.position.copy(pivotPos).negate();     // 网格相对枢轴反向偏移，落回原位
-    pivot.add(mesh);
-    body.add(pivot);
-
-    parts[p] = {
-      pivot, mesh, mat,
-      base : {x:pivot.rotation.x, y:pivot.rotation.y, z:pivot.rotation.z},
-      pose : {x:0, y:0, z:0},        // 动作偏移（补间写入）
-      idle : {x:0, y:0, z:0},        // 待机律动偏移（每帧写入）
-    };
-  }
+  // ---- 绑定蒙皮：先更新世界矩阵，再算逆绑定矩阵，最后 bind ----
+  root.updateMatrixWorld(true);
+  const skeleton=new THREE.Skeleton(boneArr);
+  skeleton.calculateInverses();
+  mesh.bind(skeleton);
 
   // ---- 整体归一化到 TARGET_H ----
-  root.scale.setScalar(SPLIT.TARGET_H / srcBox.getSize(new THREE.Vector3()).y);
+  root.scale.setScalar(SPLIT.TARGET_H/H);
 
   // ---- 清理源模型 ----
   gltf.scene.traverse(n=>{
     if(n.isMesh){ n.geometry.dispose(); }
   });
 
-  Dancer.root = root;
-  Dancer.body = body;
-  Dancer.parts = parts;
-  Dancer.mats = mats;
-  Dancer.ready = true;
-  Dancer._baseX = body.position.x;   // 记录初始水平位（跑动/复位用）
-  Dancer._baseY = body.position.y;
+  // ---- 部位动作结构：每根骨带 pose（动作补间）+ idle（每帧律动）----
+  const parts={};
+  boneArr.forEach((b,i)=>{
+    parts[boneNames[i]]={ bone:b, pose:{x:0,y:0,z:0}, idle:{x:0,y:0,z:0} };
+  });
 
-  // 调试输出：各部位三角面数
-  const stat = PARTS.map(p=>`${p}=${(buckets[p].length/24)|0}`).join(' ');
-  console.log('%c[奶娃切分] 完成：'+stat, 'color:#ffe17a');
-  window.__danceParts = parts;   // 控制台可查
+  Dancer.root=root;
+  Dancer.body=body;
+  Dancer.parts=parts;
+  Dancer.mats=[mat];
+  Dancer._mat=mat;
+  Dancer._colorAttr=geo.attributes.color;
+  Dancer._labels=labels;
+  Dancer.ready=true;
+  Dancer._baseX=body.position.x;
+  Dancer._baseY=body.position.y;
+
+  console.log(`%c[奶蛙绑骨] 完成：顶点 ${VN}，7 根骨，兜底顶点 ${fallbackCount} 个`, 'color:#ffe17a');
 }
 
 // ============================================================
@@ -288,10 +359,10 @@ export function doAction(dir, quality='good'){
     tw(Dancer.body.position,'y', -0.14, 130, 'outQuad', 0, amp);
     tw(Dancer.body.position,'y',  0,  430, 'outElastic', 140);
   }
-  else if(dir === 2){                  // ↑ 扭肚子 + 抬头
-    tw(parts.belly.pose,'y',  0.5, 140, 'outQuad', 0, amp);
-    tw(parts.belly.pose,'y', -0.32, 240, 'inOutCubic', 150);
-    tw(parts.belly.pose,'y',  0,   420, 'outElastic', 400);
+  else if(dir === 2){                  // ↑ 扭脊柱 + 抬头（肚子是整块网格的中段，扭转交给脊柱骨）
+    tw(parts.spine.pose,'y',  0.5, 140, 'outQuad', 0, amp);
+    tw(parts.spine.pose,'y', -0.32, 240, 'inOutCubic', 150);
+    tw(parts.spine.pose,'y',  0,   420, 'outElastic', 400);
     if(parts.head){ tw(parts.head.pose,'x', -0.62, 150, 'outBack', 0, amp); tw(parts.head.pose,'x', 0, 520, 'outElastic', 180); }
     tw(Dancer.body.scale,'x', 0.9, 130, 'outQuad', 0, amp);
     tw(Dancer.body.scale,'x', 1,  440, 'outElastic', 140);
@@ -315,21 +386,20 @@ export function stumble(){
   const now = performance.now();
   if(now - _stumbleT < 320) return;    // 节流，连 miss 不至于抽搐
   _stumbleT = now;
-  beginGroup('miss');
   const b = Dancer.body;
   if(!b) return;   // ★ 舞者尚未加载就位时忽略（防止游戏循环刷空引用错误）
+  beginGroup('miss');
   tw(b.rotation,'z',  0.3, 90, 'outQuad');
   tw(b.rotation,'z', -0.22, 180, 'inOutCubic', 100);
   tw(b.rotation,'z',  0,   320, 'outElastic', 290);
   const parts = P();
   if(parts.head){ tw(parts.head.pose,'z', 0.4, 120, 'outQuad'); tw(parts.head.pose,'z', 0, 400, 'outElastic', 140); }
-  // 材质闪红
-  Dancer.mats.forEach(m=>{
-    m.emissive = m.emissive || new THREE.Color(0,0,0);
-    m.emissive.setHex(0xff2244);
-    m.emissiveIntensity = 0.85;
-  });
-  setTimeout(()=>{ Dancer.mats.forEach(m=>{ if(m.emissive) m.emissiveIntensity = 0; }); }, 220);
+  // 材质闪红（整块网格只有一个材质，整体染红再恢复，跳过 emissive 兼容问题）
+  const m=Dancer._mat;
+  if(m){
+    m.color.setHex(0xff5566);
+    setTimeout(()=>{ m.color.setHex(0xffffff); }, 220);
+  }
 }
 
 // 结算庆祝：蹦跳 + 挥双手 + 转圈
@@ -368,7 +438,7 @@ export function resetBody(){
   b.position.x = Dancer._baseX || 0;
   b.position.y = Dancer._baseY || 0;
   b.scale.set(1,1,1);
-  // 局部 pose 复位
+  // 骨骼 pose 复位
   for(const k in Dancer.parts){
     const p = Dancer.parts[k];
     p.pose.x=0; p.pose.y=0; p.pose.z=0;
@@ -376,7 +446,7 @@ export function resetBody(){
 }
 
 // ============================================================
-// 每帧更新：补间 + 待机律动
+// 每帧更新：补间 + 律动
 // ============================================================
 export function updateDancer(dt, bpm, dancing){
   if(!Dancer.ready) return;
@@ -392,7 +462,7 @@ export function updateDancer(dt, bpm, dancing){
     w.obj[w.axis] = w.from + (w.to - w.from) * EASE[w.ease](t);
   }
 
-  // ---- 律动：演出中手脚肚腿全动（跟节拍），待机时整体轻扭 ----
+  // ---- 律动：演出中手脚脊腿全动（跟节拍），待机时整体轻扭 ----
   const bps = (dancing? bpm : 100) / 60;
   Dancer._beatPhase += dt * bps * Math.PI;          // 半拍一相位
   const s = Math.sin(Dancer._beatPhase);
@@ -402,13 +472,11 @@ export function updateDancer(dt, bpm, dancing){
   const parts = Dancer.parts;
 
   if(dancing){
-    // ========== 演出中：手脚肚腿全开，跟节拍狂扭 ==========
+    // ========== 演出中：跟节拍律动（动作补间是主角，律动打底） ==========
     const e = 1.0;
-    // 整体弹跳 + 呼吸
     if(!Dancer._tweens.some(w=>w.obj===b.position && w.axis==='y')){
       b.position.y = Math.abs(s) * 0.12 * e;
     }
-    // ★ 整体左右跑动（不止原地摇摆，真的在舞台跑来跑去）
     if(!Dancer._tweens.some(w=>w.obj===b.position && w.axis==='x')){
       b.position.x = (Dancer._baseX||0) + Math.sin(Dancer._beatPhase*0.5) * 0.8;
     }
@@ -416,28 +484,28 @@ export function updateDancer(dt, bpm, dancing){
       b.scale.x = 1 + s * 0.04 * e;
       b.scale.y = 1 - s * 0.04 * e;
     }
-    // 整体左右摇摆（动作补间占用 rotation 时不抢）
     if(!Dancer._tweens.some(w=>w.obj===b.rotation)){
       b.rotation.z = s * 0.09 * e;
       b.rotation.y = c * 0.13 * e;
     }
-    // 手臂：跟随节拍甩动（幅度收一档，给 doAction 的大动作留空间，两轴叠加不拧麻花）
+    // 手臂
     if(parts.armL){ parts.armL.idle.x = s * 0.55 * e; parts.armL.idle.z = s2 * 0.22 * e; }
     if(parts.armR){ parts.armR.idle.x = -s * 0.55 * e; parts.armR.idle.z = -s2 * 0.22 * e; }
-    // 肚子：左右扭（幅度小一点，重叠带边界三角不会和手臂错开成碎片）
-    if(parts.belly){ parts.belly.idle.y = s * 0.14 * e; parts.belly.idle.z = c * 0.06 * e; }
-    // 腿：左右交替踏步（收一档，踢腿动作时脚不穿进身体）
+    // 脊柱（带轻微左右扭）
+    if(parts.spine){ parts.spine.idle.y = s * 0.14 * e; parts.spine.idle.z = c * 0.06 * e; }
+    // 腿
     if(parts.legL){ parts.legL.idle.x = Math.max(0,s) * 0.45 * e; parts.legL.idle.z = s2 * 0.1 * e; }
     if(parts.legR){ parts.legR.idle.x = Math.max(0,-s) * 0.45 * e; parts.legR.idle.z = -s2 * 0.1 * e; }
-    // 头：跟节拍轻点
+    // 头
     if(parts.head){ parts.head.idle.x = c * 0.18 * e; parts.head.idle.z = s * 0.1 * e; }
+    // 骨盆本身不扭（整体摇摆都在 body 上）
+    if(parts.pelvis){ parts.pelvis.idle.x=0; parts.pelvis.idle.y=0; parts.pelvis.idle.z=0; }
   }else{
-    // ========== 待机：整体轻微扭动 + 呼吸，局部几乎不动（防撕裂）==========
+    // ========== 待机：整体轻微扭动 + 呼吸，骨骼几乎不动 ==========
     const e = 0.55;
     if(!Dancer._tweens.some(w=>w.obj===b.position && w.axis==='y')){
       b.position.y = Math.abs(s) * 0.05 * e;
     }
-    // ★ 待机时 x 复位（演出跑动后回到舞台中央）
     if(!Dancer._tweens.some(w=>w.obj===b.position && w.axis==='x')){
       b.position.x = Dancer._baseX || 0;
     }
@@ -449,40 +517,45 @@ export function updateDancer(dt, bpm, dancing){
       b.rotation.z = s * 0.04 * e;
       b.rotation.y = c * 0.06 * e;
     }
-    // 待机时局部幅度极小
     if(parts.head){ parts.head.idle.z = s * 0.03 * e; parts.head.idle.x = c * 0.02 * e; }
     if(parts.armL) parts.armL.idle.x = s * 0.08 * e;
     if(parts.armR) parts.armR.idle.x = -s * 0.08 * e;
-    if(parts.belly){ parts.belly.idle.y = 0; parts.belly.idle.x = 0; parts.belly.idle.z = 0; }
-    if(parts.legL){ parts.legL.idle.x = 0; parts.legL.idle.y = 0; parts.legL.idle.z = 0; }
-    if(parts.legR){ parts.legR.idle.x = 0; parts.legR.idle.y = 0; parts.legR.idle.z = 0; }
+    for(const k of ['pelvis','spine','legL','legR']){
+      if(parts[k]){ parts[k].idle.x=0; parts[k].idle.y=0; parts[k].idle.z=0; }
+    }
   }
 
-  // ---- 合成最终姿态：base + pose + idle ----
+  // ---- 合成最终骨姿态：pose + idle（绑定姿势为零旋转）----
   for(const k in parts){
     const p = parts[k];
-    p.pivot.rotation.set(
-      p.base.x + p.pose.x + p.idle.x,
-      p.base.y + p.pose.y + p.idle.y,
-      p.base.z + p.pose.z + p.idle.z
+    p.bone.rotation.set(
+      p.pose.x + p.idle.x,
+      p.pose.y + p.idle.y,
+      p.pose.z + p.idle.z
     );
-    // idle 衰减到 0 附近没关系，每帧都会重写
   }
 }
 
 // ============================================================
-// 涂装：给 6 个部位上色（map 保留，color 相乘）
+// 涂装：单材质 + 顶点色，按部位标签分别染头/肚子
 // ============================================================
+const _cHead=new THREE.Color(), _cBelly=new THREE.Color();
 export function setSkin(skin){
   if(!Dancer.ready) return;
-  Dancer.mats.forEach(m=>{ m.color.setHex(0xffffff); });
-  for(const k in skin.colors){
-    const p = Dancer.parts[k];
-    if(p) p.mat.color.setHex(skin.colors[k]);
+  const attr=Dancer._colorAttr, labels=Dancer._labels;
+  _cHead.setHex(skin.colors.head ?? 0xffffff);
+  _cBelly.setHex(skin.colors.belly ?? 0xffffff);
+  for(let i=0;i<labels.length;i++){
+    const lb=labels[i];
+    if(lb==='head') attr.setXYZ(i,_cHead.r,_cHead.g,_cHead.b);
+    else if(lb==='belly') attr.setXYZ(i,_cBelly.r,_cBelly.g,_cBelly.b);
+    else attr.setXYZ(i,1,1,1);
   }
-  if(skin.glow){
-    Dancer.mats.forEach(m=>{ m.emissive = m.emissive||new THREE.Color(); m.emissive.setHex(skin.glow); m.emissiveIntensity = 0.22; });
-  } else {
-    Dancer.mats.forEach(m=>{ if(m.emissive) m.emissiveIntensity = 0; });
+  attr.needsUpdate=true;
+  // 发光涂装（材质带 emissive 才生效）
+  const m=Dancer._mat;
+  if(m && 'emissive' in m){
+    if(skin.glow){ m.emissive.setHex(skin.glow); m.emissiveIntensity=0.22; }
+    else m.emissiveIntensity=0;
   }
 }
