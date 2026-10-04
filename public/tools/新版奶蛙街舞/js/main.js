@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261105';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261105';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261105';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261105';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261105';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261106';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261106';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261106';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261106';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261106';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261105';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261106';
 
 const $=id=>document.getElementById(id);
 
@@ -38,19 +38,19 @@ let stageGroup=null, curTheme=THEMES[0];
 let keyLight=null, lampL=null, lampR=null, floorMesh=null, ringMesh=null;
 let _stageToken=0, _bgTex=null;   // 图片背景：异步加载令牌（防旧回调覆盖）+ 当前背景贴图（用于释放）
 
-// 图片背景布局：宽度优先、顶部对齐的 cover 适配 —— 图片永远不变形。
-// 手机竖屏（sa<1）时正方形图片刚好铺满屏幕上部，下半部（舞台区）采样图片边缘色，被舞台遮住。
+// 正方形背景布局：宽度铺满、顶部对齐，整张图完整落在屏幕上部（约屏幕上半 47%）；
+// 屏幕其余部分采样图片边缘（UV 超出 0-1 时纹理自动 clamp 到边缘色）做自然延伸，会被舞台遮住。
+// 图片永远等比显示，人物不会被拉长。
 function layoutBgTex(tex){
-  const ia=tex.image.width/tex.image.height;        // 图片宽高比
-  const sa=innerWidth/innerHeight;                  // 屏幕宽高比
-  const ry=sa/ia;
-  if(ry<=1){
-    // 图片比屏幕更"宽"：横向铺满，纵向只用上部
-    tex.repeat.set(1,ry); tex.offset.set(0,1-ry);
+  const sa=innerWidth/innerHeight;                  // 屏幕宽高比（竖屏<1）
+  if(sa<=1){
+    // 竖屏：横向完整铺满；屏幕上部正方形区 v∈[1-sa,1] ↔ 图片 v∈[0,1]
+    tex.repeat.set(1, 1/sa);
+    tex.offset.set(0, (sa-1)/sa);
   }else{
-    // 屏幕更宽：纵向铺满，横向居中裁剪
-    const rx=ia/sa;
-    tex.repeat.set(rx,1); tex.offset.set((1-rx)/2,0);
+    // 横屏：纵向铺满，正方形水平居中
+    tex.repeat.set(sa, 1);
+    tex.offset.set((1-sa)/2, 0);
   }
 }
 
