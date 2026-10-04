@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261070';
-import { Game, pauseGame, chartNotes } from './game.js?v=20261070';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261071';
+import { Game, pauseGame } from './game.js?v=20261071';
 
 // ============================================================
 // 存档（localStorage）
@@ -141,23 +141,24 @@ export const THEMES=[
 // 歌曲库：只保留真实存在的内置曲 music.mp3。
 // （扒站时 songs/ 目录下的其他音频没有拿到，条目全是点了没声的死链，已按用户要求删除；
 //   想听别的歌，用「上传歌曲」把音频连自动谱面一起存进班级曲库即可）
+// stars = 难度星级（离线按「音符密度+双押/连续双押」评好直接写死，用户端不再计算）
 export const SONGS=[
-  {id:'default', name:'默认曲目', artist:'内置BGM', file:'music.mp3', bpm:104, desc:'游戏自带的节奏曲', cat:'builtin'},
-  {id:'u14', name:'小半', artist:'陈粒', file:'1790904961734_529237489.mp3', bpm:165, desc:'165 BPM · 约5分钟', cat:'builtin', staticChart:true},
-  {id:'u15', name:'玻璃', artist:'Gareth.T', file:'1790905313361_805251406.mp3', bpm:146, desc:'146 BPM · 约3分钟', cat:'builtin', staticChart:true},
-  {id:'u16', name:'晴天', artist:'周杰伦', file:'1790905913537_81414028.mp3', bpm:137, desc:'137 BPM · 约4.5分钟', cat:'builtin', staticChart:true},
-  {id:'u17', name:'甲乙丙丁', artist:'李佳薇', file:'1790906408562_96433968.mp3', bpm:130, desc:'130 BPM · 约3.5分钟', cat:'builtin', staticChart:true},
-  {id:'u18', name:'雨天', artist:'孙燕姿', file:'1790921439546_533325666.mp3', bpm:114, desc:'114 BPM · 约4分钟', cat:'builtin', staticChart:true},
-  {id:'u19', name:'一见如故', artist:'同学上传', file:'1790930389175_193904487.mp3', bpm:118, desc:'118 BPM · 约4.5分钟', cat:'builtin', staticChart:true},
-  {id:'u20', name:'女骑士', artist:'徐良', file:'1790935598626_920508153.mp3', bpm:110, desc:'110 BPM · 约4分钟', cat:'builtin', staticChart:true},
-  {id:'u21', name:'河山大好', artist:'许嵩', file:'1790937139158_104059326.mp3', bpm:175, desc:'175 BPM · 约3.5分钟', cat:'builtin', staticChart:true},
-  {id:'u22', name:'渲染离别', artist:'许嵩', file:'1790940036039_422108884.mp3', bpm:120, desc:'120 BPM · 约4.5分钟', cat:'builtin', staticChart:true},
-  {id:'u23', name:'那时雨', artist:'徐良', file:'1790997804951_1054170.mp3', bpm:119, desc:'119 BPM · 约3.5分钟', cat:'builtin', staticChart:true},
-  {id:'u24', name:'下完这场雨', artist:'后弦', file:'1790997815955_933366348.mp3', bpm:146, desc:'146 BPM · 约4.5分钟', cat:'builtin', staticChart:true},
-  {id:'u25', name:'玫瑰花的葬礼', artist:'许嵩', file:'1790997826227_330567208.mp3', bpm:164, desc:'164 BPM · 约4.3分钟', cat:'builtin', staticChart:true},
-  {id:'u26', name:'画风', artist:'后弦', file:'1790997851988_318725934.mp3', bpm:146, desc:'146 BPM · 约4.1分钟', cat:'builtin', staticChart:true},
-  {id:'u30', name:'出雨林记', artist:'许嵩', file:'1791030610756_931040190.mp3', bpm:134, desc:'134 BPM · 约4.6分钟', cat:'builtin', staticChart:true},
-  {id:'u31', name:'有何不可', artist:'许嵩', file:'1791030705432_931125239.mp3', bpm:101, desc:'101 BPM · 约4分钟', cat:'builtin', staticChart:true},
+  {id:'default', name:'默认曲目', artist:'内置BGM', file:'music.mp3', bpm:104, desc:'游戏自带的节奏曲', cat:'builtin', stars:2},
+  {id:'u14', name:'小半', artist:'陈粒', file:'1790904961734_529237489.mp3', bpm:165, desc:'165 BPM · 约5分钟', cat:'builtin', staticChart:true, stars:4},
+  {id:'u15', name:'玻璃', artist:'Gareth.T', file:'1790905313361_805251406.mp3', bpm:146, desc:'146 BPM · 约3分钟', cat:'builtin', staticChart:true, stars:3},
+  {id:'u16', name:'晴天', artist:'周杰伦', file:'1790905913537_81414028.mp3', bpm:137, desc:'137 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:3},
+  {id:'u17', name:'甲乙丙丁', artist:'李佳薇', file:'1790906408562_96433968.mp3', bpm:130, desc:'130 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:3},
+  {id:'u18', name:'雨天', artist:'孙燕姿', file:'1790921439546_533325666.mp3', bpm:114, desc:'114 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:2},
+  {id:'u19', name:'一见如故', artist:'同学上传', file:'1790930389175_193904487.mp3', bpm:118, desc:'118 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:3},
+  {id:'u20', name:'女骑士', artist:'徐良', file:'1790935598626_920508153.mp3', bpm:110, desc:'110 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:2},
+  {id:'u21', name:'河山大好', artist:'许嵩', file:'1790937139158_104059326.mp3', bpm:175, desc:'175 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:4},
+  {id:'u22', name:'渲染离别', artist:'许嵩', file:'1790940036039_422108884.mp3', bpm:120, desc:'120 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:2},
+  {id:'u23', name:'那时雨', artist:'徐良', file:'1790997804951_1054170.mp3', bpm:119, desc:'119 BPM · 约3.5分钟', cat:'builtin', staticChart:true, stars:2},
+  {id:'u24', name:'下完这场雨', artist:'后弦', file:'1790997815955_933366348.mp3', bpm:146, desc:'146 BPM · 约4.5分钟', cat:'builtin', staticChart:true, stars:3},
+  {id:'u25', name:'玫瑰花的葬礼', artist:'许嵩', file:'1790997826227_330567208.mp3', bpm:164, desc:'164 BPM · 约4.3分钟', cat:'builtin', staticChart:true, stars:4},
+  {id:'u26', name:'画风', artist:'后弦', file:'1790997851988_318725934.mp3', bpm:146, desc:'146 BPM · 约4.1分钟', cat:'builtin', staticChart:true, stars:3},
+  {id:'u30', name:'出雨林记', artist:'许嵩', file:'1791030610756_931040190.mp3', bpm:134, desc:'134 BPM · 约4.6分钟', cat:'builtin', staticChart:true, stars:3},
+  {id:'u31', name:'有何不可', artist:'许嵩', file:'1791030705432_931125239.mp3', bpm:101, desc:'101 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:1},
 ];
 
 // 歌曲分类（渲染时每组带小标题；空的分组会自动跳过）
@@ -166,7 +167,7 @@ export const SONG_CATS=[
   {id:'user',    name:'⭐ 班级自制', tip:'同学上传 · 自动谱面'},
 ];
 
-// 难度星级分组（歌曲列表按星数分区，空的分组自动跳过；星数算法见 ensureSongStars）
+// 难度星级分组（歌曲列表按星数分区，空的分组自动跳过；星数离线评好写在每首歌的 stars 字段）
 export const STAR_TIERS=[
   {stars:1, name:'⭐ 1 星 · 入门',    tip:'节奏缓慢 · 随手就能跟'},
   {stars:2, name:'⭐⭐ 2 星 · 轻松',  tip:'双押很少 · 喘得过来'},
@@ -180,7 +181,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261070');
+    const r=await fetch('charts.json?v=20261071');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -217,6 +218,8 @@ export async function refreshUserSongs(){
       desc:`${row.note_count||0} 音符 · ${fmtDur(row.duration)}`,
       cat:'user', user:true, uploaderId:row.uploader_id,
       duration:row.duration||0, noteCount:row.note_count||0,
+      // 星级沿用离线评好的写死值；以后新上传的歌默认 3 星，待我评完再补
+      stars:SONGS.find(s=>s.id==='u'+row.id)?.stars||3,
     }));
     USER_SONGS.loaded=true; USER_SONGS.loadError=false;
     serverOn=true;
@@ -258,60 +261,7 @@ export async function ensureChart(song){
   return song.chart;
 }
 
-// ============================================================
-// 歌曲难度星级（满分 5 星）
-// ============================================================
-// 判定依据（用户定的两条）：
-//   ① 音符数 ÷ 音乐时长：每秒音符越多越难（密谱密度直接反映歌曲节奏快慢）
-//   ② 双押个数：同一时刻要同时按两个方向键；相邻时间点连续双押更难，额外加权。
-// 玩家实际玩到的双押由 game.js 的 chartNotes 用「歌曲id + 地狱」固定种子生成
-// → 同一首歌每次结果完全一样，星级才算得公平。
-const clamp01=x=>x<0?0:x>1?1:x;
-async function ensureSongStars(song){
-  if(song.stars) return song.stars;
-  try{
-    let dur, noteCount, hard=null;
-    if(song.staticChart){
-      await loadStaticCharts();
-      const dbId=song.id.replace(/^u/,'');
-      const chart=STATIC_CHARTS.map[dbId];
-      if(!chart) return song.stars=2;                        // 静态谱缺失：保守给 2 星
-      dur=song.duration||(+chart[chart.length-1].t+2);       // 离线版没有真实时长，用谱面末尾估算
-      noteCount=chart.length;
-      hard=chartNotes(chart,'hard',dur,song.id);
-    }else if(song.user){
-      dur=song.duration; noteCount=song.noteCount||0;        // 列表行里已带音符数/时长
-      if(song.chart) hard=chartNotes(song.chart,'hard',dur,song.id);
-      else{
-        try{ const chart=await ensureChart(song); if(chart) hard=chartNotes(chart,'hard',dur,song.id); }catch{}
-      }
-    }else{
-      return song.stars=2;                                   // 默认曲目（104BPM 程序生谱）：2 星
-    }
-    // 密度分：6.5 个/秒 → 0；11.5 个/秒 → 1
-    const densScore=clamp01((noteCount/dur-6.5)/5);
-    // 统计双押：按时间点分组，一个时间点 ≥2 个音即双押；相邻时间点连续双押单独计数
-    let dblPerSec=0, consPerSec=0;
-    if(hard){
-      const cnt=new Map();
-      for(const n of hard) cnt.set(n.t,(cnt.get(n.t)||0)+1);
-      const times=[...cnt.keys()].sort((a,b)=>a-b);
-      let dbls=0, cons=0, run=0;
-      for(const t of times){
-        if(cnt.get(t)>=2){ dbls++; run++; if(run>=2)cons++; }
-        else run=0;
-      }
-      dblPerSec=dbls/dur; consPerSec=cons/dur;
-    }
-    const dblScore=clamp01((dblPerSec-0.15)/0.15);           // 0.15 个/秒→0；0.30→1
-    const consScore=clamp01(consPerSec/0.03);                // 连续双押额外加权：0.03 对/秒封顶
-    const total=0.7*densScore+0.2*dblScore+0.1*consScore;
-    song.stars=Math.max(1,Math.min(5,1+Math.round(total*4)));
-  }catch(e){
-    song.stars=2;
-  }
-  return song.stars;
-}
+// 星级已离线评好直接写在 SONGS 里（stars 字段），用户端不再做任何难度计算。
 
 // 一键更新曲谱：把原音频重新下载，用当前最新算法分析，覆盖服务器上的旧谱。
 // 全程在浏览器完成，音频不换，只是谱面/BPM换成新版本 —— 省去删歌重传。
@@ -351,6 +301,65 @@ async function regenerateSong(ev,song){
 function preloadSong(song){
   try{ Music.setSong(song.file); }catch{}
   if(song.user) ensureChart(song).catch(()=>{});
+}
+
+// ============================================================
+// 歌曲试听（选歌页）：点 🔊 开始；再点同一个 = 暂停/继续；点别的 = 直接切过去
+// 全程复用游戏那唯一的 <audio> 元素 → 物理上不可能两首歌同时响
+// ============================================================
+let previewSong=null;     // 正在试听的歌曲对象（null = 没有任何试听）
+let previewPaused=false;  // 当前试听是否处于手动暂停态
+
+// 刷新所有试听小按钮的图标（不重建卡片，列表滚动位置不变）
+function refreshPreviewIcons(){
+  document.querySelectorAll('.song-preview').forEach(el=>{
+    const s=el._song;
+    if(s===previewSong && !previewPaused){ el.textContent='⏸'; el.classList.add('playing'); el.title='暂停试听'; }
+    else if(s===previewSong && previewPaused){ el.textContent='▶'; el.classList.remove('playing'); el.title='继续试听'; }
+    else{ el.textContent='🔊'; el.classList.remove('playing'); el.title='试听这首歌'; }
+  });
+}
+
+// 试听按钮的总入口：同一首 = 暂停/继续；不同首 = 停旧的、播新的
+async function togglePreview(song){
+  ensureCtx();
+  if(previewSong===song){
+    if(previewPaused){
+      const ok=await Music.play();          // 从暂停位置继续
+      if(ok) previewPaused=false;
+    }else{
+      Music.pause();                        // 暂停但保留进度
+      previewPaused=true;
+    }
+    refreshPreviewIcons();
+    return;
+  }
+  // 切歌：同一个 audio 元素换 src，旧歌立刻停（不会叠播）
+  previewSong=null; previewPaused=false;
+  Music.setSong(song.file);
+  previewSong=song;
+  Music.el.onended=()=>{                    // 自然播完：复位成 🔊
+    previewSong=null; previewPaused=false;
+    Music.el.onended=null;
+    refreshPreviewIcons();
+  };
+  const ok=await Music.play();
+  if(!ok){                                  // 极少数浏览器拦截：提示重点一次
+    previewSong=null; Music.el.onended=null;
+    toast('试听没启动，请再点一次 🔊');
+  }
+  refreshPreviewIcons();
+}
+
+// 完全停止试听（离开选歌页 / 开始演出时调用）：暂停 + 进度归零 + 清回调
+export function stopPreview(){
+  if(previewSong){
+    Music.pause();
+    try{ if(Music.el.readyState>=2) Music.el.currentTime=0; }catch{}
+  }
+  previewSong=null; previewPaused=false;
+  Music.el.onended=null;
+  refreshPreviewIcons();
 }
 
 // 能否删除某首玩家歌曲（上传者本人或管理员）
@@ -441,6 +450,7 @@ export function initUI(main){
       if(id==='scr-endless') renderEndlessBoard();
       if(id==='scr-home') renderHome();
       if(id==='scr-set') updateAdminAuthUI();
+      if(id!=='scr-play') stopPreview();   // 离开选歌页：试听必须停
       showScreen(id);
     });
   });
@@ -582,16 +592,14 @@ async function renderPlay(){
     b.onclick=()=>{ sfxClick(); sel.theme=t.id; renderPlay(); mainRef.switchTheme(t.id); };
     tg.appendChild(b);
   });
-  // 歌曲 —— 按难度星级分组（星数依据「音符密度 + 双押/连续双押」，算法见 ensureSongStars）
+  // 歌曲 —— 按难度星级分组（stars 离线评好写死，直接同步渲染，无需等待）
   const sg=document.getElementById('songGrid');
   if(sg){
-    sg.innerHTML='<div class="song-cat-head"><span class="sc-name">⏳ 正在计算歌曲难度…</span></div>';
+    sg.innerHTML='';
     // 去重后的全部歌曲：连着服务器时数据库版与内置版是同一首，只留数据库版；默认曲目数据库没有，单独保留
     const allSongs=serverOn
       ? [...TEMP_SONGS, ...USER_SONGS.list, SONGS.find(s=>s.id==='default')]
       : [...TEMP_SONGS, ...SONGS];
-    await Promise.all(allSongs.map(ensureSongStars));
-    sg.innerHTML='';
     STAR_TIERS.forEach(tier=>{
       const list=allSongs.filter(s=>s.stars===tier.stars);
       if(!list.length) return;
@@ -605,9 +613,13 @@ async function renderPlay(){
         b.className='theme-card'+(sel.song===s.id?' sel':'');
         b.style.background=`linear-gradient(135deg, #7a4dffcc, #36d1ffcc)`;
         b.innerHTML=`<div class="tname">🎵 ${s.name}</div><div class="tdesc">${s.artist} · ${s.bpm}BPM<br>${s.desc}</div>
+          <span class="song-preview" title="试听这首歌">🔊</span>
           ${sel.song===s.id?'<span class="tag">✓ 已选</span>':''}
           ${canDelete(s)?(s.temp?'<span class="song-del" title="移除（临时歌曲刷新也会消失）">🗑</span>':'<span class="song-regen" title="用最新算法重新生成曲谱">🔄</span><span class="song-del" title="删除这首歌">🗑</span>'):''}`;
         b.onclick=()=>{ sfxClick(); sel.song=s.id; renderPlay(); preloadSong(s); };
+        // 试听：独立小按钮，阻止冒泡 → 试听不会同时选中这首歌
+        const pv=b.querySelector('.song-preview'); pv._song=s;
+        pv.addEventListener('click', ev=>{ ev.stopPropagation(); togglePreview(s); });
         if(canDelete(s)){
           b.querySelector('.song-del').addEventListener('click',async ev=>{
             ev.stopPropagation();
@@ -648,6 +660,7 @@ async function renderPlay(){
       sg.appendChild(h);
     }
   }
+  refreshPreviewIcons();   // 重渲染后恢复试听中的图标（🔊/⏸/▶）
   // 难度
   const dr=document.getElementById('diffRow');
   dr.innerHTML='';
@@ -1203,6 +1216,7 @@ function bindUpload(){
         desc:`${analyzed.notes.length} 音符 · ${fmtDur(analyzed.duration)} · ⏱临时`,
         cat:'user', user:true, temp:true,
         chart:analyzed.notes, duration:analyzed.duration,
+        stars:3,   // 临时本地歌：默认 3 星（不现场评估）
       };
       TEMP_SONGS.push(song);
       sel.song=song.id;

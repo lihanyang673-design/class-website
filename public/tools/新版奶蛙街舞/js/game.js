@@ -4,8 +4,8 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261070';
-import { doAction, stumble } from './dancer.js?v=20261070';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261071';
+import { doAction, stumble } from './dancer.js?v=20261071';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
 // ---------- 判定窗口（秒） ----------
@@ -182,11 +182,11 @@ function spawnNoteEl(n){
   return el;
 }
 
-export function startGame(cfg, defer){
+export function startGame(cfg){
   // cfg:{diff,bpm,offset,speed,duration,chart?}
   // diff==='endless' = 无尽难度（独立第5难度，谱面按地狱密度生成，计分从0开始）
   // chart 存在 = 玩家自制谱面（按难度抽稀）；否则按 BPM 程序化生成
-  // defer=true：只搭台不开播，等用户点「开演」按钮（手机浏览器要求真手势）
+  // 只搭台不开播：倒计时归零后由 main.js 调用 beginPlayback 开播
   stopGame(true);
   Game.cfg = cfg;
   const endless = cfg.diff==='endless';
@@ -231,36 +231,17 @@ export function startGame(cfg, defer){
   Music.el.onended = endless ? null : ()=> finishGame(true);
   window.__music = Music.el;   // 调试钩子（与 __game 同性质）
   console.log(`%c[演出] 🎬 开始！难度=${cfg.diff} BPM=${cfg.bpm} 音符数=${Game.notes.length} 时长≈${cfg.duration.toFixed(0)}s`, 'color:#ffe17a;font-weight:bold');
-  if(defer){
-    // 只搭台不开播：舞台中央显示「点我开演」，等用户真手势再开播
-    document.getElementById('stageGate').classList.add('on');
-    return;
-  }
-  beginPlayback(endless);
+  // 搭台完成：只搭台不开播，倒计时归零后由 main.js 调用 beginPlayback 开播
 }
 
 // 真正开播：音乐 + 主循环（无尽顺带弹开局提醒）
-async function beginPlayback(endless){
+export async function beginPlayback(endless){
   // 卡顿全靠主循环的滑动窗口：已处理的永久跳过、每帧只算1.4秒内的几个方块
   const ok=await Music.play();
   if(!ok) return false;
   if(endless) speedToast('♾ 无尽模式 · 计分从0开始 · 1.1×');
   loop();
   return true;
-}
-
-// 倒计时归零自动开播（手机浏览器拦截时，也用于兜底按钮）：
-// 成功 → 收起闸门；失败 → 闸门留着提示再点一次
-export async function launchFromGate(){
-  const ok=await beginPlayback(!!Game.endless);
-  const gate=document.getElementById('stageGate');
-  if(ok){
-    gate?.classList.remove('on');
-  }else{
-    const sub=document.getElementById('stageGateSub');
-    if(sub) sub.textContent='音乐没启动，点一下上面的按钮';
-  }
-  return ok;
 }
 
 export function pauseGame(){
@@ -278,7 +259,7 @@ export function stopGame(silent){
   Music.el.onended=null;
   Music.el.loop=false; Music.el.playbackRate=1;
   Game.endless=null;
-  document.getElementById('stageGate')?.classList.remove('on');
+  document.getElementById('countOverlay')?.classList.remove('on');
   if(!silent){
     document.getElementById('stageUI').classList.remove('on');
     document.getElementById('noteTilt').querySelectorAll('.note').forEach(n=>n.remove());

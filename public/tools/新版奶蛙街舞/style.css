@@ -410,23 +410,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #stageUI{position:fixed;inset:0;z-index:60;display:none;pointer-events:none}
 #stageUI.on{display:block}
 
-/* 开播闸门：加载完不点不播（手机浏览器手势要求）。
-   显示时整层置顶并接收点击（游戏未开始，挡住其他元素无影响），保证按钮点得到 */
-#stageGate{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;z-index:50}
-#stageGate.on{display:flex;pointer-events:auto}
-#stageGateBtn{
-  pointer-events:auto;font-size:21px;font-weight:900;color:#1c1030;
-  background:linear-gradient(180deg,#ffe17a,#ffb84d);border:none;border-radius:99px;
-  padding:17px 38px;box-shadow:0 8px 28px #0008,0 0 0 4px #ffffff44;
-  animation:gatePulse 1.15s ease-in-out infinite;font-family:inherit;
-}
-#stageGate .gate-sub{margin-top:14px;font-size:13px;color:#fff;text-shadow:0 1px 4px #000;opacity:.92;text-align:center;padding:0 20px}
-@keyframes gatePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-
-/* 倒计时大数字（3、2、1）：盖住按钮原本的脉动样式，每秒缩放弹出一次 */
-#stageGateBtn.counting{
-  width:150px;height:150px;border-radius:50%;padding:0;
-  font-size:76px;color:#fff;background:rgba(22,26,64,.55);
+/* 开局倒计时：全屏居中大数字（3、2、1），纯显示不接收点击，归零自动开播 */
+#countOverlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:50;pointer-events:none}
+#countOverlay.on{display:flex}
+#countNum{
+  width:150px;height:150px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:76px;font-weight:900;color:#fff;background:rgba(22,26,64,.55);
   box-shadow:0 0 0 4px #ffffff55,0 10px 34px #0009;
   animation:countPop 1s ease-out;
 }
@@ -676,8 +666,20 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .theme-card:hover .song-regen{opacity:1}
 .song-regen:hover{background:var(--cyan);transform:scale(1.12)}
+
+/* 歌卡试听角标（左下角）：播放中变绿并轻微跳动 */
+.song-preview{
+  position:absolute;bottom:8px;left:8px;z-index:2;
+  width:28px;height:28px;line-height:28px;border-radius:50%;
+  background:#00000066;font-size:13px;text-align:center;
+  opacity:0;transition:.15s;cursor:pointer;
+}
+.theme-card:hover .song-preview{opacity:1}
+.song-preview:hover{background:var(--cyan);transform:scale(1.12)}
+.song-preview.playing{opacity:.95;background:linear-gradient(135deg,#37e07a,#15b45a);animation:pvPulse .9s ease-in-out infinite}
+@keyframes pvPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 /* 手机没有鼠标悬停，按钮一直浅显示，否则永远找不到 */
-@media (pointer:coarse){.song-regen,.song-del{opacity:.8}}
+@media (pointer:coarse){.song-regen,.song-del,.song-preview{opacity:.8}}
 
 /* 弹窗遮罩（同确认框的玻璃拟态风格） */
 .up-mask{

@@ -3,16 +3,15 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261070';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261070';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261070';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261071';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261071';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261071';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261070';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261071';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261070';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart, stopPreview } from './ui.js?v=20261071';
 
 const $=id=>document.getElementById(id);
-let stageGateBound=false;    // 「点我开演」闸门按钮只绑定一次
 
 // ============================================================
 // 渲染器 / 场景 / 相机
@@ -220,8 +219,9 @@ const main={
     catch(e){ console.warn('[演出] 谱面加载失败，退回程序生成谱面', e); }
     // 演出中渲染分辨率封顶1.5：高画质手机每帧要算的像素减少约4成，3D只是背景肉眼几乎无差；退出时恢复
     if(renderer.getPixelRatio() > 1.5) renderer.setPixelRatio(1.5);
-    // defer=true：只搭台不开播；startCountdown 倒计时归零后自动开播
-    startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart}, true);
+    stopPreview();   // 正在试听就先停掉、进度归零，避免和演出音乐冲突
+    // 只搭台不开播；startCountdown 倒计时归零后自动开播
+    startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart});
     startCountdown();
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },
@@ -244,42 +244,27 @@ initUI(main);
 let countTimer=null;    // 句柄持久化：重开前先清旧计时，防止多个倒计时叠加
 function startCountdown(){
   clearInterval(countTimer);
-  const gate=$('stageGate'), btn=$('stageGateBtn'), sub=$('stageGateSub');
-  gate.classList.add('on');
-  btn.classList.add('counting');
-  btn.disabled=true;
+  const ov=$('countOverlay'), num=$('countNum');
+  ov.classList.add('on');
   let n=3;
-  btn.textContent=n;
-  sub.textContent='准备好，马上开跳';
-  countTimer=setInterval(async ()=>{
+  num.textContent=n;
+  countTimer=setInterval(()=>{
     n--;
     if(n>0){
-      btn.textContent=n;
-      // 重触发弹出动画：先摘掉样式再强制回流，再挂回去
-      btn.classList.remove('counting'); void btn.offsetWidth; btn.classList.add('counting');
+      num.textContent=n;
+      // 重触发弹出动画：清掉动画→强制回流→重新挂上
+      num.style.animation='none'; void num.offsetWidth; num.style.animation='';
       return;
     }
     clearInterval(countTimer); countTimer=null;
-    btn.classList.remove('counting');
     if(!Game.playing) return;          // 极端情况：倒计时中演出已取消 → 不再开播
-    const ok=await launchFromGate();   // 桌面浏览器：自动开播
-    if(!ok){                            // 手机浏览器拦截自动播放：按钮留作兜底，亲手点一下
-      btn.disabled=false;
-      btn.textContent='▶ 点我开演';
-      sub.textContent='手机要求音乐由你亲手点开';
-    }
+    ov.classList.remove('on');
+    // 倒计时归零直接开播；浏览器拒绝播放时（极少数手机浏览器）提示重开
+    beginPlayback(!!Game.endless).then(ok=>{
+      if(!ok) toast('音乐启动失败，请退出后重新点「开始表演」');
+    });
   },1000);
 }
-
-// 兜底点击：正常流程倒计时会自动开播，无需点；仅手机拦截自动播放时才用到
-$('stageGateBtn').addEventListener('click', async ()=>{
-  ensureCtx();
-  sfxClick();
-  const btn=$('stageGateBtn');
-  btn.disabled=true;
-  const ok=await launchFromGate();
-  if(!ok) btn.disabled=false;
-});
 
 // ============================================================
 // 演出结束回调：结算 + 存档 + 成就
@@ -318,9 +303,9 @@ function onEndlessOver(res){
 // ============================================================
 const KEYMAP={ArrowLeft:0,ArrowDown:1,ArrowUp:2,ArrowRight:3,KeyA:0,KeyS:1,KeyW:2,KeyD:3};
 addEventListener('keydown',e=>{
-  // 倒计时/闸门显示期间游戏还没真正开始：屏蔽游戏按键（防误判/误暂停）
-  const gateOpen=$('stageGate').classList.contains('on');
-  if(Game.playing && !gateOpen){
+  // 倒计时显示期间游戏还没真正开始：屏蔽游戏按键（防误判/误暂停）
+  const counting=$('countOverlay').classList.contains('on');
+  if(Game.playing && !counting){
     if(e.code in KEYMAP){ e.preventDefault(); if(!e.repeat) hitLane(KEYMAP[e.code]); }
     else if(e.code==='Escape'||e.code==='KeyP'){
       e.preventDefault();
