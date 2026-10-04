@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261108';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261108';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261108';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261108';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261108';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261109';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261109';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261109';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261109';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261109';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261108';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261109';
 
 const $=id=>document.getElementById(id);
 
@@ -117,8 +117,8 @@ function buildStage(theme){
     stageGroup.add(line);
   }
 
-  // ---- 背景板 ----
-  if(theme.sky==='city'){
+  // ---- 背景板（楼群/落日/星空）：图片背景时不画，避免深色楼群像竖条一样挡在背景图前面 ----
+  if(!hasImg && theme.sky==='city'){
     // 城市剪影楼群
     for(let i=0;i<11;i++){
       const h=2+Math.random()*4.5, w=1+Math.random()*1.4;
