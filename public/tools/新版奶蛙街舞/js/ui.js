@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261083';
-import { Game, pauseGame } from './game.js?v=20261083';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261084';
+import { Game, pauseGame } from './game.js?v=20261084';
 
 // ============================================================
 // 存档（localStorage）
@@ -188,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261083');
+    const r=await fetch('charts.json?v=20261084');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -203,10 +203,93 @@ export async function loadStaticCharts(){
 // 玩家上传歌曲（存班级网站数据库，全班共享）
 // ============================================================
 export const USER_SONGS={ list:[], loaded:false, loadError:false };
-// 临时歌曲（网页版专用）：选本地文件→浏览器分析→直接玩；只存在内存里，刷新页面就消失
+// 临时歌曲（网页版专用）：选本地文件→浏览器分析→直接玩
+// 音频 Blob 存 IndexedDB，元数据存 localStorage，刷新页面后仍可恢复
 export const TEMP_SONGS=[];
 let myIdentity=null;   // /api/me：{id, isAdmin}，用于判断能否删除
 let serverOn=false;    // 是否连着班级服务器（静态版为 false → 上传走临时模式，在线排行不可用）
+
+// ===== 本地持久化：IndexedDB 存音频 Blob，localStorage 存元数据 =====
+const TEMP_DB='naiwa_dance_local';     // IndexedDB 数据库名
+const TEMP_STORE='songs';              // objectStore 名
+const TEMP_META_KEY='naiwa_dance_tempsongs_v1';  // localStorage 元数据 key
+// 打开/初始化 IndexedDB（异步单例 Promise）
+let _dbP=null;
+function openDB(){
+  if(_dbP) return _dbP;
+  _dbP=new Promise((res,rej)=>{
+    const req=indexedDB.open(TEMP_DB,1);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(TEMP_STORE)) db.createObjectStore(TEMP_STORE,{keyPath:'id'});
+    };
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>rej(req.error);
+  });
+  return _dbP;
+}
+// 存一条音频 Blob
+async function putTempBlob(id,blob){
+  const db=await openDB();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(TEMP_STORE,'readwrite');
+    tx.objectStore(TEMP_STORE).put({id,blob,mime:blob.type||'audio/mpeg'});
+    tx.oncomplete=()=>res();
+    tx.onerror=()=>rej(tx.error);
+  });
+}
+// 取一条音频 Blob
+async function getTempBlob(id){
+  const db=await openDB();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(TEMP_STORE,'readonly');
+    const req=tx.objectStore(TEMP_STORE).get(id);
+    req.onsuccess=()=>res(req.result?req.result.blob:null);
+    req.onerror=()=>rej(req.error);
+  });
+}
+// 删一条音频 Blob
+async function delTempBlob(id){
+  const db=await openDB();
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(TEMP_STORE,'readwrite');
+    tx.objectStore(TEMP_STORE).delete(id);
+    tx.oncomplete=()=>res();
+    tx.onerror=()=>rej(tx.error);
+  });
+}
+// 元数据存/取/删（localStorage）
+function saveTempMeta(list){
+  try{ localStorage.setItem(TEMP_META_KEY, JSON.stringify(list.map(s=>({
+    id:s.id, name:s.name, artist:s.artist, bpm:s.bpm, duration:s.duration,
+    desc:s.desc, chart:s.chart, stars:s.stars, createdAt:s.createdAt||Date.now(),
+  })))); }catch(e){ console.warn('[临时歌曲] 元数据保存失败', e); }
+}
+function loadTempMeta(){
+  try{ return JSON.parse(localStorage.getItem(TEMP_META_KEY))||[]; }catch{ return []; }
+}
+// 从 IndexedDB + localStorage 恢复临时歌曲（页面加载时调用）
+async function loadTempSongs(){
+  const metas=loadTempMeta();
+  if(!metas.length) return;
+  const ok=[];
+  for(const m of metas){
+    try{
+      const blob=await getTempBlob(m.id);
+      if(!blob) continue;   // Blob 丢了（被清了）就跳过这首
+      const url=URL.createObjectURL(blob);
+      ok.push({
+        id:m.id, name:m.name, artist:m.artist, bpm:m.bpm, duration:m.duration,
+        desc:m.desc, chart:m.chart, stars:m.stars||3,
+        file:url, cat:'user', user:true, temp:true, createdAt:m.createdAt,
+      });
+    }catch(e){ console.warn('[临时歌曲] 恢复失败', m.id, e); }
+  }
+  // 把恢复失败的（Blob 丢了的）从元数据里清掉，避免越积越多
+  if(ok.length!==metas.length) saveTempMeta(ok);
+  TEMP_SONGS.push(...ok);
+  console.log('%c[临时歌曲] 已恢复 '+ok.length+' 首', 'color:#36d1ff;font-weight:bold');
+}
 
 function fmtDur(s){
   s=Math.round(s||0);
@@ -488,6 +571,10 @@ export function initUI(main){
 
   // ---- 玩家歌曲：上传弹窗 + 曲库拉取 ----
   bindUpload();
+  // 恢复本地临时歌曲（IndexedDB 音频 + localStorage 元数据），不阻塞曲库加载
+  loadTempSongs().then(()=>{
+    if(document.getElementById('scr-play').classList.contains('cur')) renderPlay();
+  });
   refreshUserSongs().then(()=>{
     // 列表到位后，如果用户已停在选歌页，立即补渲染
     if(document.getElementById('scr-play').classList.contains('cur')) renderPlay();
@@ -621,7 +708,7 @@ async function renderPlay(){
     upCard.className='theme-card song-upload-card';
     upCard.style.background='linear-gradient(135deg,#ff9a3ccc,#ffe17acc)';
     upCard.innerHTML=`<div class="tname" style="color:#3a1f00">${serverOn?'⬆️ 上传歌曲':'🎲 临时歌曲'}</div>
-      <div class="tdesc" style="color:#5c3300">${serverOn?'上传本地音乐，自动生成谱面，全班可玩':'选一首本地音乐，分析完直接玩（刷新页面会消失）'}</div>
+      <div class="tdesc" style="color:#5c3300">${serverOn?'上传本地音乐，自动生成谱面，全班可玩':'选一首本地音乐，自动保存到本地，下次打开还能玩'}</div>
       <span class="tag" style="background:#3a1f00;color:#ffe17a">${serverOn?'AUTO CHART':'TEMP CHART'}</span>`;
     upCard.onclick=()=>{ ensureCtx(); sfxClick(); document.getElementById('btnUploadSong').click(); };
     sg.appendChild(upCard);
@@ -665,7 +752,7 @@ async function renderPlay(){
         b.innerHTML=`<div class="tname">🎵 ${s.name}</div><div class="tdesc">${s.artist} · ${s.bpm}BPM<br>${s.desc}</div>
           <span class="song-preview" title="试听这首歌">试听</span>
           ${sel.song===s.id?'<span class="tag">✓ 已选</span>':''}
-          ${canDelete(s)?(s.temp?'<span class="song-del" title="移除（临时歌曲刷新也会消失）">🗑</span>':'<span class="song-regen" title="用最新算法重新生成曲谱">🔄</span><span class="song-del" title="删除这首歌">🗑</span>'):''}`;
+          ${canDelete(s)?(s.temp?'<span class="song-del" title="从本地移除这首歌">🗑</span>':'<span class="song-regen" title="用最新算法重新生成曲谱">🔄</span><span class="song-del" title="删除这首歌">🗑</span>'):''}`;
         b.onclick=()=>{ sfxClick(); sel.song=s.id; renderPlay(); preloadSong(s); };
         // 试听：独立小按钮，阻止冒泡 → 试听不会同时选中这首歌
         const pv=b.querySelector('.song-preview'); pv._song=s;
@@ -673,12 +760,14 @@ async function renderPlay(){
         if(canDelete(s)){
           b.querySelector('.song-del').addEventListener('click',async ev=>{
             ev.stopPropagation();
-            // 临时歌：直接从内存移除，不碰服务器
+            // 临时歌：从内存 + IndexedDB + localStorage 一并移除
             if(s.temp){
-              const yes=await askConfirm(`确定移除《${s.name}》吗？`, {yesText:'移除'});
+              const yes=await askConfirm(`确定移除《${s.name}》吗？（从本地删除）`, {yesText:'移除'});
               if(!yes) return;
               URL.revokeObjectURL(s.file);
               const i=TEMP_SONGS.indexOf(s); if(i>=0) TEMP_SONGS.splice(i,1);
+              saveTempMeta(TEMP_SONGS);              // 同步更新 localStorage 元数据
+              delTempBlob(s.id).catch(()=>{});       // 异步删 IndexedDB，不阻塞
               if(sel.song===s.id) sel.song='default';
               renderPlay();
               return;
@@ -704,7 +793,7 @@ async function renderPlay(){
     if(!TEMP_SONGS.length && !USER_SONGS.list.length){
       const h=document.createElement('div');
       h.className='song-cat-head';
-      const tip=!serverOn ? '还没有临时歌曲，点上方卡片选一首本地音乐，分析完就能玩（刷新页面会消失）'
+      const tip=!serverOn ? '还没有本地歌曲，点上方卡片选一首本地音乐，自动保存到本地，下次打开还能玩'
         : (USER_SONGS.loadError ? '未连接班级服务器，暂时读不到曲库' : '还没有班级自制作品，点上方卡片当第一个 DJ！');
       h.innerHTML=`<span class="sc-tip">${tip}</span>`;
       sg.appendChild(h);
@@ -1211,7 +1300,7 @@ function bindUpload(){
     if(head) head.innerHTML=serverOn ? '⬆️ 上传歌曲 <small>AUTO CHART</small>' : '🎲 临时歌曲 <small>TEMP CHART</small>';
     if(tip) tip.textContent=serverOn
       ? '选一首音乐 → 浏览器自动分析节奏生成谱面 → 存进班级曲库，全班都能跳'
-      : '选一首本地音乐 → 浏览器自动分析节奏生成谱面 → 直接开跳。不会上传，刷新页面就消失';
+      : '选一首本地音乐 → 浏览器自动分析节奏生成谱面 → 自动保存到本地，下次打开还能玩';
     if(note) note.textContent=serverOn
       ? '上传需要先登录班级网站 · 请上传有版权使用权的音乐哦'
       : '纯本地分析，不会上传任何文件 · 请使用有版权使用权的音乐哦';
@@ -1254,7 +1343,7 @@ function bindUpload(){
     if(!analyzed || analyzing) return;
     submit.disabled=true;
     const title=(titleIn.value.trim()||'未命名歌曲');
-    // ===== 网页版临时模式：不联网，直接内存建歌 =====
+    // ===== 网页版临时模式：不联网，存本地（IndexedDB + localStorage），刷新后仍在 =====
     if(!serverOn){
       const url=URL.createObjectURL(analyzed.file);
       const song={
@@ -1263,16 +1352,22 @@ function bindUpload(){
         artist:artistIn.value.trim()||'本地音乐',
         file:url,
         bpm:analyzed.bpm,
-        desc:`${analyzed.notes.length} 音符 · ${fmtDur(analyzed.duration)} · ⏱临时`,
+        desc:`${analyzed.notes.length} 音符 · ${fmtDur(analyzed.duration)} · 📂本地`,
         cat:'user', user:true, temp:true,
         chart:analyzed.notes, duration:analyzed.duration,
         stars:3,   // 临时本地歌：默认 3 星（不现场评估）
+        createdAt:Date.now(),
       };
       TEMP_SONGS.push(song);
+      // 持久化：音频 Blob → IndexedDB；元数据 → localStorage
+      try{
+        await putTempBlob(song.id, analyzed.file);
+        saveTempMeta(TEMP_SONGS);
+      }catch(e){ console.warn('[临时歌曲] 本地保存失败（仍可临时玩）', e); }
       sel.song=song.id;
       ov.classList.remove('on');
       reset();
-      toast('🎵 《'+title+'》准备好了，选好难度点「开始表演」！');
+      toast('🎵 《'+title+'》已保存到本地，下次打开还在！');
       sfxCoin();
       renderPlay();
       return;
