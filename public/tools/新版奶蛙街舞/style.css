@@ -346,8 +346,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .diff-card.sel{border-color:var(--pink);background:#ff3b6b22;box-shadow:0 0 24px #ff3b6b44}
 .diff-card .dname{font-size:18px;font-weight:900}
 .diff-card .ddesc{font-size:12px;color:var(--sub);margin-top:4px}
-.play-foot{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.play-foot .tip{font-size:13px;color:var(--sub)}
+.play-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.play-foot .tip{width:100%;font-size:13px;color:var(--sub)}
 
 /* ---------- 商城 / 图鉴 / 成就 / 排行 ---------- */
 .grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}

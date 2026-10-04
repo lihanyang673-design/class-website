@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261089';
-import { Game, pauseGame } from './game.js?v=20261089';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261090';
+import { Game, pauseGame } from './game.js?v=20261090';
 
 // ============================================================
 // 存档（localStorage）
@@ -188,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261089');
+    const r=await fetch('charts.json?v=20261090');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -616,6 +616,25 @@ export function initUI(main){
     else{ ensureCtx(); startShow(); }   // 第3步：开演
   });
 
+  // ---- ★ 随机按钮：根据当前步骤随机选舞池/歌曲/难度 ----
+  document.getElementById('btnRandom').addEventListener('click',()=>{
+    sfxClick();
+    if(playStep===1){
+      const t=THEMES[Math.floor(Math.random()*THEMES.length)];
+      sel.theme=t.id; mainRef.switchTheme(t.id);
+    }else if(playStep===2){
+      const all=serverOn
+        ? [...TEMP_SONGS, ...USER_SONGS.list, SONGS.find(s=>s.id==='default')]
+        : [...TEMP_SONGS, ...SONGS];
+      const s=all[Math.floor(Math.random()*all.length)];
+      sel.song=s.id; preloadSong(s);
+    }else{
+      const d=DIFFS[Math.floor(Math.random()*DIFFS.length)];
+      sel.diff=d.id;
+    }
+    renderPlay();
+  });
+
   // ---- ★ 选曲页返回按钮：第1步回主界面，第2/3步回上一步 ----
   const btnPlayBack=document.getElementById('btnPlayBack');
   if(btnPlayBack) btnPlayBack.addEventListener('click',()=>{
@@ -712,6 +731,9 @@ async function renderPlay(){
   // 底部按钮：第3步显示「开始表演」，其余显示「我选好了」
   const nextBtn=document.getElementById('btnNextStep');
   nextBtn.textContent = playStep===3 ? '🚀 开始表演' : '我选好了';
+  // 随机按钮文字随步骤变化
+  const rndBtn=document.getElementById('btnRandom');
+  if(rndBtn) rndBtn.textContent = playStep===1 ? '🎲 随机舞池' : playStep===2 ? '🎲 随机歌曲' : '🎲 随机难度';
 
   // 上传入口：有服务器→存班级曲库；网页版→临时歌曲（刷新就没）
   const upBtn=document.getElementById('btnUploadSong');
