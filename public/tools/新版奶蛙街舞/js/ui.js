@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261095';
-import { Game, pauseGame } from './game.js?v=20261095';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261096';
+import { Game, pauseGame } from './game.js?v=20261096';
 
 // ============================================================
 // 存档（localStorage）
@@ -188,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261095');
+    const r=await fetch('charts.json?v=20261096');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -1457,7 +1457,7 @@ export function showResult(res, isNew){
   if(res.maxCombo>s.maxCombo) s.maxCombo=res.maxCombo;
   if(res.acc>s.bestAcc) s.bestAcc=res.acc;
   if(res.cnt.miss===0 && res.cnt.perfect+res.cnt.good>0) s.fullCombos++;
-  if(res.rank==='SS') s.ssCount++;
+  if(res.rank==='SS' || res.rank==='SSS') s.ssCount++;
   Store.data.coins+=res.coin;
   // 写入排行榜（含相对分，排行按相对分，不同歌曲才公平）
   Store.data.scores[res.diff]=Store.data.scores[res.diff]||[];

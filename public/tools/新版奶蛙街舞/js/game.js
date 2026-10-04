@@ -4,8 +4,8 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261095';
-import { doAction, stumble } from './dancer.js?v=20261095';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261096';
+import { doAction, stumble } from './dancer.js?v=20261096';
 import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20260929r';
 
 // ---------- 判定窗口（秒） ----------
@@ -479,7 +479,8 @@ function finishGame(natural){
 
   // 评级按相对分（满分 100000）
   let rank='C';
-  if(rel>=98000) rank='SS';
+  if(rel>=100000) rank='SSS';
+  else if(rel>=98000) rank='SS';
   else if(rel>=90000) rank='S';
   else if(rel>=80000) rank='A';
   else if(rel>=70000) rank='B';
