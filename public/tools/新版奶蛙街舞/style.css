@@ -597,7 +597,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   background:linear-gradient(160deg,#2c1450,#241040);
   border:2px solid var(--pink);border-radius:18px;padding:12px 14px 10px;
   box-shadow:0 0 40px #ff3b6b55,inset 0 0 30px #7a4dff22;
-  display:flex;flex-direction:column;gap:4px;
+  display:flex;flex-direction:column;gap:2px;
   animation:noticePop .35s cubic-bezier(.2,1.4,.4,1);
 }
 /* 右上角关闭叉号：大、醒目、悬停变红 */
@@ -611,9 +611,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .notice-x:active{transform:scale(.92)}
 @keyframes noticePop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 .notice-hd{font-size:19px;font-weight:900;color:var(--yellow);text-shadow:0 0 12px #ffe17a88;padding-right:30px}
-.notice-bd{font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
-.notice-bd .nb-p{margin-bottom:1px}
-.cp-row{display:flex;align-items:center;gap:8px;margin-top:2px;
+.notice-bd{font-size:14px;line-height:1.4;white-space:pre-wrap;word-break:break-word}
+.notice-bd .nb-p{margin-bottom:0}
+.cp-row{display:flex;align-items:center;gap:8px;margin-top:1px;
   background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:5px 8px}
 .cp-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:0}
 .cp-label{font-size:12px;font-weight:800;color:var(--cyan)}
