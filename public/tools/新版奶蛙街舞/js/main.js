@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261106';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261106';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261106';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261106';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261106';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261107';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261107';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261107';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261107';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261107';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261106';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261107';
 
 const $=id=>document.getElementById(id);
 
@@ -105,16 +105,18 @@ function buildStage(theme){
   ringMesh.position.y=0.012;
   stageGroup.add(ringMesh);
 
-  // 内圈舞池刻线（十字放射线）
-  for(let i=0;i<8;i++){
-    const line=new THREE.Mesh(
-      new THREE.PlaneGeometry(0.06,4.6),
-      new THREE.MeshBasicMaterial({color:theme.ring,transparent:true,opacity:0.16})
-    );
-    line.rotation.x=-Math.PI/2;
-    line.rotation.z=i*Math.PI/8;
-    line.position.y=0.008;
-    stageGroup.add(line);
+  // 内圈舞池刻线（十字放射线）：图片背景时保持地板干净，不画这几条；内置舞池保留
+  if(!hasImg){
+    for(let i=0;i<8;i++){
+      const line=new THREE.Mesh(
+        new THREE.PlaneGeometry(0.06,4.6),
+        new THREE.MeshBasicMaterial({color:theme.ring,transparent:true,opacity:0.16})
+      );
+      line.rotation.x=-Math.PI/2;
+      line.rotation.z=i*Math.PI/8;
+      line.position.y=0.008;
+      stageGroup.add(line);
+    }
   }
 
   // ---- 背景板 ----
