@@ -338,13 +338,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .song-upload-card:hover{transform:translateY(-3px);box-shadow:0 0 32px #ffe17a77,0 12px 32px #0008}
 @keyframes upGlow{0%,100%{box-shadow:0 0 18px #ffe17a33,0 8px 24px #0006}50%{box-shadow:0 0 30px #ffe17a66,0 8px 24px #0006}}
-.song-refresh-card{
-  border-color:#36d1ff;
-  box-shadow:0 0 24px #36d1ff44,0 8px 24px #0006;
-  animation:refreshGlow 2s ease-in-out infinite;
-}
-.song-refresh-card:hover{transform:translateY(-3px);box-shadow:0 0 32px #36d1ff77,0 12px 32px #0008}
-@keyframes refreshGlow{0%,100%{box-shadow:0 0 18px #36d1ff33,0 8px 24px #0006}50%{box-shadow:0 0 30px #36d1ff66,0 8px 24px #0006}}
 .diff-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
 .diff-card{
   flex:1;min-width:130px;border-radius:16px;padding:14px;text-align:center;
