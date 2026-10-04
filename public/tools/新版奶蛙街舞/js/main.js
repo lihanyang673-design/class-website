@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261058';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261058';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261058';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261059';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261059';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261059';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261058';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261059';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261058';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261059';
 
 const $=id=>document.getElementById(id);
 let stageGateBound=false;    // 「点我开演」闸门按钮只绑定一次
@@ -406,7 +406,7 @@ function enterHome(){
 }
 
 // ---------- 公告弹窗 ----------
-const NOTICE_VER='2';   // 公告版本号：每次更换公告内容就 +1，当天勾选过「不再弹出」的同学也会重新看到新公告
+const NOTICE_VER='3';   // 公告版本号：每次更换公告内容就 +1，当天勾选过「不再弹出」的同学也会重新看到新公告
 
 // 一键复制：优先现代 clipboard API；QQ/微信等旧内核浏览器用 textarea+execCommand 兜底
 async function copyText(t){
