@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261056';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261056';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261056';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261057';
+import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261057';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261057';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20260929r';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261056';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, launchFromGate } from './game.js?v=20261057';
 import { THEMES, SKINS, SONGS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261056';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, ensureChart } from './ui.js?v=20261057';
 
 const $=id=>document.getElementById(id);
 let stageGateBound=false;    // 「点我开演」闸门按钮只绑定一次
@@ -406,7 +406,31 @@ function enterHome(){
 }
 
 // ---------- 公告弹窗 ----------
-const NOTICE_VER='1';   // 公告版本号：每次更换公告内容就 +1，当天勾选过「不再弹出」的同学也会重新看到新公告
+const NOTICE_VER='2';   // 公告版本号：每次更换公告内容就 +1，当天勾选过「不再弹出」的同学也会重新看到新公告
+
+// 一键复制：优先现代 clipboard API；QQ/微信等旧内核浏览器用 textarea+execCommand 兜底
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }
+  catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    let ok=false;
+    try{ ok=document.execCommand('copy'); }catch(_){}
+    ta.remove();
+    return ok;
+  }
+}
+// 复制按钮事件委托（只绑一次）：成功显示「✅ 已复制」，1.6 秒后恢复
+$('noticeOv').addEventListener('click', async e=>{
+  const b=e.target.closest('.notice-copy');
+  if(!b) return;
+  const old=b.textContent;
+  const ok=await copyText(b.dataset.copy);
+  b.textContent= ok?'✅ 已复制':'❌ 复制失败';
+  setTimeout(()=>{ b.textContent=old; }, 1600);
+});
+
 function showNoticeIfNeeded(){
   const n=new Date();
   const today=n.getFullYear()+'-'+(n.getMonth()+1)+'-'+n.getDate();
