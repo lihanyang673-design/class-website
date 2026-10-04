@@ -3,8 +3,8 @@
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
 import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261080';
-import { Game, pauseGame } from './game.js?v=20261080';
+import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261081';
+import { Game, pauseGame } from './game.js?v=20261081';
 
 // ============================================================
 // 存档（localStorage）
@@ -165,6 +165,7 @@ export const SONGS=[
   {id:'u35', name:'青石巷', artist:'魏琮霏', file:'1791092175093_984330658.mp3', bpm:173, desc:'173 BPM · 约2分钟', cat:'builtin', staticChart:true, stars:5},
   {id:'u36', name:'Love Story', artist:'Taylor Swift', file:'1791092496030_452131566.mp3', bpm:119, desc:'119 BPM · 约4分钟', cat:'builtin', staticChart:true, stars:3},
   {id:'u37', name:'九九八十一', artist:'乐正绫', file:'1791092773223_119670223.mp3', bpm:149, desc:'149 BPM · 约4.7分钟', cat:'builtin', staticChart:true, stars:4},
+  {id:'u38', name:'忘情牛肉面', artist:'马健涛', file:'1791099498004_292032976.mp3', bpm:130, desc:'130 BPM · 约3分钟', cat:'builtin', staticChart:true, stars:4},
 ];
 
 // 歌曲分类（渲染时每组带小标题；空的分组会自动跳过）
@@ -187,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261080');
+    const r=await fetch('charts.json?v=20261081');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
