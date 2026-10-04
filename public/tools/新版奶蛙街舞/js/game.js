@@ -4,9 +4,9 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261107';
-import { doAction, stumble } from './dancer.js?v=20261107';
-import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20261109r';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261098';
+import { doAction, stumble } from './dancer.js?v=20261098';
+import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20261098';
 
 // ---------- 判定窗口（秒） ----------
 const WIN_GOOD = 0.15, WIN_PERFECT = 0.07, WIN_MISS = 0.19;

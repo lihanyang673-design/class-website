@@ -128,17 +128,17 @@ function ask(q){
   let maxVer=0;
   for(const f of verFiles){
     const code=fs.readFileSync(f,'utf8');
-    for(const m of code.matchAll(/v=(2026\d{3})/g)) maxVer=Math.max(maxVer,+m[1]);
+    for(const m of code.matchAll(/v=(2026\d{4})/g)) maxVer=Math.max(maxVer,+m[1]);
   }
   const newVer=maxVer+1;
   const writeVer=new Map();   // 记住每个文件新内容，后面复制到 naiwa-release
   for(const f of verFiles){
-    const code=fs.readFileSync(f,'utf8').replace(/v=2026\d{3}/g,'v='+newVer);
+    const code=fs.readFileSync(f,'utf8').replace(/v=2026\d{4}/g,'v='+newVer);
     fs.writeFileSync(f,code);
     writeVer.set(f,code);
   }
   // ui.js 自己也要 bump 版本号（前面的修改 + 版本号）
-  uiCode=uiCode.replace(/v=2026\d{3}/g,'v='+newVer);
+  uiCode=uiCode.replace(/v=2026\d{4}/g,'v='+newVer);
   fs.writeFileSync(uiPath,uiCode);
   console.log(`✅ 版本号 → v=${newVer}`);
 
