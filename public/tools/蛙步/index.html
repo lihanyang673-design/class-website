@@ -14,15 +14,6 @@
 <!-- 3D 画布容器（开场 + 主舞台共用一个渲染器） -->
 <div id="app"></div>
 
-<!-- 载入遮罩：东南大学风格，全程不黑屏 -->
-<div id="loadOverlay">
-  <img class="load-logo" src="logo.png" alt="蛙步">
-  <div class="load-txt" id="loadTxt">蛙步 · 装扮舞台中…</div>
-  <div class="load-bar"><i id="loadBar"></i></div>
-  <button class="gate-btn hidden" id="loadStart" disabled>🎮 开始游戏 🎮</button>
-  <div class="load-sub" id="loadSub">首次加载需下载 3D 模型，请稍候…</div>
-</div>
-
 <!-- 公告弹窗：进入主界面后按「日期 + 公告版本」检查；勾选今日不再弹出则当天隐藏。
      更新公告内容时由 js 里的 NOTICE_VER 控制：版本一变，即使当天勾选过也会重新弹出 -->
 <div id="noticeOv">

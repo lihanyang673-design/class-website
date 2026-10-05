@@ -210,17 +210,8 @@ const dancerReady=new Promise((res)=>{
     res(true);
   }).catch(e=>{
     console.error('[启动] ❌ 舞者模型加载失败（不阻塞进游戏）：', e);
-    // 保底：即使模型加载失败也显示100%进度，允许进入主界面
-    $('loadBar').style.width='100%';
-    $('loadSub').textContent='模型加载失败，但游戏仍可进入';
     res(false);
   });
-});
-addEventListener('dancer-progress',e=>{
-  const pct=e.detail;
-  // 舞者下载占进度条 5%~60% 区间
-  $('loadBar').style.width=Math.min(100,(5+pct*0.55))+'%';
-  $('loadSub').textContent=`舞者模型下载中 ${pct}%`;
 });
 
 // 音乐就绪日志（不阻塞）
@@ -393,36 +384,20 @@ renderer.domElement.addEventListener('pointerdown',()=>{
 });
 
 // ============================================================
-// 启动序列（每一步都有日志，卡住时一眼能看到停在哪）
+// 启动序列（无加载遮罩，直接进主界面）
 // ============================================================
 console.log('[启动] ② 预加载背景音乐…');
 Music.load();
 console.log('[启动] ③ 搭建主舞台（灯光/地板/主题素材）…');
 buildStage(DEFAULT_THEME);
-$('loadBar').style.width='5%';
 console.log('[启动] ④ 初始化开场动画场景…');
 runOpening(renderer, enterHome);
+console.log('%c[启动] ⑤ 初始化完成，直接进入主界面 ✓', 'color:#7fffd4;font-weight:bold');
 
-// 核心初始化已完成 → 点亮「开始游戏」按钮
-const btnStart=$('loadStart');
-btnStart.classList.remove('hidden');
-btnStart.disabled=false;
-$('loadTxt').textContent='准备好了吗？';
-$('loadSub').textContent='点击按钮，开始游戏';
-console.log('%c[启动] ⑤ 初始化完成，「开始游戏」按钮已可点击 ✓', 'color:#7fffd4;font-weight:bold');
-
-// 点击：解锁音频 → 收起加载遮罩 → 直接进入主界面（无开场动画）
-btnStart.addEventListener('click', ()=>{
-  console.log('%c[启动] 👆 用户点击「开始游戏」→ 解锁音频，进入主界面', 'color:#36d1ff;font-weight:bold');
-  ensureCtx();
-  sfxClick();
-  sfxBoing();
-  setMenuBgmVolume(Store.data.set.vol);
-  $('loadOverlay').classList.add('hide');
-  $('openingUI').classList.remove('on');  // ★ 隐藏开场UI层
-  Opening.active=false;  // ★ 关键：关闭开场动画状态，让渲染循环进入主舞台
-  enterHome();
-}, {once:true});
+// 无加载遮罩，直接进主界面（等开场动画就绪后自动进入）
+Opening.active=false;
+$('openingUI').classList.remove('on');
+enterHome();
 
 // ---------- 进入主界面 ----------
 function enterHome(){
@@ -433,7 +408,6 @@ function enterHome(){
     new Promise(r=>setTimeout(()=>{ console.warn('[启动] ⚠ 等待舞者超时，先进入主界面'); r(false); }, 12000)),
   ]).then(ok=>{
     console.log(ok?'[启动] ⑦ 进入主界面（舞者已在舞台上）':'[启动] ⑦ 进入主界面（舞者稍后自动出现）');
-    $('loadBar').style.width='100%';
     showUIRoot(true);
     showScreen('scr-home');
     renderHome();
