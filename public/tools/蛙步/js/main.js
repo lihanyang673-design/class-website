@@ -3,15 +3,30 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261203';
-import { updateOpening, Opening } from './opening.js?v=20261203';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261203';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261203';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261203';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261204';
+import { updateOpening, Opening } from './opening.js?v=20261204';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261204';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261204';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261204';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261203';
+         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261204';
 
 const $=id=>document.getElementById(id);
+
+// ============================================================
+// 主页顶部滚动提示条（跑马灯）
+// 想添加新的滚动文字：在下面 TICKER_TEXTS 数组里加一行字符串，再加上引号和逗号即可
+// ============================================================
+const TICKER_TEXTS=[
+  '请多多看帮助哦，里面会有很多内容',
+];
+function renderTicker(){
+  const track=$('htTrack');
+  if(!track) return;
+  const one=TICKER_TEXTS.map(t=>`<span class="ht-item">${t}</span>`).join('');
+  track.innerHTML=one+one;   // 内容复制两份，配合 CSS 滚动 -50% 实现无缝循环
+}
+renderTicker();
 
 // ============================================================
 // 渲染器 / 场景 / 相机

@@ -168,6 +168,25 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #scr-home{display:none}
 #scr-home.cur{display:flex;flex-direction:column;
   background:url('bg-home.jpg') center/cover no-repeat fixed}
+
+/* 顶部循环滚动提示条（跑马灯）：橙红底 + 亮黄发光字，悬停可暂停 */
+.home-ticker{
+  margin:-18px calc(-1 * clamp(12px,4vw,48px)) 12px;   /* 抵消屏幕容器内边距：贴屏幕顶、贴左右边 */
+  background:linear-gradient(90deg,#7c2d12,#c2410c 45%,#b45309 55%,#7c2d12);
+  border-bottom:2px solid #fbbf24;overflow:hidden;
+  box-shadow:0 4px 20px rgba(255,160,0,.35);
+}
+.ht-track{display:inline-flex;white-space:nowrap;will-change:transform;
+  animation:htMove 16s linear infinite}
+.home-ticker:hover .ht-track{animation-play-state:paused}
+@keyframes htMove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ht-item{
+  font-size:clamp(13px,3.2vw,17px);font-weight:900;color:#ffe680;
+  letter-spacing:1px;padding:9px 30px;
+  text-shadow:0 0 10px rgba(255,200,0,.9),0 2px 2px #00000080;
+}
+.ht-item::after{content:'✦';margin-left:56px;color:#fca5a5;text-shadow:0 0 8px #fca5a5}
+
 .home-hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
   text-align:center;min-height:52vh}
 .home-hero h1{
