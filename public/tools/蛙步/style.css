@@ -127,37 +127,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #uiRoot{position:fixed;inset:0;z-index:50;display:none;pointer-events:none}
 #uiRoot.on{display:block}
 
-/* 顶栏 */
-#topbar{
-  position:absolute;left:0;right:0;top:0;height:58px;
-  display:flex;align-items:center;gap:14px;padding:0 16px;
-  background:linear-gradient(180deg,#0f1a12ee,#0f1a1200);
-  pointer-events:auto;
-}
-#topbar .logo{
-  font-size:22px;font-weight:900;letter-spacing:2px;
-  background:linear-gradient(90deg,var(--pink),var(--yellow));
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 0 10px #22c55e55);
-}
-#topbar .coin-chip{
-  margin-left:auto;display:flex;align-items:center;gap:6px;
-  background:var(--glass);border:1px solid var(--line);
-  padding:7px 14px;border-radius:99px;font-size:14px;font-weight:800;color:var(--yellow);
-}
-#topbar nav{display:flex;gap:4px;margin-left:8px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
-#topbar nav::-webkit-scrollbar{display:none}
-#topbar nav button{
-  padding:8px 14px;border-radius:10px;font-size:14px;font-weight:700;color:var(--sub);
-  transition:.15s;
-}
-#topbar nav button:hover{color:#fff;background:var(--glass)}
-#topbar nav button.cur{color:#fff;background:linear-gradient(135deg,#22c55e44,#10b98144);
-  box-shadow:inset 0 0 0 1px var(--line)}
+/* 顶栏已删除，子页面靠返回键导航 */
 
 /* 屏幕容器 */
 .screen{
-  position:absolute;inset:58px 0 0 0;display:none;overflow:hidden auto;
+  position:absolute;inset:0;display:none;overflow:hidden auto;
   padding:18px clamp(12px,4vw,48px) 40px;pointer-events:auto;
   scrollbar-width:thin;
 }

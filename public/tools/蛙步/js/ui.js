@@ -725,7 +725,6 @@ export function initUI(main){
 
 export function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('cur', s.id===id));
-  document.querySelectorAll('#mainNav button').forEach(b=>b.classList.toggle('cur', b.dataset.scr===id));
 }
 export function showUIRoot(on){
   document.getElementById('uiRoot').classList.toggle('on', on);
