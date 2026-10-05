@@ -210,6 +210,9 @@ const dancerReady=new Promise((res)=>{
     res(true);
   }).catch(e=>{
     console.error('[启动] ❌ 舞者模型加载失败（不阻塞进游戏）：', e);
+    // 保底：即使模型加载失败也显示100%进度，允许进入主界面
+    $('loadBar').style.width='100%';
+    $('loadSub').textContent='模型加载失败，但游戏仍可进入';
     res(false);
   });
 });
