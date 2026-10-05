@@ -2,9 +2,9 @@
 // ui.js —— 界面系统：存档 / 导航 / 排行 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261208';
-import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261208';
-import { Game, pauseGame } from './game.js?v=20261208';
+import { analyzeAudio } from './analyze.js?v=20261209';
+import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261209';
+import { Game, pauseGame } from './game.js?v=20261209';
 
 // ============================================================
 // 存档（localStorage）
@@ -118,6 +118,7 @@ export const THEMES=[
   {id:'it6', name:'蛙步1', desc:'自定义图片背景', bgImage:'1791122474781_871541451.jpg', fromDb:6},
   {id:'it7', name:'蛙步2', desc:'自定义图片背景', bgImage:'1791122485709_216242919.jpg', fromDb:7},
   {id:'it8', name:'蛙步3', desc:'自定义图片背景', bgImage:'1791122502789_885100847.jpg', fromDb:8},
+  {id:'it10', name:'奶蛙4', desc:'自定义图片背景', bgImage:'1791208611617_692707618.jpg', fromDb:10},
 ];
 
 // 歌曲库：只保留真实存在的内置曲 music.mp3。
@@ -187,7 +188,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261208');
+    const r=await fetch('charts.json?v=20261209');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;

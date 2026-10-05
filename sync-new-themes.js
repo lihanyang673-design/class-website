@@ -6,7 +6,7 @@
 //   node sync-new-themes.js --no-push      只提交，不推送（代理没开时用）
 //
 // 脚本会自动：读数据库 dance_themes → 找还没同步过的背景 → 复制图片到游戏目录和
-//   naiwa-release → 在 ui.js 的内置 THEMES 里加条目 → 版本号 +1 → 提交并推送
+//   naiwa-step → 在 ui.js 的内置 THEMES 里加条目 → 版本号 +1 → 提交并推送
 //   （仓库名待改 naiwa-step，见下）
 //
 // 小知识：同步后 GitHub 静态版也有这些背景；班级服务器版会自动去重，不会重复显示。
@@ -18,7 +18,7 @@ const { execSync }=require('child_process');
 
 const ROOT=__dirname;
 const GAME_DIR=path.join(ROOT,'public','tools','蛙步');
-const RELEASE_DIR=path.join(ROOT,'naiwa-release');
+const RELEASE_DIR=path.join(ROOT,'naiwa-step');
 
 const doPush=!process.argv.includes('--no-push');
 function q(s){ return "'"+String(s).replace(/'/g,"\\'")+"'"; }
@@ -43,14 +43,14 @@ function q(s){ return "'"+String(s).replace(/'/g,"\\'")+"'"; }
   console.log(`\n检测到 ${newRows.length} 个新背景：`);
   newRows.forEach(r=>console.log(`  #${r.id} 《${r.name}》 ${r.image.split('/').pop()}`));
 
-  // 3) 复制图片到游戏目录和 naiwa-release（内置版用纯文件名，和 index.html 同目录）
+  // 3) 复制图片到游戏目录和 naiwa-step（内置版用纯文件名，和 index.html 同目录）
   for(const r of newRows){
     const fname=r.image.split('/').pop();
     const src=path.join(ROOT,'uploads','dance',fname);
     fs.copyFileSync(src, path.join(GAME_DIR,fname));
     fs.copyFileSync(src, path.join(RELEASE_DIR,fname));
   }
-  console.log('✅ 图片已复制到游戏目录和 naiwa-release');
+  console.log('✅ 图片已复制到游戏目录和 naiwa-step');
 
   // 4) 内置 THEMES 里加条目（插在数组结尾 ]; 之前）
   //    只放 id/name/bgImage/fromDb：buildStage 遇到图片背景会自动补齐默认地板和灯光
@@ -83,7 +83,7 @@ function q(s){ return "'"+String(s).replace(/'/g,"\\'")+"'"; }
   fs.writeFileSync(uiPath,uiCode);
   console.log(`✅ 版本号 → v=${newVer}`);
 
-  // 6) 同步代码文件到 naiwa-release
+  // 6) 同步代码文件到 naiwa-step
   const copyMap=[
     ['index.html','index.html'], ['charts.json','charts.json'], ['style.css','style.css'],
     ['js/main.js','js/main.js'], ['js/ui.js','js/ui.js'], ['js/game.js','js/game.js'],
@@ -94,7 +94,7 @@ function q(s){ return "'"+String(s).replace(/'/g,"\\'")+"'"; }
   for(const [rel,dstRel] of copyMap){
     fs.copyFileSync(path.join(GAME_DIR,rel), path.join(RELEASE_DIR,dstRel));
   }
-  console.log('✅ 代码已同步到 naiwa-release');
+  console.log('✅ 代码已同步到 naiwa-step');
 
   // 7) 提交两个仓库
   const names=newRows.map(r=>'《'+r.name+'》').join('、');
@@ -112,7 +112,7 @@ function q(s){ return "'"+String(s).replace(/'/g,"\\'")+"'"; }
       git('git push origin main', RELEASE_DIR);
       console.log('\n🎉 全部完成！两个仓库都已推送。');
     }catch(e){
-      console.log('\n⚠️ 推送失败（代理没开？）。提交已保存，开好代理后在项目根目录和 naiwa-release 里各运行 git push 即可。');
+      console.log('\n⚠️ 推送失败（代理没开？）。提交已保存，开好代理后在项目根目录和 naiwa-step 里各运行 git push 即可。');
     }
   }else{
     console.log('\n✅ 全部完成（未推送），准备好后运行 git push。');

@@ -7,7 +7,7 @@
 //   node sync-new-songs.js 39=5 40=3      直接指定新歌 id=星级，不问你
 //
 // 脚本会自动：检测数据库里游戏目录还没有的歌 → 把谱面写入 charts.json
-//   → 复制音频到游戏目录和 naiwa-release → 在 ui.js 的 SONGS 里加条目
+//   → 复制音频到游戏目录和 naiwa-step → 在 ui.js 的 SONGS 里加条目
 //   → 所有文件版本号 +1 → 提交并推送两个仓库
 // ============================================================
 const initSqlJs=require('sql.js');
@@ -18,7 +18,7 @@ const readline=require('readline');
 
 const ROOT=__dirname;
 const GAME_DIR=path.join(ROOT,'public','tools','蛙步');
-const RELEASE_DIR=path.join(ROOT,'naiwa-release');
+const RELEASE_DIR=path.join(ROOT,'naiwa-step');
 
 // ---------- 参数 ----------
 const args=process.argv.slice(2);
@@ -106,7 +106,7 @@ function ask(q){
     fs.copyFileSync(src, path.join(GAME_DIR,p.fname));
     fs.copyFileSync(src, path.join(RELEASE_DIR,p.fname));
   }
-  console.log('✅ 音频已复制到游戏目录和 naiwa-release');
+  console.log('✅ 音频已复制到游戏目录和 naiwa-step');
 
   // 6) ui.js 的 SONGS 里加条目（插在数组结尾 ]; 之前）
   const marker='export const SONGS=[';
@@ -131,7 +131,7 @@ function ask(q){
     for(const m of code.matchAll(/v=(2026\d{4})/g)) maxVer=Math.max(maxVer,+m[1]);
   }
   const newVer=maxVer+1;
-  const writeVer=new Map();   // 记住每个文件新内容，后面复制到 naiwa-release
+  const writeVer=new Map();   // 记住每个文件新内容，后面复制到 naiwa-step
   for(const f of verFiles){
     const code=fs.readFileSync(f,'utf8').replace(/v=2026\d{4}/g,'v='+newVer);
     fs.writeFileSync(f,code);
@@ -142,7 +142,7 @@ function ask(q){
   fs.writeFileSync(uiPath,uiCode);
   console.log(`✅ 版本号 → v=${newVer}`);
 
-  // 8) 同步改动过的代码文件到 naiwa-release
+  // 8) 同步改动过的代码文件到 naiwa-step
   const copyMap=[
     ['index.html','index.html'],
     ['charts.json','charts.json'],
@@ -160,7 +160,7 @@ function ask(q){
   for(const [rel,dstRel] of copyMap){
     fs.copyFileSync(path.join(GAME_DIR,rel), path.join(RELEASE_DIR,dstRel));
   }
-  console.log('✅ 代码已同步到 naiwa-release');
+  console.log('✅ 代码已同步到 naiwa-step');
 
   // 9) 提交两个仓库
   const names=prepared.map(p=>'《'+p.name+'》'+p.stars+'星').join('、');
@@ -178,7 +178,7 @@ function ask(q){
       git('git push origin main', RELEASE_DIR);
       console.log('\n🎉 全部完成！两个仓库都已推送。');
     }catch(e){
-      console.log('\n⚠️ 推送失败（代理没开？）。提交已保存，开好代理后分别在项目根目录和 naiwa-release 里运行 git push 即可。');
+      console.log('\n⚠️ 推送失败（代理没开？）。提交已保存，开好代理后分别在项目根目录和 naiwa-step 里运行 git push 即可。');
     }
   }else{
     console.log('\n✅ 全部完成（未推送）。准备好后运行 git push 即可。');
