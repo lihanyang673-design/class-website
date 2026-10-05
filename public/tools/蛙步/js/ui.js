@@ -1,10 +1,10 @@
 // ============================================================
-// ui.js —— 界面系统：存档 / 导航 / 商城 / 图鉴 / 成就 / 排行 / 设置 / 结算
+// ui.js —— 界面系统：存档 / 导航 / 排行 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261202';
-import { Music, setSfxEnabled, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261202';
-import { Game, pauseGame } from './game.js?v=20261202';
+import { analyzeAudio } from './analyze.js?v=20261203';
+import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261203';
+import { Game, pauseGame } from './game.js?v=20261203';
 
 // ============================================================
 // 存档（localStorage）
@@ -187,7 +187,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261202');
+    const r=await fetch('charts.json?v=20261203');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -355,8 +355,7 @@ export async function refreshUserSongs(){
     const me=await r2.json();
     // isAdmin = 本次会话已开启管理员模式（/api/admin/apply 密码认证，与全站一致）
     myIdentity = me && me.id ? { id:me.id, isAdmin:!!me.admin_mode, name:me.nickname||me.username||('用户'+me.id) } : null;
-    updateAdminAuthUI();
-  }catch(e){ myIdentity=null; updateAdminAuthUI(); }
+  }catch(e){ myIdentity=null; }
 }
 
 // 按 id 找歌（临时 + 内置 + 玩家上传），main.js 用
@@ -547,7 +546,6 @@ export function initUI(main){
       if(id==='scr-board') renderBoard();
       if(id==='scr-endless') renderEndlessBoard();
       if(id==='scr-home') renderHome();
-      if(id==='scr-set') updateAdminAuthUI();
       if(id!=='scr-play') stopPreview();   // 离开选歌页：试听必须停
       showScreen(id);
     });
@@ -570,16 +568,13 @@ export function initUI(main){
     btn.addEventListener('click',()=>{ sfxClick(); showScreen('scr-home'); renderHome(); });
   });
 
-  // ---- 设置控件 ----
-  bindSettings();
-
   // ---- 玩家歌曲：上传弹窗 + 曲库拉取 ----
   bindUpload();
   // ---- 舞池背景：上传弹窗（服务器入库 / 离线本地保存）----
   bindThemeUpload();
-  // ---- 帮助页：公告 + 一键更新 ----
-  const helpNotice=document.getElementById('helpNotice');
-  if(helpNotice) helpNotice.addEventListener('click',()=>{ sfxClick(); mainRef.showNotice&&mainRef.showNotice(); });
+  // ---- 主页：查看公告 ----
+  const homeNotice=document.getElementById('homeNotice');
+  if(homeNotice) homeNotice.addEventListener('click',()=>{ sfxClick(); mainRef.showNotice&&mainRef.showNotice(); });
   const helpUpdate=document.getElementById('helpUpdate');
   if(helpUpdate) helpUpdate.addEventListener('click',async ()=>{
     sfxClick();
@@ -688,7 +683,6 @@ export function initUI(main){
   });
 
   applyVolume();
-  updateAdminAuthUI();
   renderHome();
 }
 
@@ -1167,143 +1161,6 @@ function paintEndless(){
       </div>
       <div class="rrank">♾</div>`;
     list.appendChild(row);
-  });
-}
-
-// ---------- 设置 ----------
-// 管理员认证区块的状态显示（已认证/未认证，按钮在"认证/退出认证"间切换）
-function updateAdminAuthUI(){
-  // 静态版整个管理员认证区块不需要
-  const block=document.getElementById('setAdminAuth');
-  if(block) block.style.display=serverOn?'':'none';
-  const tip=document.getElementById('adminAuthTip');
-  const btn=document.getElementById('btnAdminAuth');
-  if(!tip||!btn) return;
-  if(myIdentity&&myIdentity.isAdmin){
-    tip.textContent='✅ 已认证：可删除任意同学上传的歌曲';
-    tip.style.color='#7fe38a';
-    btn.textContent='退出认证';
-    btn.dataset.mode='exit';
-  }else{
-    tip.textContent='先在班级网站登录管理员账号，认证后可删除任意同学上传的歌曲';
-    tip.style.color='';
-    btn.textContent='认证';
-    btn.dataset.mode='auth';
-  }
-}
-
-function bindSettings(){
-  const d=Store.data.set;
-  const $=id=>document.getElementById(id);
-  const vol=$('setVol'), off=$('setOffset'), bpm=$('setBpm');
-  vol.value=d.vol*100; $('setVolV').textContent=Math.round(d.vol*100)+'%';
-  off.value=d.offset;  $('setOffsetV').textContent=d.offset+'ms';
-  bpm.value=d.bpm;     $('setBpmV').textContent=d.bpm;
-  $('setSfx').value=String(d.sfx);
-  $('setQuality').value=String(d.quality);
-
-  vol.oninput=()=>{ d.vol=vol.value/100; $('setVolV').textContent=vol.value+'%'; applyVolume(); Store.save(); };
-  off.oninput=()=>{ d.offset=+off.value; $('setOffsetV').textContent=off.value+'ms'; Store.save(); };
-  bpm.oninput=()=>{ d.bpm=+bpm.value; $('setBpmV').textContent=bpm.value; Store.save(); };
-  $('setSfx').onchange=e=>{ d.sfx=+e.target.value; setSfxEnabled(!!d.sfx); Store.save(); };
-  $('setQuality').onchange=e=>{ d.quality=+e.target.value; mainRef.applyQuality(d.quality); Store.save(); };
-
-  // 跟拍测 BPM：连续点击间隔取平均
-  let taps=[];
-  $('btnTap').onclick=()=>{
-    ensureCtx(); sfxClick();
-    const now=performance.now();
-    taps=taps.filter(t=>now-t<2500); taps.push(now);
-    if(taps.length>=4){
-      const iv=[];
-      for(let i=1;i<taps.length;i++) iv.push(taps[i]-taps[i-1]);
-      const avg=iv.reduce((a,b)=>a+b)/iv.length;
-      const b2=Math.round(60000/avg);
-      if(b2>=60&&b2<=180){ d.bpm=b2; bpm.value=b2; $('setBpmV').textContent=b2; Store.save(); toast(`🥁 测得 BPM ≈ ${b2}`); }
-    }else toast(`继续点… ${taps.length}/4`);
-  };
-
-  $('btnReset').onclick=()=>{
-    if(confirm('确定清空全部进度？此操作不可恢复！')){
-      Store.reset(); applyVolume(); renderHome(); toast('存档已清空');
-    }
-  };
-
-  // ---- 清理本站缓存：只删旧【代码】文件，保留 3D 模型/图片（重新下载模型很慢）----
-  // 同学自己就能点，不用清整个浏览器/QQ；存档(localStorage)完全不动
-  $('btnClearCache').onclick=async()=>{
-    const btn=$('btnClearCache');
-    btn.textContent='清理中…'; btn.disabled=true;
-    let delN=0, keptN=0;
-    try{
-      if('caches' in window){
-        const CODE=/\.(html|js|css|json)(\?.*)?$/i;   // 只清代码；.glb/.gltf/.bin/图片/音频一律保留
-        for(const name of await caches.keys()){
-          const cache=await caches.open(name);
-          for(const req of await cache.keys()){
-            const p=new URL(req.url).pathname;
-            if(CODE.test(p)){ await cache.delete(req); delN++; }
-            else keptN++;
-          }
-        }
-      }
-      // 注意：不注销 Service Worker —— 它是"网络优先"，在线时永远先拿新代码，旧缓存只在断网时兜底
-      toast(`已清 ${delN} 个旧代码文件，3D模型等 ${keptN} 个文件保留；2秒后刷新`);
-    }catch(e){
-      console.error('清缓存失败', e);
-      toast('清理完成，2秒后自动刷新');
-    }
-    // 带随机参数强制刷新，确保 HTML/JS 拿到全新文件
-    setTimeout(()=>{ location.href=location.pathname+'?v='+Date.now(); }, 2000);
-  };
-
-  // ---- 管理员认证：调全站统一接口，认证后会话获得管理员模式 ----
-  $('btnAdminAuth').onclick=async()=>{
-    ensureCtx();
-    const btn=$('btnAdminAuth');
-    if(btn.dataset.mode==='exit'){
-      const r=await fetch('/api/admin/exit',{method:'POST',credentials:'same-origin'});
-      if(r.ok){
-        await refreshUserSongs();
-        if(document.getElementById('scr-play').classList.contains('cur')) renderPlay();
-        toast('已退出管理员认证');
-      }
-      return;
-    }
-    const secret=$('adminSecretInput').value.trim();
-    if(!secret){ toast('请输入管理员密码'); return; }
-    try{
-      const r=await fetch('/api/admin/apply',{method:'POST',credentials:'same-origin',
-        headers:{'Content-Type':'application/json'},body:JSON.stringify({secret})});
-      const data=await r.json().catch(()=>({}));
-      if(!r.ok) throw new Error(data.error||'认证失败');
-      sfxClick();
-      await refreshUserSongs();                       // 重新拿身份（admin_mode=true）
-      if(document.getElementById('scr-play').classList.contains('cur')) renderPlay();
-      toast('🛡️ 管理员认证成功');
-      $('adminSecretInput').value='';
-    }catch(e){ toast('❌ '+(e.message||'认证失败')); }
-  };
-  $('adminSecretInput').addEventListener('keydown',e=>{
-    if(e.key==='Enter') $('btnAdminAuth').click();
-  });
-
-  // ---- 管理入口暗号：连点版本号 5 次才显示（普通玩家看不到）----
-  const egg=$('verEgg'), secret=$('adminSecretLink');
-  if(sessionStorage.getItem('naiwa_step_admin_unlocked')) secret.style.display='inline';
-  let eggTaps=0, eggTimer=0;
-  egg.style.pointerEvents='auto';
-  egg.addEventListener('click',()=>{
-    clearTimeout(eggTimer);
-    eggTaps++;
-    if(eggTaps>=5){
-      eggTaps=0;
-      sessionStorage.setItem('naiwa_step_admin_unlocked','1');
-      secret.style.display='inline';
-      toast('🛠️ 管理入口已解锁');
-    }else{
-      eggTimer=setTimeout(()=>eggTaps=0,1500);
-    }
   });
 }
 

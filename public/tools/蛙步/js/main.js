@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261202';
-import { updateOpening, Opening } from './opening.js?v=20261202';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261202';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261202';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261202';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261203';
+import { updateOpening, Opening } from './opening.js?v=20261203';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261203';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261203';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261203';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261202';
+         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261203';
 
 const $=id=>document.getElementById(id);
 
@@ -233,7 +233,7 @@ const main={
     startCountdown();
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },
-  showNotice(){ showNoticeIfNeeded(true); },   // 帮助页强制展示公告
+  showNotice(){ showNoticeIfNeeded(true); },   // 主页强制展示公告
   quitShow(){
     stopGame(false);
     showStageUI(false);

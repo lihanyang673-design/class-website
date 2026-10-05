@@ -383,16 +383,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .rank-row .rrank{font-weight:900;font-size:18px;color:var(--yellow);padding-top:2px}
 .rank-empty{padding:40px;text-align:center;color:var(--sub)}
 
-/* ---------- 设置 ---------- */
-.set-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;
-  background:var(--glass);border:1px solid var(--line);margin-bottom:10px;flex-wrap:wrap}
-.set-item .sl{font-weight:800;font-size:15px;min-width:110px}
-.set-item .sv{margin-left:auto;color:var(--yellow);font-weight:900;font-size:14px;min-width:70px;text-align:right}
-.set-item input[type=range]{flex:1;min-width:160px;accent-color:var(--pink)}
-.set-item select{background:var(--bg1);color:#fff;border:1px solid var(--line);
-  border-radius:10px;padding:8px 12px;font-size:14px}
-.set-item .mini-tip{width:100%;font-size:12px;color:var(--sub)}
-
 /* ---------- 结算 ---------- */
 #scr-result{display:none;align-items:center;justify-content:center}
 #scr-result.cur{display:flex}

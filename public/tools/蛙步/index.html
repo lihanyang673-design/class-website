@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>蛙步 · Frog Step</title>
-<link rel="stylesheet" href="style.css?v=20261202">
+<link rel="stylesheet" href="style.css?v=20261203">
 </head>
 <body>
 
@@ -76,7 +76,7 @@
       <button class="home-card" data-scr="scr-rank"><span class="ic">🏆</span>我的纪录</button>
       <button class="home-card" data-scr="scr-board" id="homeBtnBoard"><span class="ic">📊</span>排行榜</button>
       <button class="home-card" data-scr="scr-endless" id="homeBtnEndless"><span class="ic">♾</span>无尽榜</button>
-      <button class="home-card" data-scr="scr-set"><span class="ic">⚙️</span>游戏设置</button>
+      <button class="home-card" id="homeNotice"><span class="ic">📢</span>查看公告</button>
     </div>
     <div class="home-stats">
       <div class="st">累计开跳<b id="stPlays">0</b>次</div>
@@ -118,7 +118,7 @@
     <div class="play-foot">
       <button class="btn-ghost" id="btnRandom">🎲 随机舞池</button>
       <button class="btn-main" id="btnNextStep">我选好了</button>
-      <div class="tip">← ↓ ↑ → 方向键 hit 箭头 · 节拍不准？去设置里校准 BPM 和延迟</div>
+      <div class="tip">← ↓ ↑ → 方向键击打箭头</div>
     </div>
   </section>
 
@@ -166,73 +166,6 @@
     <div id="endlessList"></div>
   </section>
 
-  <!-- 设置 -->
-  <section class="screen" id="scr-set">
-    <div class="page-head">
-      <button class="btn-back" data-back>← 返回</button>
-      <div class="sec-title" style="margin:0">⚙️ 设置 <small>SETTINGS</small></div>
-    </div>
-
-    <div class="set-item">
-      <span class="sl">🎵 音乐音量</span>
-      <input type="range" id="setVol" min="0" max="100" value="80">
-      <span class="sv" id="setVolV">80%</span>
-    </div>
-    <div class="set-item">
-      <span class="sl">🔊 音效</span>
-      <select id="setSfx"><option value="1">开启</option><option value="0">关闭</option></select>
-      <span class="mini-tip">判定 / 开场 / 按钮音效开关</span>
-    </div>
-    <div class="set-item">
-      <span class="sl">⏱️ 判定偏移</span>
-      <input type="range" id="setOffset" min="-200" max="200" step="10" value="0">
-      <span class="sv" id="setOffsetV">0ms</span>
-      <span class="mini-tip">箭头总是早到就调正数，总是晚到就调负数</span>
-    </div>
-    <div class="set-item">
-      <span class="sl">🥁 音乐 BPM</span>
-      <input type="range" id="setBpm" min="60" max="180" step="1" value="104">
-      <span class="sv" id="setBpmV">104</span>
-      <button class="btn-ghost" id="btnTap">👆 跟着节奏点我</button>
-      <span class="mini-tip">跟着音乐鼓点连点这个按钮，自动测出 BPM（点 4 下以上生效）</span>
-    </div>
-    <div class="set-item">
-      <span class="sl">🖥️ 画面质量</span>
-      <select id="setQuality">
-        <option value="0.75">流畅</option>
-        <option value="1" selected>标准</option>
-        <option value="2">高清（随设备）</option>
-      </select>
-    </div>
-    <div class="set-item" id="setAdminAuth">
-      <span class="sl">🛡️ 管理员认证</span>
-      <input id="adminSecretInput" type="password" placeholder="输入管理员密码"
-             style="flex:1;min-width:140px;background:var(--bg1);color:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14px;font-family:inherit">
-      <button class="btn-ghost" id="btnAdminAuth">认证</button>
-      <span class="mini-tip" id="adminAuthTip">先在班级网站登录管理员账号，认证后可删除任意同学上传的歌曲</span>
-    </div>
-
-    <div class="set-item">
-      <span class="sl">🧹 重置存档</span>
-      <button class="btn-ghost" id="btnReset">清空全部进度</button>
-      <span class="mini-tip">金币 / 涂装 / 排行 / 成就 全部清空，慎点！</span>
-    </div>
-
-    <div class="set-item">
-      <span class="sl">🔄 清理缓存</span>
-      <button class="btn-ghost" id="btnClearCache">只清本游戏缓存</button>
-      <span class="mini-tip">游戏出 bug 时点它：只清旧代码文件并自动刷新，<b>保留 3D 模型</b>（不用重新慢速下载）；<b>不影响</b>存档（金币/涂装/排行都在），也不用清整个 QQ/浏览器</span>
-    </div>
-
-    <div style="text-align:center;margin-top:18px">
-      <span id="verEgg" style="font-size:11px;color:var(--sub);opacity:.5;cursor:default;user-select:none">蛙步 v1.0</span>
-      <a id="adminSecretLink" href="admin.html#nai-boss" target="_blank" style="display:none;margin-left:10px;font-size:12px;color:var(--yellow);text-decoration:none">🛠️ 管理入口</a>
-      <div style="margin-top:6px;font-size:12px;color:var(--sub);opacity:.75;user-select:text">
-        🎮 制作者：<b style="color:var(--cyan)">念因</b> · QQ：<b>1139568835</b>
-      </div>
-    </div>
-  </section>
-
   <!-- 帮助 -->
   <section class="screen" id="scr-help">
     <div class="page-head">
@@ -240,15 +173,6 @@
       <div class="sec-title" style="margin:0">❓ 帮助 <small>HELP</small></div>
     </div>
     <div class="help-grid">
-      <!-- 公告 -->
-      <button class="help-card" id="helpNotice">
-        <div class="hc-ic">📢</div>
-        <div class="hc-body">
-          <div class="hc-name">查看公告</div>
-          <div class="hc-desc">作者发布的最新通知、网址、联系方式</div>
-        </div>
-        <span class="hc-arrow">›</span>
-      </button>
       <!-- 版本更新 -->
       <div class="help-card help-row">
         <div class="hc-ic">🔄</div>
@@ -414,8 +338,8 @@
   }
 }
 </script>
-<script src="js/codec.js?v=20261202"></script>
-<script type="module" src="js/main.js?v=20261202"></script>
+<script src="js/codec.js?v=20261203"></script>
+<script type="module" src="js/main.js?v=20261203"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';
