@@ -9,7 +9,7 @@ import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dance
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20261202';
 import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261202';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261202';
+         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261202';
 
 const $=id=>document.getElementById(id);
 
@@ -287,8 +287,6 @@ function onShowEnd(res){
   const prevBest=Store.data.stats.bestRel||0;
   const isNew=res.rel>prevBest;
   showResult(res,isNew);            // ui 内部完成存档 + showScreen('scr-result')
-  const got=checkAch();
-  if(got.length) setTimeout(()=>toast('🏆 成就达成：'+got.map(g=>g.name).join('、')),600);
   if(res.acc>=0.8) celebrate();    // ★ 赢了：蹦跳庆祝
   else lieDown();                  // ★ 输了：躺地上
   startMenuBgm();                   // 演出结束回到结算页：恢复菜单 BGM

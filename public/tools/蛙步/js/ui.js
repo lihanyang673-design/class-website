@@ -526,39 +526,6 @@ const CODEX=[
   {ic:'➡️', key:'→ 右键', name:'大回旋 360°', desc:'整个蛙原地转一整圈，附带挤压变形，招牌舞蹈动作。'},
 ];
 
-const ACHS=[
-  // ===== 演出次数 =====
-  {id:'first', ic:'🕺', name:'初次登台', desc:'完成第一场演出', goal:1, get:s=>s.stats.plays},
-  {id:'p10',   ic:'🎪', name:'舞池常客', desc:'累计完成 10 场演出', goal:10, get:s=>s.stats.plays},
-  {id:'p30',   ic:'🎭', name:'舞台老手', desc:'累计完成 30 场演出', goal:30, get:s=>s.stats.plays},
-  {id:'p50',   ic:'🎤', name:'驻唱歌手', desc:'累计完成 50 场演出', goal:50, get:s=>s.stats.plays},
-  {id:'p100',  ic:'👑', name:'百场舞王', desc:'累计完成 100 场演出', goal:100, get:s=>s.stats.plays},
-  // ===== 连击 =====
-  {id:'c10',   ic:'🔥', name:'小试牛刀', desc:'单场连击达到 10', goal:10, get:s=>s.stats.maxCombo},
-  {id:'c30',   ic:'⚡', name:'连击新秀', desc:'单场连击达到 30', goal:30, get:s=>s.stats.maxCombo},
-  {id:'c50',   ic:'💫', name:'连击达人', desc:'单场连击达到 50', goal:50, get:s=>s.stats.maxCombo},
-  {id:'c80',   ic:'🌟', name:'连击狂人', desc:'单场连击达到 80', goal:80, get:s=>s.stats.maxCombo},
-  {id:'c100',  ic:'💥', name:'百连不破', desc:'单场连击达到 100', goal:100, get:s=>s.stats.maxCombo},
-  {id:'c200',  ic:'🌪️', name:'连击之神', desc:'单场连击达到 200', goal:200, get:s=>s.stats.maxCombo},
-  // ===== 得分 =====
-  {id:'s10k',  ic:'💯', name:'万元户', desc:'单场得分达到 10,000', goal:10000, get:s=>s.stats.bestScore},
-  {id:'s30k',  ic:'💰', name:'三万俱乐部', desc:'单场得分达到 30,000', goal:30000, get:s=>s.stats.bestScore},
-  {id:'s50k',  ic:'🏆', name:'五万分俱乐部', desc:'单场得分达到 50,000', goal:50000, get:s=>s.stats.bestScore},
-  {id:'s100k', ic:'💎', name:'十万大舞', desc:'单场得分达到 100,000', goal:100000, get:s=>s.stats.bestScore},
-  {id:'s200k', ic:'🚀', name:'二十万传奇', desc:'单场得分达到 200,000', goal:200000, get:s=>s.stats.bestScore},
-  // ===== PERFECT =====
-  {id:'pf50',  ic:'🎯', name:'准度初成', desc:'累计 50 次 PERFECT', goal:50, get:s=>s.stats.totalPerfect},
-  {id:'pf100', ic:'🎯', name:'完美主义', desc:'累计 100 次 PERFECT', goal:100, get:s=>s.stats.totalPerfect},
-  {id:'pf300', ic:'🎯', name:'完美大师', desc:'累计 300 次 PERFECT', goal:300, get:s=>s.stats.totalPerfect},
-  {id:'pf500', ic:'🎯', name:'完美传说', desc:'累计 500 次 PERFECT', goal:500, get:s=>s.stats.totalPerfect},
-  {id:'pf1000',ic:'🎯', name:'完美之神', desc:'累计 1000 次 PERFECT', goal:1000, get:s=>s.stats.totalPerfect},
-  // ===== 评级 & 全连 =====
-  {id:'fc1',   ic:'✨', name:'零失误', desc:'完成一次全连（无 Miss）', goal:1, get:s=>s.stats.fullCombos},
-  {id:'fc5',   ic:'✨', name:'稳定输出', desc:'累计 5 次全连', goal:5, get:s=>s.stats.fullCombos},
-  {id:'ss1',   ic:'🏅', name:'初露锋芒', desc:'获得一次 SS 评级', goal:1, get:s=>s.stats.ssCount},
-  {id:'ss5',   ic:'🥇', name:'SS 专业户', desc:'累计 5 次 SS 评级', goal:5, get:s=>s.stats.ssCount},
-];
-
 // ============================================================
 // 界面初始化
 // ============================================================
@@ -1020,27 +987,6 @@ function renderCodex(){
     g.appendChild(card);
   });
   g.dataset.done='1';
-}
-
-// ---------- 成就 ----------
-function renderAch(){
-  const list=document.getElementById('achList'); list.innerHTML='';
-  const d=Store.data;
-  ACHS.forEach(a=>{
-    const v=Math.min(a.get(d), a.goal);
-    const done=v>=a.goal;
-    const item=document.createElement('div');
-    item.className='ach-item'+(done?' done':'');
-    item.innerHTML=`
-      <div class="ai">${a.ic}</div>
-      <div class="amid">
-        <div class="aname">${a.name} ${done?'✓':''}</div>
-        <div class="adesc">${a.desc}</div>
-        <div class="abar"><i style="width:${v/a.goal*100}%"></i></div>
-      </div>
-      <div class="aright">${done?'已完成':`${v.toLocaleString()} / ${a.goal.toLocaleString()}`}</div>`;
-    list.appendChild(item);
-  });
 }
 
 // ---------- 排行 ----------
@@ -1810,12 +1756,3 @@ export function askConfirm(msg, opts={}){
   });
 }
 
-// ---------- 成就检测（game 结束时调用） ----------
-export function checkAch(){
-  const d=Store.data; const got=[];
-  ACHS.forEach(a=>{
-    if(!d.ach[a.id] && a.get(d)>=a.goal){ d.ach[a.id]=1; got.push(a); }
-  });
-  if(got.length) Store.save();
-  return got;
-}
