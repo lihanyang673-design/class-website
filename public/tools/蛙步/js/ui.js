@@ -11,12 +11,8 @@ import { Game, pauseGame } from './game.js?v=20261116';
 // ============================================================
 const KEY='naiwa_step_save_v1';
 const DEFAULTS={
-  playerId:'',             // 玩家唯一编号（首次进入自动生成，用于收发兑换码）
-  coins:350,               // 每位新玩家初始奶币
-  usedCodes:[],            // 已兑换的码（存签名段，防同一码重复用）
-  owned:['classic'], equipped:'classic',
-  stats:{plays:0,bestScore:0,bestRel:0,maxCombo:0,totalPerfect:0,totalCoins:0,bestAcc:0,fullCombos:0,ssCount:0},
-  ach:{},
+  playerId:'',             // 玩家唯一编号
+  stats:{plays:0,bestScore:0,bestRel:0,maxCombo:0,totalPerfect:0,bestAcc:0,fullCombos:0,ssCount:0},
   scores:{easy:[],casual:[],normal:[],hard:[],endless:[]},
   set:{vol:0.8,sfx:1,offset:0,bpm:104,speed:1,quality:1},
 };
@@ -573,20 +569,11 @@ const ACHS=[
   {id:'pf300', ic:'🎯', name:'完美大师', desc:'累计 300 次 PERFECT', goal:300, get:s=>s.stats.totalPerfect},
   {id:'pf500', ic:'🎯', name:'完美传说', desc:'累计 500 次 PERFECT', goal:500, get:s=>s.stats.totalPerfect},
   {id:'pf1000',ic:'🎯', name:'完美之神', desc:'累计 1000 次 PERFECT', goal:1000, get:s=>s.stats.totalPerfect},
-  // ===== 涂装 =====
-  {id:'buy1',  ic:'🛍️', name:'氪金第一步', desc:'购买第一套涂装', goal:1, get:s=>s.owned.length-1},
-  {id:'own4',  ic:'👕', name:'时尚蛙', desc:'拥有 4 套涂装', goal:4, get:s=>s.owned.length},
-  {id:'own8',  ic:'👔', name:'衣帽间', desc:'拥有 8 套涂装', goal:8, get:s=>s.owned.length},
-  {id:'own15', ic:'🧥', name:'穿搭博主', desc:'拥有 15 套涂装', goal:15, get:s=>s.owned.length},
-  {id:'ownall',ic:'👑', name:'涂装收藏家', desc:'拥有全部涂装', goal:26, get:s=>s.owned.length},
   // ===== 评级 & 全连 =====
   {id:'fc1',   ic:'✨', name:'零失误', desc:'完成一次全连（无 Miss）', goal:1, get:s=>s.stats.fullCombos},
   {id:'fc5',   ic:'✨', name:'稳定输出', desc:'累计 5 次全连', goal:5, get:s=>s.stats.fullCombos},
   {id:'ss1',   ic:'🏅', name:'初露锋芒', desc:'获得一次 SS 评级', goal:1, get:s=>s.stats.ssCount},
   {id:'ss5',   ic:'🥇', name:'SS 专业户', desc:'累计 5 次 SS 评级', goal:5, get:s=>s.stats.ssCount},
-  // ===== 金币 =====
-  {id:'coin1k',ic:'🪙', name:'小富婆', desc:'累计获得 1000 奶币', goal:1000, get:s=>s.stats.totalCoins},
-  {id:'coin5k',ic:'🪙', name:'大富翁', desc:'累计获得 5000 奶币', goal:5000, get:s=>s.stats.totalCoins},
 ];
 
 // ============================================================
@@ -606,9 +593,6 @@ export function initUI(main){
       sfxClick();
       const id=btn.dataset.scr;
       if(id==='scr-play'){ playStep=1; renderPlay(); }
-      if(id==='scr-shop') renderShop();
-      if(id==='scr-codex') renderCodex();
-      if(id==='scr-ach')  renderAch();
       if(id==='scr-rank') renderRank();
       if(id==='scr-board') renderBoard();
       if(id==='scr-endless') renderEndlessBoard();
@@ -793,7 +777,6 @@ export function renderHome(){
   document.getElementById('stBest').textContent=(s.bestRel||0).toLocaleString();
   document.getElementById('stCombo').textContent=s.maxCombo;
   document.getElementById('stPerf').textContent=s.totalPerfect;
-  document.getElementById('coinNum').textContent=Store.data.coins.toLocaleString();
   const hp=document.getElementById('homePlayerId');
   if(hp) hp.textContent=Store.data.playerId||'------';
   refreshPlayerId();
@@ -1764,14 +1747,13 @@ async function submitServerScore(res){
 export function showResult(res, isNew){
   submitServerScore(res);   // 自动上传，不等待
   const s=Store.data.stats;
-  s.plays++; s.totalPerfect+=res.cnt.perfect; s.totalCoins+=res.coin;
+  s.plays++; s.totalPerfect+=res.cnt.perfect;
   if(res.score>s.bestScore) s.bestScore=res.score;
   if(res.rel>(s.bestRel||0)) s.bestRel=res.rel;
   if(res.maxCombo>s.maxCombo) s.maxCombo=res.maxCombo;
   if(res.acc>s.bestAcc) s.bestAcc=res.acc;
   if(res.cnt.miss===0 && res.cnt.perfect+res.cnt.good>0) s.fullCombos++;
   if(res.rank==='SS' || res.rank==='SSS') s.ssCount++;
-  Store.data.coins+=res.coin;
   // 写入排行榜（含相对分，排行按相对分，不同歌曲才公平）
   Store.data.scores[res.diff]=Store.data.scores[res.diff]||[];
   Store.data.scores[res.diff].push({
@@ -1792,10 +1774,10 @@ export function showResult(res, isNew){
   document.getElementById('resGood').textContent=res.cnt.good;
   document.getElementById('resMiss').textContent=res.cnt.miss;
   document.getElementById('resCombo').textContent=res.maxCombo;
-  document.getElementById('resCoinLine').innerHTML='🪙 本场演出费 +<span id="resCoin">'+res.coin+'</span> 奶币';
+  document.getElementById('resCoinLine').style.display='none';  // ★ 隐藏奶币显示
   document.getElementById('resNew').style.display=isNew?'':'none';
   showScreen('scr-result');
-  renderHome(); renderAch();
+  renderHome();
 }
 
 // ---------- 无尽模式结算 ----------
@@ -1825,9 +1807,6 @@ export function showEndlessResult(res){
   const s=Store.data.stats;
   if(res.score>s.bestScore) s.bestScore=res.score;
   if(res.maxCombo>s.maxCombo) s.maxCombo=res.maxCombo;
-  // 无尽演出费：无尽计分从0开始，直接按总分发奶币
-  const coin=Math.floor(res.score/400);
-  Store.data.coins+=coin;
   // ★ 写入本地「我的纪录·无尽」：只记绝对分，备注曲目/段数/判定/日期（保留最近10条，按分排序）
   Store.data.scores.endless=Store.data.scores.endless||[];
   Store.data.scores.endless.push({
@@ -1848,9 +1827,9 @@ export function showEndlessResult(res){
   document.getElementById('resGood').textContent=res.cnt.good;
   document.getElementById('resMiss').textContent=res.cnt.miss;
   document.getElementById('resCombo').textContent=res.maxCombo;
-  document.getElementById('resCoinLine').innerHTML='🪙 无尽演出费 +<span id="resCoin">'+coin+'</span> 奶币';
+  document.getElementById('resCoinLine').style.display='none';  // ★ 隐藏奶币显示
   showScreen('scr-result');
-  renderHome(); renderAch();
+  renderHome();
 }
 
 // ---------- Toast ----------

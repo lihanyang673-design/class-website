@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // game.js —— 节奏玩法核心
 // 判定线 + 四方向箭头掉落 + Perfect/Good/Miss + 连击计分
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
@@ -484,11 +484,9 @@ function finishGame(natural){
   else if(rel>=90000) rank='S';
   else if(rel>=80000) rank='A';
   else if(rel>=70000) rank='B';
-  const coin = Math.floor(Game.score/400);
-
   Game.hooks.onEnd && Game.hooks.onEnd({
     score:Game.score, maxCombo:Game.maxCombo, cnt:{...Game.cnt},
-    acc, rank, coin, diff:Game.cfg.diff, rel, maxScore, notes:noteN,
+    acc, rank, diff:Game.cfg.diff, rel, maxScore, notes:noteN,
     song:Game.cfg.songName||'', songId:Game.cfg.songId||'',
   });
 }

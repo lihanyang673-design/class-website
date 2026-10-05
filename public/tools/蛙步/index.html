@@ -91,9 +91,6 @@
     <nav id="mainNav">
       <button data-scr="scr-home" class="cur">🏠 主界面</button>
       <button data-scr="scr-play">🎵 开跳</button>
-      <button data-scr="scr-shop">👕 涂装工坊</button>
-      <button data-scr="scr-codex">📖 舞步图鉴</button>
-      <button data-scr="scr-ach">🎯 挑战之路</button>
       <button data-scr="scr-rank">🏆 我的纪录</button>
       <button data-scr="scr-board">📊 排行榜</button>
       <button data-scr="scr-endless">♾ 无尽榜</button>
@@ -101,7 +98,6 @@
       <!-- GitHub 展示版专用：回到入口大厅（校园网运行时不显示） -->
       <button id="navHallBtn" onclick="location.href='../../'" style="display:none">⬅ 大厅</button>
     </nav>
-    <div class="coin-chip">🪙 <span id="coinNum">0</span></div>
   </header>
 
   <!-- 主界面 -->
@@ -118,14 +114,11 @@
     </div>
     <div class="home-grid">
       <button class="home-card" data-scr="scr-play"><span class="ic">🎵</span>选舞池开跳</button>
-      <button class="home-card" data-scr="scr-shop"><span class="ic">👕</span>涂装工坊</button>
       <button class="home-card" data-scr="scr-help"><span class="ic">❓</span>帮助</button>
       <button class="home-card" data-scr="scr-rank"><span class="ic">🏆</span>我的纪录</button>
       <button class="home-card" data-scr="scr-board" id="homeBtnBoard"><span class="ic">📊</span>排行榜</button>
       <button class="home-card" data-scr="scr-endless" id="homeBtnEndless"><span class="ic">♾</span>无尽榜</button>
-      <button class="home-card" data-scr="scr-ach"><span class="ic">🎯</span>挑战之路</button>
       <button class="home-card" data-scr="scr-set"><span class="ic">⚙️</span>游戏设置</button>
-      <button class="home-card" data-scr="scr-codex"><span class="ic">📖</span>舞步图鉴</button>
     </div>
     <div class="home-stats">
       <div class="st">累计开跳<b id="stPlays">0</b>次</div>
@@ -169,33 +162,6 @@
       <button class="btn-main" id="btnNextStep">我选好了</button>
       <div class="tip">← ↓ ↑ → 方向键 hit 箭头 · 节拍不准？去设置里校准 BPM 和延迟</div>
     </div>
-  </section>
-
-  <!-- 涂装工坊 -->
-  <section class="screen" id="scr-shop">
-    <div class="page-head">
-      <button class="btn-back" data-back>← 返回</button>
-      <div class="sec-title" style="margin:0">👕 涂装工坊 <small>PAINT SHOP</small></div>
-    </div>
-    <div class="grid-cards" id="shopGrid"></div>
-  </section>
-
-  <!-- 舞步图鉴 -->
-  <section class="screen" id="scr-codex">
-    <div class="page-head">
-      <button class="btn-back" data-back>← 返回</button>
-      <div class="sec-title" style="margin:0">📖 舞步图鉴 <small>MOVE CODEX</small></div>
-    </div>
-    <div class="grid-cards" id="codexGrid"></div>
-  </section>
-
-  <!-- 挑战之路 -->
-  <section class="screen" id="scr-ach">
-    <div class="page-head">
-      <button class="btn-back" data-back>← 返回</button>
-      <div class="sec-title" style="margin:0">🎯 挑战之路 <small>CHALLENGE ROAD</small></div>
-    </div>
-    <div id="achList"></div>
   </section>
 
   <!-- 我的纪录（本地个人成绩） -->
