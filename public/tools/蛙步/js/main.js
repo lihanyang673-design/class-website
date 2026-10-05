@@ -4,7 +4,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261116';
-import { runOpening, updateOpening, begin as beginOpening, Opening } from './opening.js?v=20261116';
+import { updateOpening, Opening } from './opening.js?v=20261116';
 import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261116';
 import { initFx, updateFx, Fx, burst } from './fx.js?v=20261116';
 import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261116';
@@ -390,13 +390,9 @@ console.log('[启动] ② 预加载背景音乐…');
 Music.load();
 console.log('[启动] ③ 搭建主舞台（灯光/地板/主题素材）…');
 buildStage(DEFAULT_THEME);
-console.log('[启动] ④ 初始化开场动画场景…');
-runOpening(renderer, enterHome);
-console.log('%c[启动] ⑤ 初始化完成，直接进入主界面 ✓', 'color:#7fffd4;font-weight:bold');
+console.log('%c[启动] ④ 初始化完成，直接进入主界面 ✓', 'color:#7fffd4;font-weight:bold');
 
-// 无加载遮罩，直接进主界面（等开场动画就绪后自动进入）
-Opening.active=false;
-$('openingUI').classList.remove('on');
+// 无加载遮罩，直接进主界面
 enterHome();
 
 // ---------- 进入主界面 ----------
