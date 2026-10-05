@@ -383,7 +383,7 @@ function enterHome(){
 }
 
 // ---------- 公告弹窗 ----------
-const NOTICE_VER='5';   // 公告版本号：每次更换公告内容/样式就 +1，当天勾选过「不再弹出」的同学也会重新看到新公告
+const NOTICE_VER='6';   // 公告版本号：每次更换公告内容/样式就 +1，当天勾选过「不再弹出」的同学也会重新看到新公告
 
 // 一键复制：优先现代 clipboard API；QQ/微信等旧内核浏览器用 textarea+execCommand 兜底
 async function copyText(t){
