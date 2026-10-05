@@ -192,7 +192,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* ---------- 主界面 ---------- */
 #scr-home{display:none}
-#scr-home.cur{display:flex;flex-direction:column}
+#scr-home.cur{display:flex;flex-direction:column;
+  background:url('bg-home.jpg') center/cover no-repeat fixed}
 .home-hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
   text-align:center;min-height:52vh}
 .home-hero h1{

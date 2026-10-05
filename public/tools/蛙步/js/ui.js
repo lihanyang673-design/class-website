@@ -113,18 +113,6 @@ export const SKINS=[
 ];
 
 export const THEMES=[
-  {id:'street', name:'街头篮球场', desc:'水泥地 + 涂鸦墙，最原始的舞蹈氛围',
-   bg:0x1c1030, fog:[10,34], floor:0x2a1745, ring:0xff3b6b, c1:0xff3b6b, c2:0x36d1ff,
-   lampA:1, lampB:1, sky:'city'},
-  {id:'club',   name:'霓虹夜店', desc:'镭射灯球摇起来，蹦就完了',
-   bg:0x0d0620, fog:[9,30], floor:0x1d0f38, ring:0xffe17a, c1:0xff2bd6, c2:0x2bfff6,
-   lampA:1, lampB:1, sky:'city'},
-  {id:'roof',   name:'天台日落', desc:'城市之巅，晚霞当背景板',
-   bg:0x3a1636, fog:[12,38], floor:0x4a2440, ring:0xffa751, c1:0xff8a5c, c2:0xffe17a,
-   lampA:1, lampB:0.7, sky:'sunset'},
-  {id:'space',  name:'太空蹦迪', desc:'失重节拍，银河打碟',
-   bg:0x050514, fog:[14,44], floor:0x101028, ring:0x7a4dff, c1:0x7a4dff, c2:0x36ffc2,
-   lampA:1, lampB:1, sky:'stars'},
   {id:'it6', name:'蛙步1', desc:'自定义图片背景', bgImage:'1791122474781_871541451.jpg', fromDb:6},
   {id:'it7', name:'蛙步2', desc:'自定义图片背景', bgImage:'1791122485709_216242919.jpg', fromDb:7},
   {id:'it8', name:'蛙步3', desc:'自定义图片背景', bgImage:'1791122502789_885100847.jpg', fromDb:8},
@@ -572,7 +560,7 @@ const ACHS=[
 // ============================================================
 // 界面初始化
 // ============================================================
-let sel={theme:'street', diff:'normal', song:'default'};
+let sel={theme:'it6', diff:'normal', song:'default'};
 let playStep=1;   // 选曲页分步：1=舞池 2=歌曲 3=难度
 let mainRef=null;   // main.js 注入 { startShow, switchTheme, applyQuality }
 
@@ -835,7 +823,7 @@ async function renderPlay(){
           const i=TEMP_THEMES.indexOf(t); if(i>=0) TEMP_THEMES.splice(i,1);
           saveTempThemeMeta(TEMP_THEMES);
           delTempBlob(t.id).catch(()=>{});
-          if(sel.theme===t.id){ sel.theme='street'; mainRef.switchTheme('street'); }
+          if(sel.theme===t.id){ sel.theme='it6'; mainRef.switchTheme('it6'); }
           renderPlay();
           return;
         }
@@ -847,7 +835,7 @@ async function renderPlay(){
           const data=await r.json().catch(()=>({}));
           if(!r.ok) throw new Error(data.error||'删除失败');
           toast('🗑 已删除舞池《'+t.name+'》');
-          if(sel.theme===t.id){ sel.theme='street'; mainRef.switchTheme('street'); }
+          if(sel.theme===t.id){ sel.theme='it6'; mainRef.switchTheme('it6'); }
           await refreshUserThemes(); renderPlay();
         }catch(e){ toast('❌ '+(e.message||'删除失败')); }
       });
