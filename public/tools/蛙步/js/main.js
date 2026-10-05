@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261205';
-import { updateOpening, Opening } from './opening.js?v=20261205';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261205';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261205';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261205';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261206';
+import { updateOpening, Opening } from './opening.js?v=20261206';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261206';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261206';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261206';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261205';
+         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261206';
 
 const $=id=>document.getElementById(id);
 
@@ -27,6 +27,22 @@ function renderTicker(){
   track.innerHTML=one+one;   // 内容复制两份，配合 CSS 滚动 -50% 实现无缝循环
 }
 renderTicker();
+
+// ============================================================
+// 帮助页「常见问题」手风琴：同一时刻只展开一个问题
+// 点问题 → 展开答案；点其他问题 → 上一个自动收起；再点已展开的问题 → 收起
+// ============================================================
+const faqList=$('faqList');
+if(faqList){
+  faqList.addEventListener('click',e=>{
+    const q=e.target.closest('.faq-q');
+    if(!q) return;
+    const item=q.closest('.faq-item');
+    const wasOpen=item.classList.contains('open');
+    faqList.querySelectorAll('.faq-item.open').forEach(x=>x.classList.remove('open'));
+    if(!wasOpen) item.classList.add('open');
+  });
+}
 
 // ============================================================
 // 渲染器 / 场景 / 相机

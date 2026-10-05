@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>蛙步 · Frog Step</title>
-<link rel="stylesheet" href="style.css?v=20261205">
+<link rel="stylesheet" href="style.css?v=20261206">
 </head>
 <body>
 
@@ -186,6 +186,82 @@
         <button class="btn-main hc-btn" id="helpUpdate">一键更新</button>
       </div>
     </div>
+
+    <!-- 常见问题（手风琴：点开一个问题展开答案，点其他问题自动收起） -->
+    <div class="faq-title">常见问题</div>
+    <div class="faq-list" id="faqList">
+
+      <div class="faq-item">
+        <button class="faq-q" type="button">
+          <span class="fq-t">SSS、SS、S、A、B、C 的评级标准是什么？</span>
+          <span class="fq-arrow">▾</span>
+        </button>
+        <div class="faq-a"><div class="fa-inner">
+          <p>每局结束后，系统会把你的得分换算成<b>相对分</b>：你的得分 ÷ 这首歌的满分 × 100000。不管歌曲长短、音符多少，相对分范围永远是 0～100000，所有歌曲都能公平比较。评级只看相对分：</p>
+          <ul>
+            <li><b>SSS</b>：相对分 = 100000，满分！一个不漏、全部 Perfect</li>
+            <li><b>SS</b>：相对分 ≥ 98000</li>
+            <li><b>S</b>：相对分 ≥ 90000</li>
+            <li><b>A</b>：相对分 ≥ 80000</li>
+            <li><b>B</b>：相对分 ≥ 70000</li>
+            <li><b>C</b>：相对分 &lt; 70000</li>
+          </ul>
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" type="button">
+          <span class="fq-t">Perfect、Good、Miss 分别是什么？</span>
+          <span class="fq-arrow">▾</span>
+        </button>
+        <div class="faq-a"><div class="fa-inner">
+          <p>按键时间和音符到达判定线的时间相差越小，评价越好：</p>
+          <ul>
+            <li><b>Perfect（完美）</b>：时间差在 0.07 秒（70 毫秒）以内。得分 = 1000 分 + 连击加成</li>
+            <li><b>Good（不错）</b>：时间差超过 0.07 秒、但在 0.19 秒以内按下。基础分只有 Perfect 的一半：500 分 + 连击加成；结算时一个 Good 只算半个 Perfect 的准确率</li>
+            <li><b>Miss（错过）</b>：音符越过判定线超过 0.19 秒还没按到。不得分、连击清零；无尽模式还会扣掉一颗 ❤</li>
+          </ul>
+          <p>连击加成：每多 1 连击多加 10 分，最高加到 60 连击，之后不再增加（Perfect 每个 1600 分、Good 每个 1100 分封顶）。附近没有音符时按键不扣分（空按无惩罚）。</p>
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" type="button">
+          <span class="fq-t">歌曲的星级是按照什么标准分类的？</span>
+          <span class="fq-arrow">▾</span>
+        </button>
+        <div class="faq-a"><div class="fa-inner">
+          <p>星级在歌曲入库前由作者统一评定，依据是每首歌<b>「地狱」难度</b>的谱面，综合四个指标：</p>
+          <ul>
+            <li><b>每秒音符数（音符密度）</b>＝ 谱面音符总数 ÷ 歌曲秒数，密度越高手越忙</li>
+            <li><b>BPM（歌曲速度）</b>：BPM 越高每拍间隔越短，留给你的反应时间越少</li>
+            <li><b>双押总数</b>：同一时刻要同时按下两个键的音符个数</li>
+            <li><b>连续双押数</b>：双押一个接一个连续出现的次数，连续双押最容易手忙脚乱，会额外增加难度</li>
+          </ul>
+          <p>密度的参考分档（先给一个初始建议，再结合 BPM、双押数、连续双押数人工微调）：</p>
+          <ul>
+            <li>⭐ 1 星：密度 &lt; 7.2</li>
+            <li>⭐⭐ 2 星：7.2 ～ 8.4</li>
+            <li>⭐⭐⭐ 3 星：8.4 ～ 9.2</li>
+            <li>⭐⭐⭐⭐ 4 星：9.2 ～ 10.7</li>
+            <li>⭐⭐⭐⭐⭐ 5 星：密度 ≥ 10.7</li>
+          </ul>
+          <p>密度相同的歌，BPM 更高、双押（尤其是连续双押）更多的会被调高星级，反之调低。新上传的歌曲在作者评定前暂时按 3 星显示。</p>
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" type="button">
+          <span class="fq-t">公告里说的「不能公开宣传」是指什么？</span>
+          <span class="fq-arrow">▾</span>
+        </button>
+        <div class="faq-a"><div class="fa-inner">
+          <p>就是<b>不要把本站发布到任何社交媒体上</b>，包括微信朋友圈、QQ 动态等公开平台。</p>
+          <p>不过可以私下把链接或游戏发给自己的朋友一起玩——但一定要<b>提醒朋友也遵守同样的规则</b>，不要再转发到公开平台。</p>
+        </div></div>
+      </div>
+
+    </div>
   </section>
 
   <!-- 结算 -->
@@ -341,8 +417,8 @@
   }
 }
 </script>
-<script src="js/codec.js?v=20261205"></script>
-<script type="module" src="js/main.js?v=20261205"></script>
+<script src="js/codec.js?v=20261206"></script>
+<script type="module" src="js/main.js?v=20261206"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';
