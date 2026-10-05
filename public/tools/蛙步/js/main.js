@@ -34,9 +34,16 @@ const camTarget=new THREE.Vector3(0,1.05,0);
 // ============================================================
 // 主舞台搭建（按主题）
 // ============================================================
-let stageGroup=null, curTheme=THEMES[0];
+let stageGroup=null, curTheme=DEFAULT_THEME;
 let keyLight=null, lampL=null, lampR=null, floorMesh=null, ringMesh=null;
 let _stageToken=0, _bgTex=null;   // 图片背景：异步加载令牌（防旧回调覆盖）+ 当前背景贴图（用于释放）
+
+// 默认舞池（含完整舞台字段，供图片主题做底板）
+const DEFAULT_THEME={
+  id:'default', name:'默认', desc:'',
+  bg:0x1c1030, fog:[10,34], floor:0x2a1745, ring:0xff3b6b, c1:0xff3b6b, c2:0x36d1ff,
+  lampA:1, lampB:1, sky:'city'
+};
 
 // 正方形背景布局：宽度铺满、顶部对齐，整张图完整落在屏幕上部（约屏幕上半 47%）；
 // 屏幕其余部分采样图片边缘（UV 超出 0-1 时纹理自动 clamp 到边缘色）做自然延伸，会被舞台遮住。
@@ -58,8 +65,8 @@ function buildStage(theme){
   curTheme=theme;
   const token=++_stageToken;
   const hasImg=!!theme.bgImage;
-  // 图片主题：只换背景，地板/灯光/背景板等缺失字段沿用默认舞池（街头篮球场）
-  if(hasImg) theme={...THEMES[0], ...theme};
+  // 图片主题：只换背景，地板/灯光/背景板等缺失字段沿用默认舞池
+  if(hasImg) theme={...DEFAULT_THEME, ...theme};
   // 清理旧舞台
   if(stageGroup){
     stageGroup.traverse(n=>{
@@ -81,7 +88,7 @@ function buildStage(theme){
       layoutBgTex(tex);
       _bgTex=tex; scene.background=tex;
     });
-    scene.fog=new THREE.Fog(THEMES[0].bg, THEMES[0].fog[0], THEMES[0].fog[1]);
+    scene.fog=new THREE.Fog(DEFAULT_THEME.bg, DEFAULT_THEME.fog[0], DEFAULT_THEME.fog[1]);
   }else{
     scene.background=new THREE.Color(theme.bg);
     scene.fog=new THREE.Fog(theme.bg, theme.fog[0], theme.fog[1]);
@@ -388,7 +395,7 @@ renderer.domElement.addEventListener('pointerdown',()=>{
 console.log('[启动] ② 预加载背景音乐…');
 Music.load();
 console.log('[启动] ③ 搭建主舞台（灯光/地板/主题素材）…');
-buildStage(THEMES[0]);
+buildStage(DEFAULT_THEME);
 $('loadBar').style.width='5%';
 console.log('[启动] ④ 初始化开场动画场景…');
 runOpening(renderer, enterHome);
