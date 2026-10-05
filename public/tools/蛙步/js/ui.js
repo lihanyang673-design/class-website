@@ -11,7 +11,6 @@ import { Game, pauseGame } from './game.js?v=20261116';
 // ============================================================
 const KEY='naiwa_step_save_v1';
 const DEFAULTS={
-  playerId:'',             // 玩家唯一编号
   stats:{plays:0,bestScore:0,bestRel:0,maxCombo:0,totalPerfect:0,bestAcc:0,fullCombos:0,ssCount:0},
   scores:{easy:[],casual:[],normal:[],hard:[],endless:[]},
   set:{vol:0.8,sfx:1,offset:0,bpm:104,speed:1,quality:1},
@@ -36,12 +35,6 @@ export const Store={
       if(this.data.scores[d].length!==before) purged=true;
     }
     if(purged) this.save();
-    this.data.usedCodes=this.data.usedCodes||[];
-    // 首次进入 / 老存档：自动分配玩家编号
-    if(!this.data.playerId && window.NaiCode){
-      this.data.playerId=window.NaiCode.genPlayerId();
-      this.save();
-    }
     return this.data;
   },
   save(){ localStorage.setItem(KEY, JSON.stringify(this.data)); },
@@ -615,17 +608,6 @@ export function initUI(main){
   });
 
   // ---- 首页编号徽章：点击复制 ----
-  document.getElementById('btnHomeCopyId').addEventListener('click',async ()=>{
-    sfxClick();
-    const id=Store.data.playerId;
-    try{ await navigator.clipboard.writeText(id); }
-    catch(e){
-      const t=document.createElement('textarea'); t.value=id; document.body.appendChild(t);
-      t.select(); document.execCommand('copy'); t.remove();
-    }
-    toast('📋 编号已复制：'+id+'，发给管理员领奶币');
-  });
-
   // ---- 所有子页面的返回键（data-back）----
   document.querySelectorAll('[data-back]').forEach(btn=>{
     btn.addEventListener('click',()=>{ sfxClick(); showScreen('scr-home'); renderHome(); });
@@ -777,9 +759,6 @@ export function renderHome(){
   document.getElementById('stBest').textContent=(s.bestRel||0).toLocaleString();
   document.getElementById('stCombo').textContent=s.maxCombo;
   document.getElementById('stPerf').textContent=s.totalPerfect;
-  const hp=document.getElementById('homePlayerId');
-  if(hp) hp.textContent=Store.data.playerId||'------';
-  refreshPlayerId();
 }
 
 // ---------- 开跳页 ----------
@@ -1311,7 +1290,7 @@ function bindSettings(){
 
   $('btnReset').onclick=()=>{
     if(confirm('确定清空全部进度？此操作不可恢复！')){
-      Store.reset(); applyVolume(); renderHome(); refreshPlayerId(); toast('存档已清空');
+      Store.reset(); applyVolume(); renderHome(); toast('存档已清空');
     }
   };
 
@@ -1374,22 +1353,6 @@ function bindSettings(){
     if(e.key==='Enter') $('btnAdminAuth').click();
   });
 
-  // ---- 玩家编号 ----
-  refreshPlayerId();
-  $('btnCopyId').onclick=async ()=>{
-    sfxClick();
-    const id=Store.data.playerId;
-    try{
-      await navigator.clipboard.writeText(id);
-      toast('📋 编号已复制：'+id);
-    }catch(e){
-      // 老浏览器/非 https 兜底
-      const t=document.createElement('textarea'); t.value=id; document.body.appendChild(t);
-      t.select(); document.execCommand('copy'); t.remove();
-      toast('📋 编号已复制：'+id);
-    }
-  };
-
   // ---- 管理入口暗号：连点版本号 5 次才显示（普通玩家看不到）----
   const egg=$('verEgg'), secret=$('adminSecretLink');
   if(sessionStorage.getItem('naiwa_step_admin_unlocked')) secret.style.display='inline';
@@ -1407,12 +1370,6 @@ function bindSettings(){
       eggTimer=setTimeout(()=>eggTaps=0,1500);
     }
   });
-}
-
-// 刷新设置页显示的玩家编号
-function refreshPlayerId(){
-  const el=document.getElementById('myPlayerId');
-  if(el) el.textContent=Store.data.playerId||'------';
 }
 
 // ============================================================
@@ -1727,13 +1684,12 @@ function applyVolume(){ Music.setVolume(Store.data.set.vol); setMenuBgmVolume(St
 async function submitServerScore(res){
   if(!serverOn) return;   // 静态版没有在线排行榜
   try{
-    const localId=Store.data.playerId||'anon';
     const body={
       songKey:res.songId||'default',
       songName:res.song||'',
       diff:res.diff,
-      userKey:'g'+localId,
-      userName:myIdentity?myIdentity.name:('游客'+String(localId).slice(-4)),
+      userKey:'guest',
+      userName:myIdentity?myIdentity.name:'游客',
       score:res.score, rel:res.rel, combo:res.maxCombo, rank:res.rank,
       p:res.cnt.perfect, g:res.cnt.good, m:res.cnt.miss,
     };
@@ -1785,12 +1741,11 @@ export function showResult(res, isNew){
 async function submitServerEndless(res){
   if(!serverOn) return;
   try{
-    const localId=Store.data.playerId||'anon';
     const body={
       songKey:res.songId||'default',
       songName:res.song||'',
-      userKey:'g'+localId,
-      userName:myIdentity?myIdentity.name:('游客'+String(localId).slice(-4)),
+      userKey:'guest',
+      userName:myIdentity?myIdentity.name:'游客',
       score:res.score, round:res.round, combo:res.maxCombo,
       notes:res.cnt.perfect+res.cnt.good,
     };
