@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261116';
-import { updateOpening, Opening } from './opening.js?v=20261116';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261116';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261116';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261116';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261201';
+import { updateOpening, Opening } from './opening.js?v=20261201';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261201';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261201';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261201';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261116';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261201';
 
 const $=id=>document.getElementById(id);
 
@@ -34,16 +34,18 @@ const camTarget=new THREE.Vector3(0,1.05,0);
 // ============================================================
 // 主舞台搭建（按主题）
 // ============================================================
-let stageGroup=null, curTheme=DEFAULT_THEME;
-let keyLight=null, lampL=null, lampR=null, floorMesh=null, ringMesh=null;
-let _stageToken=0, _bgTex=null;   // 图片背景：异步加载令牌（防旧回调覆盖）+ 当前背景贴图（用于释放）
-
 // 默认舞池（含完整舞台字段，供图片主题做底板）
+// ★ 必须写在上面：下面的 curTheme 初始值要用它；const 有暂时性死区，
+//   先使用后声明会直接抛 ReferenceError，整个模块中断 → 黑屏（v20261201 踩过）
 const DEFAULT_THEME={
   id:'default', name:'默认', desc:'',
   bg:0x1c1030, fog:[10,34], floor:0x2a1745, ring:0xff3b6b, c1:0xff3b6b, c2:0x36d1ff,
   lampA:1, lampB:1, sky:'city'
 };
+
+let stageGroup=null, curTheme=DEFAULT_THEME;
+let keyLight=null, lampL=null, lampR=null, floorMesh=null, ringMesh=null;
+let _stageToken=0, _bgTex=null;   // 图片背景：异步加载令牌（防旧回调覆盖）+ 当前背景贴图（用于释放）
 
 // 正方形背景布局：宽度铺满、顶部对齐，整张图完整落在屏幕上部（约屏幕上半 47%）；
 // 屏幕其余部分采样图片边缘（UV 超出 0-1 时纹理自动 clamp 到边缘色）做自然延伸，会被舞台遮住。
