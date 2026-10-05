@@ -387,34 +387,35 @@ renderer.domElement.addEventListener('pointerdown',()=>{
 // ============================================================
 console.log('[启动] ② 预加载背景音乐…');
 Music.load();
-console.log('[启动] ③ 搭建主舞台（灯光/地板/4 主题素材）…');
+console.log('[启动] ③ 搭建主舞台（灯光/地板/主题素材）…');
 buildStage(THEMES[0]);
 $('loadBar').style.width='5%';
 console.log('[启动] ④ 初始化开场动画场景…');
 runOpening(renderer, enterHome);
 
-// 核心初始化已完成 → 点亮「开跳」按钮（无需等 17MB 模型下完）
+// 核心初始化已完成 → 点亮「开始游戏」按钮
 const btnStart=$('loadStart');
 btnStart.classList.remove('hidden');
 btnStart.disabled=false;
 $('loadTxt').textContent='准备好了吗？';
-$('loadSub').textContent='点击按钮，欣赏开场（舞者模型在后台继续加载）';
-console.log('%c[启动] ⑤ 初始化完成，「开跳」按钮已可点击 ✓', 'color:#7fffd4;font-weight:bold');
+$('loadSub').textContent='点击按钮，开始游戏';
+console.log('%c[启动] ⑤ 初始化完成，「开始游戏」按钮已可点击 ✓', 'color:#7fffd4;font-weight:bold');
 
-// 点击：解锁音频 → 收起加载遮罩 → 开始开场动画
+// 点击：解锁音频 → 收起加载遮罩 → 直接进入主界面
 btnStart.addEventListener('click', ()=>{
-  console.log('%c[启动] 👆 用户点击「开跳」→ 解锁音频，开始开场动画', 'color:#36d1ff;font-weight:bold');
-  ensureCtx();                        // ★ 首次用户手势内创建/恢复 AudioContext
-  sfxClick();                         // 点击音效
-  sfxBoing();                         // Q弹启动音效
+  console.log('%c[启动] 👆 用户点击「开始游戏」→ 解锁音频，进入主界面', 'color:#36d1ff;font-weight:bold');
+  ensureCtx();
+  sfxClick();
+  sfxBoing();
   setMenuBgmVolume(Store.data.set.vol);
   $('loadOverlay').classList.add('hide');
-  beginOpening();
+  // 简化：跳过开场动画，直接进主界面
+  enterHome();
 }, {once:true});
 
-// ---------- 开场结束 → 进入主界面 ----------
+// ---------- 进入主界面 ----------
 function enterHome(){
-  console.log('%c[启动] ⑥ 开场动画播放完毕，准备进入主界面…', 'color:#36d1ff;font-weight:bold');
+  console.log('%c[启动] ⑥ 进入主界面', 'color:#36d1ff;font-weight:bold');
   // 最多等舞者 12 秒；超时也进，绝不再卡死加载页
   Promise.race([
     dancerReady,

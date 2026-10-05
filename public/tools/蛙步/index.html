@@ -14,14 +14,11 @@
 <!-- 3D 画布容器（开场 + 主舞台共用一个渲染器） -->
 <div id="app"></div>
 
-<!-- 载入遮罩：糖果亮色渐变，全程不黑屏。
-     注意：「开跳」按钮必须在这一层内（本层 z-index 最高），
-     否则会被自己盖住造成「按钮点不到→开场不播→遮罩永不消失」的死锁 -->
+<!-- 载入遮罩：东南大学风格，全程不黑屏 -->
 <div id="loadOverlay">
-  <!-- 已移除原侵权图像，后续可替换为新图案 -->
+  <img class="load-logo" src="logo.png" alt="蛙步">
   <div class="load-txt" id="loadTxt">蛙步 · 装扮舞台中…</div>
   <div class="load-bar"><i id="loadBar"></i></div>
-  <!-- 初始化就绪前隐藏；就绪后由 main.js 点亮，点击解锁音频并开始开场 -->
   <button class="gate-btn hidden" id="loadStart" disabled>🎮 开始游戏 🎮</button>
   <div class="load-sub" id="loadSub">首次加载需下载 3D 模型，请稍候…</div>
 </div>
@@ -77,15 +74,12 @@
   </div>
 </div>
 
-<!-- ===================== 开场动画层 ===================== -->
+<!-- ===================== 开场动画层（简化版） ===================== -->
 <div id="openingUI">
-  <!-- 交叉闪光 -->
-  <div id="crossFlash"></div>
-  <!-- 「蛙步」Q弹大标题 -->
+  <img class="open-logo" src="logo.png" alt="蛙步">
   <div id="openTitle">
     <span class="c1">蛙</span><span class="c2">步</span>
   </div>
-  <!-- 跳过提示 -->
   <div id="openSkip">点击跳过 »</div>
 </div>
 

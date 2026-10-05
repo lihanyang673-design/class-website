@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    蛙步 · 全站样式
    主题：糖果霓虹街舞风 —— 深紫底 + 奶粉红/奶青/奶黄霓虹
    ============================================================ */
@@ -31,15 +31,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #loadOverlay{
   position:fixed;inset:0;z-index:200;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-  background:linear-gradient(135deg,#059669 0%,#047857 55%,#065f46 100%);
+  background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 55%,#d97706 100%);
   transition:opacity .5s;
 }
 #loadOverlay.hide{opacity:0;pointer-events:none}
+#loadOverlay .load-logo{width:min(200px,50vw);height:auto;object-fit:contain;animation:logoFloat 2s ease-in-out infinite}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 #loadOverlay .load-txt{font-size:22px;font-weight:900;color:#ffffff;text-shadow:0 2px 4px rgba(0,0,0,0.3)}
 #loadOverlay .load-bar{width:min(320px,60vw);height:10px;border-radius:99px;background:#ffffff33;overflow:hidden}
 #loadOverlay .load-bar i{display:block;height:100%;width:0%;border-radius:99px;
-  background:linear-gradient(90deg,#34d399,#10b981);transition:width .25s}
-@keyframes fadeIn{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+  background:linear-gradient(90deg,#ffffff,#fef3c7);transition:width .25s}
 
 /* ===== 开局加载进度条 ===== */
 #playLoad{
@@ -55,79 +56,62 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   background:linear-gradient(90deg,#10b981,#3b82f6);transition:width .2s}
 
 /* ============================================================
-   开场动画层
+   开场动画层（简化版：Logo + 标题）
    ============================================================ */
-#openingUI{position:fixed;inset:0;z-index:150;pointer-events:none;display:none}
+#openingUI{position:fixed;inset:0;z-index:150;pointer-events:none;display:none;
+  background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 55%,#d97706 100%);}
 #openingUI.on{display:block}
 
-/* 开始按钮（浏览器要求点击后才能出声，用它开启音效+动画） */
-#openGate{
-  position:absolute;inset:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:14px;pointer-events:auto;
-  background:radial-gradient(circle at 50% 42%,#ffffff30,#ffffff00 60%);
+#openingUI .open-logo{
+  position:absolute;left:50%;top:35%;
+  transform:translate(-50%,-50%);
+  width:min(280px,60vw);height:auto;object-fit:contain;
+  animation:logoBounce 1.5s ease-in-out infinite;
+  filter:drop-shadow(0 10px 30px rgba(0,0,0,0.3));
 }
+@keyframes logoBounce{
+  0%,100%{transform:translate(-50%,-50%) scale(1)}
+  50%{transform:translate(-50%,-55%) scale(1.05)}
+}
+
 /* 开始按钮（浏览器要求点击后才能出声，用它开启音效+动画；位于加载遮罩层内） */
 .gate-btn{
   font-size:30px;font-weight:900;color:#fff;letter-spacing:6px;
   padding:20px 58px;border-radius:99px;border:none;
-  background:linear-gradient(135deg,var(--pink),var(--purple));
-  box-shadow:0 10px 0 #166534,0 18px 40px #22c55e66, inset 0 -6px 0 #00000022;
+  background:linear-gradient(135deg,#059669,#047857);
+  box-shadow:0 10px 0 #065f46,0 18px 40px #05966966, inset 0 -6px 0 #00000022;
   text-shadow:0 3px 0 #00000033;
   animation:gateBeat 1.1s ease-in-out infinite;
-  transition:transform .12s;   /* 只过渡 transform，绝不要把 opacity 放进来（会卡滞在 0） */
+  transition:transform .12s;
 }
 .gate-btn:active{transform:scale(.93)}
 .gate-btn:disabled{animation:none;filter:grayscale(.6)}
-/* 就绪前：直接隐藏（不用 opacity，避免过渡卡滞） */
 .gate-btn.hidden{visibility:hidden}
-#loadOverlay .load-sub{font-size:13px;color:#7a1440;font-weight:700;background:#ffffffaa;
+#loadOverlay .load-sub{font-size:13px;color:#92400e;font-weight:700;background:#ffffffaa;
   padding:6px 16px;border-radius:99px;min-height:18px}
-.gate-sub{font-size:14px;color:#7a1440;font-weight:700;background:#fff8;
+.gate-sub{font-size:14px;color:#92400e;font-weight:700;background:#fff8;
   padding:6px 16px;border-radius:99px}
 @keyframes gateBeat{0%,100%{transform:scale(1)}12%{transform:scale(1.07)}24%{transform:scale(1)}36%{transform:scale(1.05)}}
 
-/* 交叉闪光 */
-#crossFlash{
-  position:absolute;left:50%;top:44%;width:22vmin;height:22vmin;
-  transform:translate(-50%,-50%) scale(0);border-radius:50%;
-  background:radial-gradient(circle,#fff 0%,#f59e0b99 35%,transparent 70%);
-  opacity:0;
-}
-#crossFlash.go{animation:crossGo .5s ease-out forwards}
-@keyframes crossGo{
-  0%{transform:translate(-50%,-50%) scale(0);opacity:1}
-  100%{transform:translate(-50%,-50%) scale(3.2);opacity:0}
-}
-
-/* 「蛙步」大标题 —— 单色 Q 版，弹出→放大→缩小→淡出 */
+/* 「蛙步」大标题 —— 东南大学风格 */
 #openTitle{
-  position:absolute;left:50%;top:42%;
+  position:absolute;left:50%;top:65%;
   transform:translate(-50%,-50%);
-  display:flex;gap:.04em;
-  font-size:min(17vw,150px);font-weight:900;line-height:1;
-  /* 圆润 Q 版字体栈 */
-  font-family:"Yuanti SC","华文圆体","幼圆","Hiragino Maru Gothic ProN",
-              "Comic Sans MS","Chalkboard SE","Microsoft YaHei",sans-serif;
+  display:flex;gap:.08em;
+  font-size:min(20vw,120px);font-weight:900;line-height:1;
+  font-family:"Yuanti SC","华文圆体","幼圆","Microsoft YaHei",sans-serif;
   opacity:0;pointer-events:none;
-  filter:drop-shadow(0 12px 0 #00000026) drop-shadow(0 0 34px #ffffff88);
+  color:#fff;
+  text-shadow:0 4px 0 #92400e,0 8px 20px rgba(0,0,0,0.3);
 }
-#openTitle span{
-  -webkit-text-stroke:3px #fff;
-  paint-order:stroke fill;
-  color:var(--pink);     /* ★ 单色：奶粉红，不再四色叠加 */
-}
-/* 弹出 → 放大 → 缩小 → 淡出（一气呵成） */
-#openTitle.pop{animation:titlePop 2.2s ease-in-out forwards}
+#openTitle.pop{animation:titlePop 2s ease-in-out forwards}
 @keyframes titlePop{
-  0%   {opacity:0;transform:translate(-50%,-50%) scale(0)}
-  25%  {opacity:1;transform:translate(-50%,-50%) scale(1)}      /* 弹出 */
-  50%  {opacity:1;transform:translate(-50%,-50%) scale(1.25)}   /* 放大 */
-  75%  {opacity:1;transform:translate(-50%,-50%) scale(0.92)}   /* 缩小 */
-  100% {opacity:0;transform:translate(-50%,-50%) scale(1.08)}   /* 淡出 */
+  0%   {opacity:0;transform:translate(-50%,-50%) scale(0.5)}
+  30%  {opacity:1;transform:translate(-50%,-50%) scale(1.1)}
+  60%  {opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100% {opacity:0;transform:translate(-50%,-50%) scale(1.05)}
 }
-/* （已停用，保留空定义） */
-#openTitle.wob{animation:none}
-#openTitle.bye{opacity:0;transform:translate(-50%,-50%) scale(1.08)}
+#openTitle.bye{opacity:0;transform:translate(-50%,-50%) scale(1.05)}
 
 /* 跳过提示 */
 #openSkip{
