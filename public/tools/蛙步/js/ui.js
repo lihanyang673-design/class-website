@@ -14,6 +14,7 @@ const DEFAULTS={
   stats:{plays:0,bestScore:0,bestRel:0,maxCombo:0,totalPerfect:0,bestAcc:0,fullCombos:0,ssCount:0},
   scores:{easy:[],casual:[],normal:[],hard:[],endless:[]},
   set:{vol:0.8,sfx:1,offset:0,bpm:104,speed:1,quality:1},
+  ach:{},
 };
 export const Store={
   data:null,
@@ -24,6 +25,7 @@ export const Store={
     this.data.stats={...DEFAULTS.stats,...(this.data.stats||{})};
     this.data.set={...DEFAULTS.set,...(this.data.set||{})};
     this.data.scores={...DEFAULTS.scores,...(this.data.scores||{})};
+    this.data.ach={...DEFAULTS.ach,...(this.data.ach||{})};
     // 迁移：删除旧版/残缺排行记录（无相对分或无判定明细，口径不公平）
     let purged=false;
     for(const d of Object.keys(this.data.scores)){
