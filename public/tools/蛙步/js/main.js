@@ -281,16 +281,16 @@ function startCountdown(){
 // ============================================================
 function onShowEnd(res){
   showStageUI(false);
+  showUIRoot(true);                  // ★ 先恢复主界面容器，再切结算页
   camera.position.copy(CAM_HOME);
   Fx.camBase.copy(CAM_HOME);
   const prevBest=Store.data.stats.bestRel||0;
   const isNew=res.rel>prevBest;
-  showResult(res,isNew);            // ui 内部完成存档
+  showResult(res,isNew);            // ui 内部完成存档 + showScreen('scr-result')
   const got=checkAch();
   if(got.length) setTimeout(()=>toast('🏆 成就达成：'+got.map(g=>g.name).join('、')),600);
   if(res.acc>=0.8) celebrate();    // ★ 赢了：蹦跳庆祝
   else lieDown();                  // ★ 输了：躺地上
-  showUIRoot(true);
   startMenuBgm();                   // 演出结束回到结算页：恢复菜单 BGM
   // ★ 每局结束必播结束语音（稍延迟，等页面切稳）
   setTimeout(()=>sfxEndVoice(), 500);
@@ -299,11 +299,11 @@ function onShowEnd(res){
 // ♾ 无尽结束回调（❤ 打光）：结算累计总分 + 上传无尽榜
 function onEndlessOver(res){
   showStageUI(false);
+  showUIRoot(true);                  // ★ 先恢复主界面容器，再切结算页
   camera.position.copy(CAM_HOME);
   Fx.camBase.copy(CAM_HOME);
   showEndlessResult(res);           // ui 内部完成存档 + 自动上传无尽榜
   lieDown();                        // ❤ 打光：蛙躺地上
-  showUIRoot(true);
   startMenuBgm();
   setTimeout(()=>sfxEndVoice(), 500);
 }
