@@ -406,7 +406,7 @@ async function initDB() {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(song_key, user_key)        -- 同一玩家同一首歌只留最高总分
   )`);
-  // ===== 奶蛙街舞：自定义舞池背景（同学上传图片，全班可用；以后由管理员同步成内置背景）=====
+  // ===== 蛙步：自定义舞池背景（同学上传图片，全班可用；以后由管理员同步成内置背景）=====
   db.run(`CREATE TABLE IF NOT EXISTS dance_themes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,

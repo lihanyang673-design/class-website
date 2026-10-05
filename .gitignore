@@ -10,12 +10,12 @@ backups/
 uploads/
 # 本地密码文件
 secrets.js
-# 独立发布的奶蛙街舞 git 仓库（嵌套）
+# 独立发布的蛙步 git 仓库（嵌套）
 naiwa-release/
 # 临时导出文件
 charts.json
 # 但内置游戏打包用的谱面需随仓库发布（GitHub Pages 上才能玩全部歌曲）
-!public/tools/新版奶蛙街舞/charts.json
+!public/tools/蛙步/charts.json
 
 # ===== 按用户要求排除的大目录 =====
 # 同学照片和录音（隐私）

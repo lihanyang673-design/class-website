@@ -7,6 +7,7 @@
 //
 // 脚本会自动：读数据库 dance_themes → 找还没同步过的背景 → 复制图片到游戏目录和
 //   naiwa-release → 在 ui.js 的内置 THEMES 里加条目 → 版本号 +1 → 提交并推送
+//   （仓库名待改 naiwa-step，见下）
 //
 // 小知识：同步后 GitHub 静态版也有这些背景；班级服务器版会自动去重，不会重复显示。
 // ============================================================
@@ -16,7 +17,7 @@ const path=require('path');
 const { execSync }=require('child_process');
 
 const ROOT=__dirname;
-const GAME_DIR=path.join(ROOT,'public','tools','新版奶蛙街舞');
+const GAME_DIR=path.join(ROOT,'public','tools','蛙步');
 const RELEASE_DIR=path.join(ROOT,'naiwa-release');
 
 const doPush=!process.argv.includes('--no-push');

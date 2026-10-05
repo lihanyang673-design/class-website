@@ -17,7 +17,7 @@ const { execSync }=require('child_process');
 const readline=require('readline');
 
 const ROOT=__dirname;
-const GAME_DIR=path.join(ROOT,'public','tools','新版奶蛙街舞');
+const GAME_DIR=path.join(ROOT,'public','tools','蛙步');
 const RELEASE_DIR=path.join(ROOT,'naiwa-release');
 
 // ---------- 参数 ----------
