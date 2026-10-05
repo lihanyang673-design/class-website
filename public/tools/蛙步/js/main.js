@@ -128,25 +128,27 @@ function buildStage(theme, mode='home'){
   }
 
   // ========== 演奏模式：简约深色舞台（和主界面区分） ==========
-  // 半透明深色地板（不抢背景图风头）
+  // 半透明深色地板（不抢背景图风头，铺满下半屏）
   floorMesh=new THREE.Mesh(
-    new THREE.PlaneGeometry(10,6),
+    new THREE.PlaneGeometry(16,10),
     new THREE.MeshStandardMaterial({color:0x0d0818,roughness:0.8,metalness:0.1,transparent:true,opacity:0.85})
   );
   floorMesh.rotation.x=-Math.PI/2;
   floorMesh.position.y=0;
+  floorMesh.position.z=-1;
   floorMesh.receiveShadow=true;
   stageGroup.add(floorMesh);
 
-  // 四条轨道竖线（代替原来的大圆环+放射线）
+  // 四条轨道竖线：与 DOM 轨道对齐（11%/36%/61%/86%），考虑透视和 16 度倾斜
   _trackLines=[];
+  const laneX=[-2.6, -0.87, 0.87, 2.6];  // 近似对齐 DOM 轨道中心
   for(let i=0;i<4;i++){
     const track=new THREE.Mesh(
-      new THREE.PlaneGeometry(0.04,5),
-      new THREE.MeshBasicMaterial({color:theme.c2,transparent:true,opacity:0.25})
+      new THREE.PlaneGeometry(0.06,8),
+      new THREE.MeshBasicMaterial({color:theme.c2,transparent:true,opacity:0.35})
     );
     track.rotation.x=-Math.PI/2;
-    track.position.set((i-1.5)*0.95, 0.005, 0.5);
+    track.position.set(laneX[i], 0.005, -0.5);
     stageGroup.add(track);
     _trackLines.push(track);
   }
