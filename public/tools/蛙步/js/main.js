@@ -401,9 +401,10 @@ enterHome();
 function enterHome(){
   console.log('%c[启动] ⑥ 进入主界面', 'color:#36d1ff;font-weight:bold');
   // 最多等舞者 12 秒；超时也进，绝不再卡死加载页
+  let danced=false;   // 舞者是否已就绪（race 输了之后 setTimeout 仍会触发，用标志位防止误报超时）
   Promise.race([
-    dancerReady,
-    new Promise(r=>setTimeout(()=>{ console.warn('[启动] ⚠ 等待舞者超时，先进入主界面'); r(false); }, 12000)),
+    dancerReady.then(ok=>{ danced=true; return ok; }),
+    new Promise(r=>setTimeout(()=>{ if(!danced) console.warn('[启动] ⚠ 等待舞者超时，先进入主界面'); r(false); }, 12000)),
   ]).then(ok=>{
     console.log(ok?'[启动] ⑦ 进入主界面（舞者已在舞台上）':'[启动] ⑦ 进入主界面（舞者稍后自动出现）');
     showUIRoot(true);
