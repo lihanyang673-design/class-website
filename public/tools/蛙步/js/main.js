@@ -409,6 +409,7 @@ btnStart.addEventListener('click', ()=>{
   sfxBoing();
   setMenuBgmVolume(Store.data.set.vol);
   $('loadOverlay').classList.add('hide');
+  $('openingUI').classList.remove('on');  // ★ 隐藏开场UI层
   Opening.active=false;  // ★ 关键：关闭开场动画状态，让渲染循环进入主舞台
   enterHome();
 }, {once:true});
