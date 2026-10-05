@@ -124,7 +124,7 @@ export const SKINS=[
 ];
 
 export const THEMES=[
-  {id:'street', name:'街头篮球场', desc:'水泥地 + 涂鸦墙，最原始的街舞味',
+  {id:'street', name:'街头篮球场', desc:'水泥地 + 涂鸦墙，最原始的舞蹈氛围',
    bg:0x1c1030, fog:[10,34], floor:0x2a1745, ring:0xff3b6b, c1:0xff3b6b, c2:0x36d1ff,
    lampA:1, lampB:1, sky:'city'},
   {id:'club',   name:'霓虹夜店', desc:'镭射灯球摇起来，蹦就完了',
@@ -544,7 +544,7 @@ const CODEX=[
   {ic:'⬅️', key:'← 左键', name:'左勾鞭手', desc:'左手大回环甩出去，鞭出残影，古典 Breaking 起手式。Perfect 时会甩得更狠。'},
   {ic:'⬇️', key:'↓ 下键', name:'扫堂双踢', desc:'双腿交替前踢 + 下蹲闪避，落地带弹性回弹，蛙牌地板动作。'},
   {ic:'⬆️', key:'↑ 上键', name:'扭肚抬头', desc:'肚子魔性左右一扭，脑袋高高抬起——不信你只看一遍。'},
-  {ic:'➡️', key:'→ 右键', name:'大回旋 360°', desc:'整个蛙原地转一整圈，附带挤压变形，街舞招牌杀招。'},
+  {ic:'➡️', key:'→ 右键', name:'大回旋 360°', desc:'整个蛙原地转一整圈，附带挤压变形，招牌舞蹈动作。'},
 ];
 
 const ACHS=[

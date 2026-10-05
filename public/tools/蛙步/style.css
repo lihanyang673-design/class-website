@@ -1,18 +1,18 @@
-/* ============================================================
+﻿/* ============================================================
    蛙步 · 全站样式
    主题：糖果霓虹街舞风 —— 深紫底 + 奶粉红/奶青/奶黄霓虹
    ============================================================ */
 :root{
-  --pink:#ff3b6b;   /* 奶粉红（主色） */
-  --cyan:#36d1ff;   /* 奶青 */
-  --yellow:#ffe17a; /* 奶黄 */
-  --purple:#7a4dff; /* 奶紫 */
-  --bg0:#160a24;    /* 页面深紫底 */
-  --bg1:#241040;    /* 面板底 */
+  --pink:#22c55e;   /* 清新绿（主色） */
+  --cyan:#3b82f6;   /* 天空蓝 */
+  --yellow:#f59e0b; /* 暖橙 */
+  --purple:#10b981; /* 深绿 */
+  --bg0:#0f1a12;    /* 深绿底 */
+  --bg1:#1a2e1f;    /* 深绿面板 */
   --glass:rgba(255,255,255,.06);
   --line:rgba(255,255,255,.12);
   --txt:#fff;
-  --sub:#c9b8e8;
+  --sub:#9ca3af;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
@@ -31,16 +31,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #loadOverlay{
   position:fixed;inset:0;z-index:200;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-  background:linear-gradient(135deg,#ff6b9d 0%,#ffa751 55%,#ffe17a 100%);
+  background:linear-gradient(135deg,#059669 0%,#047857 55%,#065f46 100%);
   transition:opacity .5s;
 }
 #loadOverlay.hide{opacity:0;pointer-events:none}
-#loadOverlay .load-baby{width:72px;height:72px;object-fit:contain;animation:bounceL .8s ease-in-out infinite}
-#loadOverlay .load-txt{font-size:22px;font-weight:900;color:#5a1030;text-shadow:0 2px 0 #fff8}
-#loadOverlay .load-bar{width:min(320px,60vw);height:10px;border-radius:99px;background:#ffffff66;overflow:hidden}
+#loadOverlay .load-txt{font-size:22px;font-weight:900;color:#ffffff;text-shadow:0 2px 4px rgba(0,0,0,0.3)}
+#loadOverlay .load-bar{width:min(320px,60vw);height:10px;border-radius:99px;background:#ffffff33;overflow:hidden}
 #loadOverlay .load-bar i{display:block;height:100%;width:0%;border-radius:99px;
-  background:linear-gradient(90deg,#7a4dff,#36d1ff);transition:width .25s}
-@keyframes bounceL{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-16px) scale(1.08)}}
+  background:linear-gradient(90deg,#34d399,#10b981);transition:width .25s}
+@keyframes fadeIn{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
 
 /* ===== 开局加载进度条 ===== */
 #playLoad{
@@ -50,10 +49,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 #playLoad.on{display:flex}
 #playLoad .pl-box{width:min(340px,72vw);text-align:center}
-#playLoad .pl-txt{font-size:17px;font-weight:800;color:#ffe17a;margin-bottom:14px;text-shadow:0 2px 8px #000}
+#playLoad .pl-txt{font-size:17px;font-weight:800;color:#f59e0b;margin-bottom:14px;text-shadow:0 2px 8px #000}
 #playLoad .pl-bar{height:10px;border-radius:99px;background:#ffffff2a;overflow:hidden}
 #playLoad .pl-bar i{display:block;height:100%;width:0%;border-radius:99px;
-  background:linear-gradient(90deg,#7a4dff,#36d1ff);transition:width .2s}
+  background:linear-gradient(90deg,#10b981,#3b82f6);transition:width .2s}
 
 /* ============================================================
    开场动画层
@@ -72,7 +71,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   font-size:30px;font-weight:900;color:#fff;letter-spacing:6px;
   padding:20px 58px;border-radius:99px;border:none;
   background:linear-gradient(135deg,var(--pink),var(--purple));
-  box-shadow:0 10px 0 #a01448,0 18px 40px #ff3b6b66, inset 0 -6px 0 #00000022;
+  box-shadow:0 10px 0 #166534,0 18px 40px #22c55e66, inset 0 -6px 0 #00000022;
   text-shadow:0 3px 0 #00000033;
   animation:gateBeat 1.1s ease-in-out infinite;
   transition:transform .12s;   /* 只过渡 transform，绝不要把 opacity 放进来（会卡滞在 0） */
@@ -91,7 +90,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #crossFlash{
   position:absolute;left:50%;top:44%;width:22vmin;height:22vmin;
   transform:translate(-50%,-50%) scale(0);border-radius:50%;
-  background:radial-gradient(circle,#fff 0%,#ffe17a99 35%,transparent 70%);
+  background:radial-gradient(circle,#fff 0%,#f59e0b99 35%,transparent 70%);
   opacity:0;
 }
 #crossFlash.go{animation:crossGo .5s ease-out forwards}
@@ -148,14 +147,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #topbar{
   position:absolute;left:0;right:0;top:0;height:58px;
   display:flex;align-items:center;gap:14px;padding:0 16px;
-  background:linear-gradient(180deg,#160a24ee,#160a2400);
+  background:linear-gradient(180deg,#0f1a12ee,#0f1a1200);
   pointer-events:auto;
 }
 #topbar .logo{
   font-size:22px;font-weight:900;letter-spacing:2px;
   background:linear-gradient(90deg,var(--pink),var(--yellow));
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 0 10px #ff3b6b55);
+  filter:drop-shadow(0 0 10px #22c55e55);
 }
 #topbar .coin-chip{
   margin-left:auto;display:flex;align-items:center;gap:6px;
@@ -169,7 +168,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   transition:.15s;
 }
 #topbar nav button:hover{color:#fff;background:var(--glass)}
-#topbar nav button.cur{color:#fff;background:linear-gradient(135deg,#ff3b6b44,#7a4dff44);
+#topbar nav button.cur{color:#fff;background:linear-gradient(135deg,#22c55e44,#10b98144);
   box-shadow:inset 0 0 0 1px var(--line)}
 
 /* 屏幕容器 */
@@ -194,7 +193,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   font-size:20px;font-weight:900;color:#fff;letter-spacing:2px;
   padding:16px 44px;border-radius:99px;
   background:linear-gradient(135deg,var(--pink),var(--purple));
-  box-shadow:0 8px 0 #a01448,0 16px 34px #ff3b6b55;
+  box-shadow:0 8px 0 #166534,0 16px 34px #22c55e55;
   transition:transform .12s;
 }
 .btn-main:active{transform:translateY(4px)}
@@ -216,7 +215,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   font-size:clamp(40px,8vw,84px);font-weight:900;letter-spacing:8px;line-height:1.1;
   background:linear-gradient(90deg,var(--pink) 0%,var(--yellow) 35%,var(--cyan) 70%,var(--purple) 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 6px 0 #00000040) drop-shadow(0 0 28px #ff3b6b44);
+  filter:drop-shadow(0 6px 0 #00000040) drop-shadow(0 0 28px #22c55e44);
   animation:heroFloat 3s ease-in-out infinite;
 }
 @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
@@ -256,8 +255,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   transition:.2s;
 }
 .step-indicator .step.active{
-  background:linear-gradient(135deg,#7a4dff,#36d1ff);color:#fff;border-color:transparent;
-  box-shadow:0 4px 14px #7a4dff55;
+  background:linear-gradient(135deg,#10b981,#3b82f6);color:#fff;border-color:transparent;
+  box-shadow:0 4px 14px #10b98155;
 }
 .step-indicator .step.done{
   color:var(--cyan);border-color:var(--cyan);
@@ -320,7 +319,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .cf-no{background:#ffffff1a;color:#fffb;border:1px solid var(--line)}
 .cf-no:hover{background:#ffffff2a}
-.cf-yes{background:linear-gradient(135deg,var(--pink),#ff6b9d);color:#fff}
+.cf-yes{background:linear-gradient(135deg,var(--pink),#34d399);color:#fff}
 .cf-yes:hover{filter:brightness(1.1)}
 .cf-yes.danger{background:linear-gradient(135deg,#ff4d6d,#c9184a)}
 .cf-btns button:active{transform:scale(.95)}
@@ -330,31 +329,29 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .theme-card .tname{font-size:19px;font-weight:900;text-shadow:0 2px 6px #0008}
 .theme-card .tdesc{font-size:12px;opacity:.85;margin-top:6px}
-.theme-card.sel{border-color:var(--yellow);box-shadow:0 0 0 3px #ffe17a44,0 10px 30px #0006}
+.theme-card.sel{border-color:var(--yellow);box-shadow:0 0 0 3px #f59e0b44,0 10px 30px #0006}
 .theme-card .tag{position:absolute;right:12px;top:12px;font-size:11px;background:#0007;
   padding:3px 10px;border-radius:99px}
 /* 上传/临时歌曲卡片：暖黄渐变 + 发光边框 + 悬停上浮，比普通歌曲卡更醒目 */
 .song-upload-card{
-  border-color:#ffe17a;
-  box-shadow:0 0 24px #ffe17a44,0 8px 24px #0006;
-  animation:upGlow 2.4s ease-in-out infinite;
+  border-color:#f59e0b;
+  box-shadow:0 0 24px #f59e0b44,0 8px 24px #0006;
+  transition:all .3s ease;
 }
-.song-upload-card:hover{transform:translateY(-3px);box-shadow:0 0 32px #ffe17a77,0 12px 32px #0008}
-@keyframes upGlow{0%,100%{box-shadow:0 0 18px #ffe17a33,0 8px 24px #0006}50%{box-shadow:0 0 30px #ffe17a66,0 8px 24px #0006}}
-/* 我的歌曲卡片：紫蓝渐变 + 青色发光，与上传歌曲的暖黄区分 */
+.song-upload-card:hover{transform:translateY(-3px);box-shadow:0 0 32px #f59e0b77,0 12px 32px #0008}
+/* 我的歌曲卡片：天空蓝渐变 + 发光，与上传歌曲的暖橙区分 */
 .my-song-card{
-  border-color:#36d1ff;
-  box-shadow:0 0 24px #36d1ff44,0 8px 24px #0006;
-  animation:myGlow 2.4s ease-in-out infinite;
+  border-color:#3b82f6;
+  box-shadow:0 0 24px #3b82f644,0 8px 24px #0006;
+  transition:all .3s ease;
 }
-.my-song-card:hover{transform:translateY(-3px);box-shadow:0 0 32px #36d1ff77,0 12px 32px #0008}
-@keyframes myGlow{0%,100%{box-shadow:0 0 18px #36d1ff33,0 8px 24px #0006}50%{box-shadow:0 0 30px #36d1ff66,0 8px 24px #0006}}
+.my-song-card:hover{transform:translateY(-3px);box-shadow:0 0 32px #3b82f677,0 12px 32px #0008}
 .diff-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
 .diff-card{
   flex:1;min-width:130px;border-radius:16px;padding:14px;text-align:center;
   background:var(--glass);border:2px solid var(--line);transition:.15s;
 }
-.diff-card.sel{border-color:var(--pink);background:#ff3b6b22;box-shadow:0 0 24px #ff3b6b44}
+.diff-card.sel{border-color:var(--pink);background:#22c55e22;box-shadow:0 0 24px #22c55e44}
 .diff-card .dname{font-size:18px;font-weight:900}
 .diff-card .ddesc{font-size:12px;color:var(--sub);margin-top:4px}
 .play-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -498,12 +495,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .pause-btn:hover{
   border-color:var(--yellow);color:var(--yellow);
-  box-shadow:0 4px 20px #ffe17a44, 0 0 16px #ffe17a33, inset 0 1px 0 #ffffff22;
+  box-shadow:0 4px 20px #f59e0b44, 0 0 16px #f59e0b33, inset 0 1px 0 #ffffff22;
   transform:scale(1.08);
 }
 .quit-btn:hover{
   border-color:var(--pink);color:var(--pink);
-  box-shadow:0 4px 20px #ff3b6b44, 0 0 16px #ff3b6b33, inset 0 1px 0 #ffffff22;
+  box-shadow:0 4px 20px #22c55e44, 0 0 16px #22c55e33, inset 0 1px 0 #ffffff22;
   transform:scale(1.08);
 }
 .pause-btn:active,.quit-btn:active{transform:scale(.9)}
@@ -518,9 +515,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   font-size:64px;font-weight:900;line-height:1;
   background:linear-gradient(180deg,#fff,var(--yellow));
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 4px 0 #00000055) drop-shadow(0 0 20px #ffe17a66);
+  filter:drop-shadow(0 4px 0 #00000055) drop-shadow(0 0 20px #f59e0b66);
 }
-#comboBox .clab{font-size:14px;font-weight:900;letter-spacing:6px;color:#ffe17a;text-shadow:0 2px 6px #000a}
+#comboBox .clab{font-size:14px;font-weight:900;letter-spacing:6px;color:#f59e0b;text-shadow:0 2px 6px #000a}
 #comboBox.pop .cnum{animation:comboPop .18s ease-out}
 @keyframes comboPop{0%{transform:scale(1.35)}100%{transform:scale(1)}}
 
@@ -546,7 +543,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #hitLine{
   position:absolute;left:0;right:0;bottom:12vh;height:3px;
   background:linear-gradient(90deg,#ffffff00,var(--yellow),#ffffff00);
-  box-shadow:0 0 18px #ffe17a99;
+  box-shadow:0 0 18px #f59e0b99;
 }
 .receptor{
   position:absolute;bottom:calc(12vh - 26px);width:52px;height:52px;margin-left:-26px;
@@ -561,7 +558,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .receptor[data-l="2"]{left:61%}
 .receptor[data-l="3"]{left:86%}
 .receptor.hit{transform:scale(1.35);border-color:var(--yellow);
-  box-shadow:0 0 26px #ffe17acc, inset 0 0 12px #ffe17a55}
+  box-shadow:0 0 26px #f59e0bcc, inset 0 0 12px #f59e0b55}
 
 /* 掉落的箭头 */
 .note{
@@ -633,7 +630,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* 暂停层 */
 #pauseOv{
   position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
-  background:#160a24cc;backdrop-filter:blur(6px);
+  background:#0f1a12cc;backdrop-filter:blur(6px);
 }
 #pauseOv.on{display:flex}
 #pauseOv .pbox{text-align:center;display:flex;flex-direction:column;gap:14px}
@@ -642,15 +639,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ---------- 公告弹窗 ---------- */
 #noticeOv{
   position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;
-  background:#160a24cc;backdrop-filter:blur(6px);padding:10px;
+  background:#0f1a12cc;backdrop-filter:blur(6px);padding:10px;
 }
 #noticeOv.on{display:flex}
 .notice-box{
   position:relative;
   width:min(440px,95vw);
-  background:linear-gradient(160deg,#2c1450,#241040);
+  background:linear-gradient(160deg,#2c1450,#1a2e1f);
   border:2px solid var(--pink);border-radius:18px;padding:12px 14px 10px;
-  box-shadow:0 0 40px #ff3b6b55,inset 0 0 30px #7a4dff22;
+  box-shadow:0 0 40px #22c55e55,inset 0 0 30px #10b98122;
   display:flex;flex-direction:column;gap:2px;
   animation:noticePop .35s cubic-bezier(.2,1.4,.4,1);
 }
@@ -658,13 +655,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .notice-x{
   position:absolute;top:8px;right:10px;z-index:3;
   width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;
-  background:#ff3b6b33;color:#ff6b8a;font-size:16px;font-weight:900;line-height:28px;
+  background:#22c55e33;color:#ff6b8a;font-size:16px;font-weight:900;line-height:28px;
   transition:.15s;
 }
-.notice-x:hover{background:#ff3b6b;color:#fff;transform:scale(1.12) rotate(90deg)}
+.notice-x:hover{background:#22c55e;color:#fff;transform:scale(1.12) rotate(90deg)}
 .notice-x:active{transform:scale(.92)}
 @keyframes noticePop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
-.notice-hd{font-size:19px;font-weight:900;color:var(--yellow);text-shadow:0 0 12px #ffe17a88;padding-right:30px}
+.notice-hd{font-size:19px;font-weight:900;color:var(--yellow);text-shadow:0 0 12px #f59e0b88;padding-right:30px}
 .notice-bd{font-size:14px;line-height:1.4;white-space:pre-wrap;word-break:break-word}
 .notice-bd .nb-p{margin-bottom:0}
 .cp-row{display:flex;align-items:center;gap:8px;margin-top:1px;
@@ -673,12 +670,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .cp-label{font-size:12px;font-weight:800;color:var(--cyan)}
 .cp-val{font-size:13px;color:var(--yellow);word-break:break-all;user-select:text}
 .notice-copy{flex-shrink:0;padding:4px 9px;border-radius:99px;font-size:12px;font-weight:800;color:#fff;
-  background:linear-gradient(135deg,#ff3b6b,#7a4dff);box-shadow:0 4px 12px #ff3b6b33}
+  background:linear-gradient(135deg,#22c55e,#10b981);box-shadow:0 4px 12px #22c55e33}
 .notice-copy:active{transform:scale(.94)}
 .notice-chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub);cursor:pointer}
 .notice-chk input{width:14px;height:14px;accent-color:var(--pink);cursor:pointer}
 .notice-btn{padding:8px;border-radius:99px;font-size:15px;font-weight:900;color:#fff;
-  background:linear-gradient(135deg,#ff3b6b,#7a4dff);box-shadow:0 6px 18px #ff3b6b44}
+  background:linear-gradient(135deg,#22c55e,#10b981);box-shadow:0 6px 18px #22c55e44}
 .notice-btn:active{transform:scale(.96)}
 
 /* Toast */
@@ -716,10 +713,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   position:absolute;right:0;top:50%;transform:translateY(-50%);
   font-size:14px;font-weight:800;color:var(--yellow);
   padding:8px 18px;border-radius:99px;
-  border:1px solid var(--yellow);background:#ffe17a14;
+  border:1px solid var(--yellow);background:#f59e0b14;
   transition:.15s;
 }
-.up-entry:hover{background:#ffe17a2e;transform:translateY(-50%) scale(1.05)}
+.up-entry:hover{background:#f59e0b2e;transform:translateY(-50%) scale(1.05)}
 
 /* 歌卡上的删除角标 */
 .song-del{
@@ -786,7 +783,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   color:#fff;font-size:14.5px;font-weight:700;
   transition:.15s;
 }
-.up-drop:hover{border-color:var(--cyan);background:#36d1ff14}
+.up-drop:hover{border-color:var(--cyan);background:#3b82f614}
 .up-drop .up-ic{font-size:30px}
 
 /* 进度条 / 状态文字 / 分析结果 */
@@ -892,9 +889,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .speedToast{
   position:fixed;top:34%;left:50%;z-index:120;pointer-events:none;
   transform:translate(-50%,0);
-  font-size:30px;font-weight:800;letter-spacing:1px;color:#ffe17a;
-  text-shadow:0 0 16px #ffe17a88;
-  background:#0a0514cc;border:1px solid #ffe17a66;border-radius:999px;
+  font-size:30px;font-weight:800;letter-spacing:1px;color:#f59e0b;
+  text-shadow:0 0 16px #f59e0b88;
+  background:#0a0514cc;border:1px solid #f59e0b66;border-radius:999px;
   padding:10px 26px;backdrop-filter:blur(4px);
   animation:speedToastIn 1.5s ease-out forwards;
   white-space:nowrap;

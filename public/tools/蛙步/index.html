@@ -18,11 +18,11 @@
      注意：「开跳」按钮必须在这一层内（本层 z-index 最高），
      否则会被自己盖住造成「按钮点不到→开场不播→遮罩永不消失」的死锁 -->
 <div id="loadOverlay">
-  <img class="load-baby" src="baby.png" alt="蛙">
+  <!-- 已移除原侵权图像，后续可替换为新图案 -->
   <div class="load-txt" id="loadTxt">蛙步 · 装扮舞台中…</div>
   <div class="load-bar"><i id="loadBar"></i></div>
   <!-- 初始化就绪前隐藏；就绪后由 main.js 点亮，点击解锁音频并开始开场 -->
-  <button class="gate-btn hidden" id="loadStart" disabled>🎵 开 跳 🎵</button>
+  <button class="gate-btn hidden" id="loadStart" disabled>🎮 开始游戏 🎮</button>
   <div class="load-sub" id="loadSub">首次加载需下载 3D 模型，请稍候…</div>
 </div>
 
