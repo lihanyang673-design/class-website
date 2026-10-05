@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261207';
-import { updateOpening, Opening } from './opening.js?v=20261207';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261207';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261207';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261207';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261208';
+import { updateOpening, Opening } from './opening.js?v=20261208';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261208';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261208';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261208';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261207';
+         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261208';
 
 const $=id=>document.getElementById(id);
 
@@ -79,19 +79,60 @@ let keyLight=null, lampL=null, lampR=null, floorMesh=null;
 let _trackLines=[];   // 演奏模式的四条轨道线（用于律动）
 let _stageToken=0, _bgTex=null;   // 图片背景：异步加载令牌（防旧回调覆盖）+ 当前背景贴图（用于释放）
 
-// 正方形背景布局：宽度铺满、顶部对齐，整张图完整落在屏幕上部（约屏幕上半 47%）；
-// 屏幕其余部分采样图片边缘（UV 超出 0-1 时纹理自动 clamp 到边缘色）做自然延伸，会被舞台遮住。
+// 正方形背景布局：宽度铺满、顶部对齐，整张图完整落在屏幕上部（约屏幕上半）；
 // 图片永远等比显示，人物不会被拉长。
+// ★ 下方延伸不能直接靠纹理 ClampToEdge：它逐列夹取底边像素，底边颜色一杂，
+//   下方就变成一条条彩色竖条（v20261208 bug）。所以图片先经 bakeBgCanvas 烘焙，
+//   下半改为底部条带重度模糊后铺满——颜色仍取自图片，但平滑无条纹。
+// 烘焙画布 2:1：上半（v∈0.5~1）= 图片；下半（v∈0~0.5）= 模糊延伸。
+function bakeBgCanvas(img){
+  const iw=img.width||img.naturalWidth, ih=img.height||img.naturalHeight;
+  const CW=1024, HALF=1024, CH=2048;
+  const cv=document.createElement('canvas'); cv.width=CW; cv.height=CH;
+  const ctx=cv.getContext('2d');
+
+  // 1) 延伸色：取图片底部 1/8 条带压到 32×8，读出整体平均色 → 纯色填充。
+  //    必须是单一颜色：模糊缩小对"小图+强对比底边"仍会留下可辨色带，纯色才能保证零条纹、各浏览器一致
+  const stripH=Math.max(1,Math.round(ih/8));
+  const tiny=document.createElement('canvas'); tiny.width=32; tiny.height=8;
+  tiny.getContext('2d').drawImage(img,0,ih-stripH,iw,stripH,0,0,32,8);
+  const td=tiny.getContext('2d').getImageData(0,0,32,8).data;
+  let tr=0,tg=0,tb=0,tn=0;
+  for(let i=0;i<td.length;i+=4){tr+=td[i];tg+=td[i+1];tb+=td[i+2];tn++;}
+  ctx.fillStyle=`rgb(${tr/tn|0},${tg/tn|0},${tb/tn|0})`;
+  // 向上多盖 56px 与图片重叠，接缝才能融合
+  ctx.fillRect(0,HALF-56,CW,CH-HALF+56);
+
+  // 2) 下半叠透明→深黑渐变，底部更沉稳
+  const g=ctx.createLinearGradient(0,HALF,0,CH);
+  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.38)');
+  ctx.fillStyle=g; ctx.fillRect(0,HALF,CW,CH-HALF);
+
+  // 3) 上半画图片（cover 等比居中裁剪；裁剪图本身就是正方形）
+  const sc=Math.max(CW/iw,HALF/ih), dw=iw*sc, dh=ih*sc;
+  const top=document.createElement('canvas'); top.width=CW; top.height=HALF;
+  const pctx=top.getContext('2d');
+  pctx.drawImage(img,(CW-dw)/2,(HALF-dh)/2,dw,dh);
+  // 底部 56px 渐隐为透明 → 和下面重叠的模糊延伸平滑相接
+  pctx.globalCompositeOperation='destination-out';
+  const fg=pctx.createLinearGradient(0,HALF-56,0,HALF);
+  fg.addColorStop(0,'rgba(0,0,0,0)'); fg.addColorStop(1,'rgba(0,0,0,1)');
+  pctx.fillStyle=fg; pctx.fillRect(0,HALF-56,CW,56);
+  ctx.drawImage(top,0,0);
+  return cv;
+}
+
+// 把"图片区 v∈0.5~1"摆到屏幕上部正方形区域；其余屏幕位置落到烘焙好的模糊延伸区
 function layoutBgTex(tex){
   const sa=innerWidth/innerHeight;                  // 屏幕宽高比（竖屏<1）
   if(sa<=1){
-    // 竖屏：横向完整铺满；屏幕上部正方形区 v∈[1-sa,1] ↔ 图片 v∈[0,1]
-    tex.repeat.set(1, 1/sa);
-    tex.offset.set(0, (sa-1)/sa);
+    // 竖屏：屏幕 uv∈[1-sa,1] ↔ 图片 v∈[0.5,1]；屏幕底部 v<0.5 为模糊延伸
+    tex.repeat.set(1, 0.5/sa);
+    tex.offset.set(0, 1-0.5/sa);
   }else{
-    // 横屏：纵向铺满，正方形水平居中
-    tex.repeat.set(sa, 1);
-    tex.offset.set((1-sa)/2, 0);
+    // 横屏：纵向显示图片区；水平居中正方形，两侧夹取图片边缘
+    tex.repeat.set(sa, 0.5);
+    tex.offset.set((1-sa)/2, 0.5);
   }
 }
 
@@ -120,8 +161,15 @@ function buildStage(theme, mode='home'){
   if(hasImg){
     scene.background=null;
     // 图片异步加载；令牌过期（已切换到别的舞池）就直接丢弃，不覆盖
-    new THREE.TextureLoader().load(curTheme.bgImage, tex=>{
-      if(token!==_stageToken){ tex.dispose(); return; }
+    new THREE.TextureLoader().load(curTheme.bgImage, raw=>{
+      if(token!==_stageToken){ raw.dispose(); return; }
+      let tex;
+      try{
+        tex=new THREE.CanvasTexture(bakeBgCanvas(raw.image));   // 烘焙：下方模糊延伸，杜绝竖条
+        raw.dispose();
+      }catch(e){
+        console.warn('背景烘焙失败，改用原图',e); tex=raw;      // 兜底：烘焙失败不致黑屏
+      }
       tex.colorSpace=THREE.SRGBColorSpace;
       layoutBgTex(tex);
       _bgTex=tex; scene.background=tex;
