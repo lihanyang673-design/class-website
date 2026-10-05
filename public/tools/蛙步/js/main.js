@@ -3,13 +3,13 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261201';
-import { updateOpening, Opening } from './opening.js?v=20261201';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261201';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261201';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261201';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261202';
+import { updateOpening, Opening } from './opening.js?v=20261202';
+import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261202';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261202';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261202';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261201';
+         checkAch, getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261202';
 
 const $=id=>document.getElementById(id);
 
@@ -44,7 +44,8 @@ const DEFAULT_THEME={
 };
 
 let stageGroup=null, curTheme=DEFAULT_THEME;
-let keyLight=null, lampL=null, lampR=null, floorMesh=null, ringMesh=null;
+let keyLight=null, lampL=null, lampR=null, floorMesh=null;
+let _trackLines=[];   // 演奏模式的四条轨道线（用于律动）
 let _stageToken=0, _bgTex=null;   // 图片背景：异步加载令牌（防旧回调覆盖）+ 当前背景贴图（用于释放）
 
 // 正方形背景布局：宽度铺满、顶部对齐，整张图完整落在屏幕上部（约屏幕上半 47%）；
@@ -63,11 +64,15 @@ function layoutBgTex(tex){
   }
 }
 
-function buildStage(theme){
+// ============================================================
+// 主舞台搭建（按主题 + 模式）
+// mode: 'home' 主界面（无舞台，只有背景图+灯光） | 'play' 演奏（简约深色舞台）
+// ============================================================
+function buildStage(theme, mode='home'){
   curTheme=theme;
   const token=++_stageToken;
   const hasImg=!!theme.bgImage;
-  // 图片主题：只换背景，地板/灯光/背景板等缺失字段沿用默认舞池
+  // 图片主题：只换背景，灯光颜色等缺失字段沿用默认舞池
   if(hasImg) theme={...DEFAULT_THEME, ...theme};
   // 清理旧舞台
   if(stageGroup){
@@ -96,84 +101,7 @@ function buildStage(theme){
     scene.fog=new THREE.Fog(theme.bg, theme.fog[0], theme.fog[1]);
   }
 
-  // ---- 圆形舞池地板 ----
-  floorMesh=new THREE.Mesh(
-    new THREE.CircleGeometry(5.2,72),
-    new THREE.MeshStandardMaterial({color:theme.floor,roughness:0.55,metalness:0.35})
-  );
-  floorMesh.rotation.x=-Math.PI/2;
-  floorMesh.receiveShadow=true;
-  stageGroup.add(floorMesh);
-
-  // 发光边缘环
-  ringMesh=new THREE.Mesh(
-    new THREE.RingGeometry(5.06,5.2,72),
-    new THREE.MeshBasicMaterial({color:theme.ring,side:THREE.DoubleSide})
-  );
-  ringMesh.rotation.x=-Math.PI/2;
-  ringMesh.position.y=0.012;
-  stageGroup.add(ringMesh);
-
-  // 内圈舞池刻线（十字放射线）
-  for(let i=0;i<8;i++){
-    const line=new THREE.Mesh(
-      new THREE.PlaneGeometry(0.06,4.6),
-      new THREE.MeshBasicMaterial({color:theme.ring,transparent:true,opacity:0.16})
-    );
-    line.rotation.x=-Math.PI/2;
-    line.rotation.z=i*Math.PI/8;
-    line.position.y=0.008;
-    stageGroup.add(line);
-  }
-
-  // ---- 背景板（楼群/落日/星空）：图片背景时不画，避免深色楼群像竖条一样挡在背景图前面 ----
-  if(!hasImg && theme.sky==='city'){
-    // 城市剪影楼群
-    for(let i=0;i<11;i++){
-      const h=2+Math.random()*4.5, w=1+Math.random()*1.4;
-      const b=new THREE.Mesh(
-        new THREE.BoxGeometry(w,h,0.6),
-        new THREE.MeshStandardMaterial({color:0x0e0820,roughness:0.9,
-          emissive:i%2?theme.c1:theme.c2, emissiveIntensity:0.05})
-      );
-      b.position.set(-11+i*2.2+(Math.random()-0.5), h/2-0.5, -9.5-Math.random()*2);
-      stageGroup.add(b);
-    }
-  }else if(theme.sky==='sunset'){
-    // 落日圆盘 + 楼群
-    const sun=new THREE.Mesh(
-      new THREE.CircleGeometry(2.6,48),
-      new THREE.MeshBasicMaterial({color:0xffa751,transparent:true,opacity:0.85})
-    );
-    sun.position.set(0,2.6,-13);
-    stageGroup.add(sun);
-    for(let i=0;i<9;i++){
-      const h=1.5+Math.random()*3.5;
-      const b=new THREE.Mesh(new THREE.BoxGeometry(1.3,h,0.6),
-        new THREE.MeshBasicMaterial({color:0x241028}));
-      b.position.set(-9+i*2.3, h/2-0.6, -10);
-      stageGroup.add(b);
-    }
-  }else if(theme.sky==='stars'){
-    // 星空 + 带环行星
-    const N=260, P=new Float32Array(N*3);
-    for(let i=0;i<N;i++){
-      const r=16+Math.random()*14, a=Math.random()*Math.PI*2, y=Math.random()*14-2;
-      P[i*3]=Math.cos(a)*r; P[i*3+1]=y; P[i*3+2]=Math.sin(a)*r-6;
-    }
-    const sg=new THREE.BufferGeometry();
-    sg.setAttribute('position',new THREE.BufferAttribute(P,3));
-    stageGroup.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:0.09})));
-    const planet=new THREE.Mesh(new THREE.SphereGeometry(1.1,32,32),
-      new THREE.MeshStandardMaterial({color:0x7a4dff,roughness:0.5,emissive:0x7a4dff,emissiveIntensity:0.25}));
-    planet.position.set(-6.5,4.5,-10);
-    const pring=new THREE.Mesh(new THREE.RingGeometry(1.5,2.1,48),
-      new THREE.MeshBasicMaterial({color:0x36d1ff,side:THREE.DoubleSide,transparent:true,opacity:0.6}));
-    pring.rotation.x=1.2; pring.position.copy(planet.position);
-    stageGroup.add(planet,pring);
-  }
-
-  // ---- 灯光（环境光全局只建一次；主光挂在舞台组随主题重建）----
+  // 灯光（主界面/演奏共用，照亮舞者）
   if(!scene.userData.ambient){
     const amb=new THREE.AmbientLight(0xffffff,0.55);
     scene.add(amb);
@@ -190,6 +118,38 @@ function buildStage(theme){
   lampL=new THREE.PointLight(theme.c1,2.2,15,1.8); lampL.position.set(-4,2.4,2.5);
   lampR=new THREE.PointLight(theme.c2,2.2,15,1.8); lampR.position.set( 4,2.4,2.5);
   stageGroup.add(lampL,lampR);
+
+  // 主界面模式：不要任何舞台结构，只留背景+灯光
+  if(mode==='home'){
+    // 舞台特效（轨道灯/迪斯科球/扫描灯，只在首次初始化）
+    if(!Fx.ready) initFx(scene,camera);
+    Fx.camBase.copy(CAM_HOME);
+    return;
+  }
+
+  // ========== 演奏模式：简约深色舞台（和主界面区分） ==========
+  // 半透明深色地板（不抢背景图风头）
+  floorMesh=new THREE.Mesh(
+    new THREE.PlaneGeometry(10,6),
+    new THREE.MeshStandardMaterial({color:0x0d0818,roughness:0.8,metalness:0.1,transparent:true,opacity:0.85})
+  );
+  floorMesh.rotation.x=-Math.PI/2;
+  floorMesh.position.y=0;
+  floorMesh.receiveShadow=true;
+  stageGroup.add(floorMesh);
+
+  // 四条轨道竖线（代替原来的大圆环+放射线）
+  _trackLines=[];
+  for(let i=0;i<4;i++){
+    const track=new THREE.Mesh(
+      new THREE.PlaneGeometry(0.04,5),
+      new THREE.MeshBasicMaterial({color:theme.c2,transparent:true,opacity:0.25})
+    );
+    track.rotation.x=-Math.PI/2;
+    track.position.set((i-1.5)*0.95, 0.005, 0.5);
+    stageGroup.add(track);
+    _trackLines.push(track);
+  }
 
   // 舞台特效（轨道灯/迪斯科球/扫描灯，只在首次初始化）
   if(!Fx.ready) initFx(scene,camera);
@@ -225,7 +185,7 @@ Music.el.addEventListener('error', ()=>console.warn('[启动] ⚠ 背景音乐 m
 // ============================================================
 const main={
   switchTheme(id){
-    buildStage(getThemeById(id));
+    buildStage(getThemeById(id), 'home');
   },
   applySkin(sk){ setSkin(sk); },
   applyQuality(q){
@@ -238,7 +198,8 @@ const main={
     const song=getSongById(songId)||SONGS[0];
     Music.setSong(song.file);
     const theme=getThemeById(themeId);
-    if(theme.id!==curTheme.id) buildStage(theme);
+    // 演奏模式：无论主题是否切换，都重建为演奏舞台（主界面是无舞台的）
+    buildStage(theme, 'play');
     const set=Store.data.set;
     const bpm=song.bpm||set.bpm;          // 优先用歌曲自带 BPM
     showUIRoot(false);
@@ -275,6 +236,7 @@ const main={
     stopGame(false);
     showStageUI(false);
     showUIRoot(true);           // ★ 退出演出必须恢复主界面（之前漏了）
+    buildStage(curTheme, 'home');  // 切回主界面：无舞台模式
     camera.position.copy(CAM_HOME);
     Fx.camBase.copy(CAM_HOME);
     const q=Store.data.set.quality;   // ★ 恢复主界面的渲染分辨率
@@ -502,8 +464,10 @@ function loop(){
     camera.lookAt(camTarget.x,0.9,0);
   }
 
-  // 边缘环呼吸发光
-  if(ringMesh) ringMesh.material.opacity=0.75+Math.sin(t*(dancing?6:2))*0.25;
+  // 轨道线呼吸发光（演奏模式）
+  for(let i=0;i<_trackLines.length;i++){
+    _trackLines[i].material.opacity=0.2+Math.sin(t*(dancing?6:2)+i)*0.15;
+  }
 
   // 侧灯律动
   if(lampL){ lampL.intensity=2.0+Math.sin(t*3)*0.6; lampR.intensity=2.0+Math.cos(t*3)*0.6; }
