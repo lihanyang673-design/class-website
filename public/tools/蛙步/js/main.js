@@ -401,7 +401,7 @@ $('loadTxt').textContent='准备好了吗？';
 $('loadSub').textContent='点击按钮，开始游戏';
 console.log('%c[启动] ⑤ 初始化完成，「开始游戏」按钮已可点击 ✓', 'color:#7fffd4;font-weight:bold');
 
-// 点击：解锁音频 → 收起加载遮罩 → 直接进入主界面
+// 点击：解锁音频 → 收起加载遮罩 → 直接进入主界面（无开场动画）
 btnStart.addEventListener('click', ()=>{
   console.log('%c[启动] 👆 用户点击「开始游戏」→ 解锁音频，进入主界面', 'color:#36d1ff;font-weight:bold');
   ensureCtx();
@@ -409,7 +409,6 @@ btnStart.addEventListener('click', ()=>{
   sfxBoing();
   setMenuBgmVolume(Store.data.set.vol);
   $('loadOverlay').classList.add('hide');
-  // 简化：跳过开场动画，直接进主界面
   enterHome();
 }, {once:true});
 
