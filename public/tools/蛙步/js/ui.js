@@ -2,10 +2,10 @@
 // ui.js —— 界面系统：存档 / 导航 / 排行 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261012';
-import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261012';
-import { Game, pauseGame } from './game.js?v=20261012';
-import { CHARACTERS } from './dancer.js?v=20261012';
+import { analyzeAudio } from './analyze.js?v=20261013';
+import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261013';
+import { Game, pauseGame } from './game.js?v=20261013';
+import { CHARACTERS } from './dancer.js?v=20261013';
 
 // ============================================================
 // 存档（localStorage）
@@ -121,6 +121,24 @@ export const THEMES=[
   {id:'it7', name:'蛙步2', desc:'自定义图片背景', bgImage:'1791122485709_216242919.jpg', fromDb:7},
   {id:'it8', name:'蛙步3', desc:'自定义图片背景', bgImage:'1791122502789_885100847.jpg', fromDb:8},
   {id:'it10', name:'奶蛙4', desc:'自定义图片背景', bgImage:'1791208611617_692707618.jpg', fromDb:10},
+  {id:'it11', name:'奶蛙5', desc:'自定义图片背景', bgImage:'1791259717641_587284622.jpg', fromDb:11},
+  {id:'it12', name:'奶蛙6', desc:'自定义图片背景', bgImage:'1791259736241_894754504.jpg', fromDb:12},
+  {id:'it13', name:'奶蛙7', desc:'自定义图片背景', bgImage:'1791259756589_320324198.jpg', fromDb:13},
+  {id:'it14', name:'奶蛙8', desc:'自定义图片背景', bgImage:'1791259768647_72594720.jpg', fromDb:14},
+  {id:'it15', name:'奶蛙9', desc:'自定义图片背景', bgImage:'1791259781127_849608255.jpg', fromDb:15},
+  {id:'it16', name:'奶蛙10', desc:'自定义图片背景', bgImage:'1791259794117_55213782.jpg', fromDb:16},
+  {id:'it17', name:'奶蛙11', desc:'自定义图片背景', bgImage:'1791259808440_5265097.jpg', fromDb:17},
+  {id:'it18', name:'奶蛙12', desc:'自定义图片背景', bgImage:'1791259822374_72641506.jpg', fromDb:18},
+  {id:'it19', name:'奶蛙13', desc:'自定义图片背景', bgImage:'1791259832293_947502956.jpg', fromDb:19},
+  {id:'it20', name:'奶蛙14', desc:'自定义图片背景', bgImage:'1791259842535_100103614.jpg', fromDb:20},
+  {id:'it21', name:'奶蛙15', desc:'自定义图片背景', bgImage:'1791259852157_784197347.jpg', fromDb:21},
+  {id:'it22', name:'奶蛙16', desc:'自定义图片背景', bgImage:'1791259861435_879238390.jpg', fromDb:22},
+  {id:'it23', name:'奶蛙17', desc:'自定义图片背景', bgImage:'1791259870354_923098179.jpg', fromDb:23},
+  {id:'it24', name:'奶蛙18', desc:'自定义图片背景', bgImage:'1791259892849_471462543.jpg', fromDb:24},
+  {id:'it25', name:'奶蛙19', desc:'自定义图片背景', bgImage:'1791259904860_927362618.jpg', fromDb:25},
+  {id:'it26', name:'奶蛙20', desc:'自定义图片背景', bgImage:'1791259915901_975429585.jpg', fromDb:26},
+  {id:'it27', name:'奶蛙21', desc:'自定义图片背景', bgImage:'1791259924556_265562456.jpg', fromDb:27},
+  {id:'it28', name:'奶蛙22', desc:'自定义图片背景', bgImage:'1791259935340_233001054.jpg', fromDb:28},
 ];
 
 // 歌曲库：只保留真实存在的内置曲 music.mp3。
@@ -192,7 +210,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261012');
+    const r=await fetch('charts.json?v=20261013');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
