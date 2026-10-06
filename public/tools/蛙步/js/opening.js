@@ -6,7 +6,7 @@
 //  3. 弹出「蛙步」标题 → 淡出 → 进主界面
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, sfxBoing, sfxOutro } from './audio.js?v=20261013';
+import { ensureCtx, sfxBoing, sfxOutro } from './audio.js?v=20261014';
 
 export const Opening = { active:false };
 
