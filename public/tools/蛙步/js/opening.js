@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // opening.js —— 开场动画（简化版：Logo + 标题）
 // 流程：
 //  1. 东南大学风格渐变背景
@@ -6,7 +6,7 @@
 //  3. 弹出「蛙步」标题 → 淡出 → 进主界面
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, sfxBoing, sfxOutro } from './audio.js?v=20261009';
+import { ensureCtx, sfxBoing, sfxOutro } from './audio.js?v=20261010';
 
 export const Opening = { active:false };
 

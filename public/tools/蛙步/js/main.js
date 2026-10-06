@@ -1,16 +1,16 @@
-// ============================================================
+﻿// ============================================================
 // main.js —— 程序入口 / 总调度
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261009';
-import { updateOpening, Opening } from './opening.js?v=20261009';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261010';
+import { updateOpening, Opening } from './opening.js?v=20261010';
 import { initDancerLayer, preloadDancers, updateDancer, selectDancer, setDancerMode,
-         setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261009';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261009';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261009';
+         setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261010';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261010';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261010';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261009';
+         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261010';
 
 const $=id=>document.getElementById(id);
 
@@ -309,7 +309,7 @@ const main={
     startGame({diff:diffId, bpm, offset:set.offset, speed:set.speed, duration:dur, songId:song.id, songName:song.name, chart});
     // 倒计时界面显示本场信息
     const diff=DIFFS.find(d=>d.id===diffId);
-    const notes=chart&&chart.notes?chart.notes.length:0;
+    const notes=chart&&chart.length?chart.length:0;
     const mm=Math.floor(dur/60), ss=Math.floor(dur%60).toString().padStart(2,'0');
     $('countInfo').innerHTML=
       `<div class="ci-song">${song.name}${song.artist?` · ${song.artist}`:''}</div>
