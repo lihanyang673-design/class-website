@@ -2,9 +2,10 @@
 // ui.js —— 界面系统：存档 / 导航 / 排行 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261209';
-import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261209';
-import { Game, pauseGame } from './game.js?v=20261209';
+import { analyzeAudio } from './analyze.js?v=20261006';
+import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261006';
+import { Game, pauseGame } from './game.js?v=20261006';
+import { CHARACTERS } from './dancer.js?v=20261006';
 
 // ============================================================
 // 存档（localStorage）
@@ -15,6 +16,7 @@ const DEFAULTS={
   scores:{easy:[],casual:[],normal:[],hard:[],endless:[]},
   set:{vol:0.8,sfx:1,offset:0,bpm:104,speed:1,quality:1},
   ach:{},
+  dancer:'frog',
 };
 export const Store={
   data:null,
@@ -151,6 +153,8 @@ export const SONGS=[
   {id:'u38', name:'忘情牛肉面', artist:'马健涛', file:'1791099498004_292032976.mp3', bpm:130, desc:'130 BPM · 约3分钟', cat:'builtin', staticChart:true, stars:4, diff:8.54},
   {id:'u39', name:'雨爱', artist:'泡泡心', file:'1791113581381_316393854.mp3', bpm:162, desc:'162 BPM · 约3.9分钟', cat:'builtin', staticChart:true, stars:5, diff:10.68},
   {id:'u40', name:'坏女孩', artist:'徐良&小凌', file:'1791116189863_102373838.mp3', bpm:127, desc:'127 BPM · 约4.1分钟', cat:'builtin', staticChart:true, stars:3, diff:8.42},
+  {id:'u41', name:'夜间巡航 (钢琴版)', artist:'同学上传', file:'1791248165698_329787984.mp3', bpm:132, desc:'132 BPM · 约2.3分钟', cat:'builtin', staticChart:true, stars:3, diff:8.62},
+  {id:'u42', name:'夜间巡航', artist:'Dark 3', file:'1791248293974_724495692.mp3', bpm:126, desc:'126 BPM · 约2.4分钟', cat:'builtin', staticChart:true, stars:2, diff:8.24},
 ];
 
 // 歌曲分类（渲染时每组带小标题；空的分组会自动跳过）
@@ -188,7 +192,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261209');
+    const r=await fetch('charts.json?v=20261006');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -530,7 +534,7 @@ const CODEX=[
 // 界面初始化
 // ============================================================
 let sel={theme:'it6', diff:'normal', song:'default'};
-let playStep=1;   // 选曲页分步：1=舞池 2=歌曲 3=难度
+let playStep=1;   // 开跳分步：1=舞者 2=舞池 3=歌曲 4=难度
 let mainRef=null;   // main.js 注入 { startShow, switchTheme, applyQuality }
 
 export function initUI(main){
@@ -614,18 +618,22 @@ export function initUI(main){
   // ---- ★ 选曲页底部按钮：分步推进（我选好了 → 我选好了 → 开始表演）----
   document.getElementById('btnNextStep').addEventListener('click',()=>{
     sfxClick();
-    if(playStep<3){ playStep++; renderPlay(); }
-    else{ ensureCtx(); startShow(); }   // 第3步：开演
+    if(playStep<4){ playStep++; renderPlay(); }
+    else{ ensureCtx(); startShow(); }   // 第4步：开演
   });
 
   // ---- ★ 随机按钮：根据当前步骤随机选舞池/歌曲/难度 ----
   document.getElementById('btnRandom').addEventListener('click',()=>{
     sfxClick();
     if(playStep===1){
+      const list=CHARACTERS;
+      const c=list[Math.floor(Math.random()*list.length)];
+      mainRef.chooseDancer(c.id); Store.data.dancer=c.id; Store.save();
+    }else if(playStep===2){
       const allThemes=[...(serverOn?USER_THEMES.list:TEMP_THEMES), ...THEMES];
       const t=allThemes[Math.floor(Math.random()*allThemes.length)];
       sel.theme=t.id; mainRef.switchTheme(t.id);
-    }else if(playStep===2){
+    }else if(playStep===3){
       const all=serverOn
         ? [...TEMP_SONGS, ...USER_SONGS.list, SONGS.find(s=>s.id==='default')]
         : [...TEMP_SONGS, ...SONGS];
@@ -715,7 +723,11 @@ export function renderHome(){
 // ---------- 开跳页 ----------
 async function renderPlay(){
   // ---- 步骤指示器 + 分区显隐 ----
-  const stepTitles={1:'🎵 选择舞池 <small>DANCE FLOOR</small>',2:'🎵 选择歌曲 <small>SELECT SONG</small>',3:'🔥 选择难度 <small>DIFFICULTY</small>'};
+  const stepTitles={
+    1:'🐰 选择舞者 <small>DANCER</small>',
+    2:'🎵 选择舞池 <small>DANCE FLOOR</small>',
+    3:'🎵 选择歌曲 <small>SELECT SONG</small>',
+    4:'🔥 选择难度 <small>DIFFICULTY</small>'};
   document.getElementById('playStepTitle').innerHTML=stepTitles[playStep];
   document.querySelectorAll('#stepIndicator .step').forEach(el=>{
     const s=+el.dataset.step;
@@ -724,15 +736,17 @@ async function renderPlay(){
     el.classList.toggle('disabled', s>playStep);
     el.style.cursor = s<=playStep ? 'pointer' : 'not-allowed';
   });
-  document.getElementById('stepTheme').style.display = playStep===1?'':'none';
-  document.getElementById('stepSong').style.display  = playStep===2?'':'none';
-  document.getElementById('stepDiff').style.display  = playStep===3?'':'none';
-  // 底部按钮：第3步显示「开始表演」，其余显示「我选好了」
+  document.getElementById('stepDancer').style.display= playStep===1?'':'none';
+  document.getElementById('stepTheme').style.display = playStep===2?'':'none';
+  document.getElementById('stepSong').style.display  = playStep===3?'':'none';
+  document.getElementById('stepDiff').style.display  = playStep===4?'':'none';
+  if(playStep===1) renderDancer();
+  // 底部按钮：第4步显示「开始表演」，其余显示「我选好了」
   const nextBtn=document.getElementById('btnNextStep');
-  nextBtn.textContent = playStep===3 ? '🚀 开始表演' : '我选好了';
+  nextBtn.textContent = playStep===4 ? '🚀 开始表演' : '我选好了';
   // 随机按钮文字随步骤变化
   const rndBtn=document.getElementById('btnRandom');
-  if(rndBtn) rndBtn.textContent = playStep===1 ? '🎲 随机舞池' : playStep===2 ? '🎲 随机歌曲' : '🎲 随机难度';
+  if(rndBtn) rndBtn.textContent = playStep===1?'🎲 随机舞者':playStep===2 ? '🎲 随机舞池' : playStep===3 ? '🎲 随机歌曲' : '🎲 随机难度';
 
   // 上传入口：有服务器→存班级曲库；网页版→临时歌曲（刷新就没）
   const upBtn=document.getElementById('btnUploadSong');
@@ -907,6 +921,39 @@ async function renderPlay(){
 }
 export function getSelection(){ return sel; }
 export function startShow(){ mainRef.startShow(sel.theme, sel.diff, sel.song); }
+
+// ---------- 第1步：选择舞者 ----------
+const DANCER_CARDS=[
+  {id:'frog',   name:'奶蛙',       desc:'经典舞王，奶香四溢', img:'logo.png'},
+  {id:'rabbit', name:'疯狂的兔子', desc:'长耳一甩，谁都不爱', img:'rabbit.png'},
+];
+function renderDancer(){
+  const g=document.getElementById('dancerGrid');
+  if(!g) return;
+  g.innerHTML='';
+  DANCER_CARDS.forEach(c=>{
+    const using=Store.data.dancer===c.id;
+    const card=document.createElement('div');
+    card.className='card dancer-card'+(using?' sel':'');
+    card.innerHTML=`
+      ${using?'<div class="ribbon">使用中</div>':''}
+      <div class="dc-img"><img src="${c.img}" alt="${c.name}"></div>
+      <div class="dc-name">${c.name}</div>
+      <div class="dc-desc">${c.desc}</div>
+      <button class="${using?'buy use':'btn-main'}" ${using?'disabled':''}>${using?'✓ 使用中':'选 TA'}</button>
+    `;
+    card.onclick=()=>{
+      if(using)return;
+      mainRef.chooseDancer(c.id);
+      Store.data.dancer=c.id;
+      Store.save();
+      renderDancer();
+      renderHome();
+      toast(`已选择「${c.name}」`);
+    };
+    g.appendChild(card);
+  });
+}
 
 // ---------- 商城（涂装工坊）—— 购买 + 装备皮肤 ----------
 function renderShop(){

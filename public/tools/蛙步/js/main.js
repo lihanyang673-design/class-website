@@ -3,13 +3,14 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261209';
-import { updateOpening, Opening } from './opening.js?v=20261209';
-import { loadDancer, updateDancer, setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261209';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261209';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261209';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261006';
+import { updateOpening, Opening } from './opening.js?v=20261006';
+import { initDancerLayer, preloadDancers, updateDancer, selectDancer, setDancerMode,
+         setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261006';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261006';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261006';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261209';
+         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261006';
 
 const $=id=>document.getElementById(id);
 
@@ -238,21 +239,25 @@ function buildStage(theme, mode='home'){
 }
 
 // ============================================================
-// 舞者：后台预载 rigged.glb（页面一打开就开始，与开场并行）
+// 舞者：后台预载【奶蛙 + 疯狂的兔子】（页面一打开就开始，与开场并行）
 // ============================================================
 console.log('%c========== 蛙步 · 启动 ==========', 'color:#ffe17a;font-size:14px;font-weight:bold');
-console.log('[启动] ① 后台开始下载舞者模型 rigged.glb（17MB）…');
+console.log('[启动] ① 后台开始预载双舞者（奶蛙 rigged.glb 17MB + 兔子程序化建模）…');
 const tBoot0=performance.now();
+scene.add(initDancerLayer());
 const dancerReady=new Promise((res)=>{
-  loadDancer('rigged.glb').then(()=>{
-    scene.add(Dancer.root);
-    // 应用已装备涂装
+  preloadDancers().then(()=>{
+    // 按存档恢复上次选的舞者
+    const saved=Store.data.dancer==='rabbit'?'rabbit':'frog';
+    selectDancer(saved);
+    setDancerMode('home');      // 主页只显示存档选中的角色
+    // 应用已装备涂装（仅奶蛙）
     const sk=SKINS.find(s=>s.id===Store.data.equipped)||SKINS[0];
     setSkin(sk);
-    console.log(`%c[启动] ✓ 舞者模型就位并完成部位切分 (${((performance.now()-tBoot0)/1000).toFixed(2)}s)`, 'color:#7fffd4;font-weight:bold');
+    console.log(`%c[启动] ✓ 双舞者就位 (${((performance.now()-tBoot0)/1000).toFixed(2)}s)，当前：${saved}`, 'color:#7fffd4;font-weight:bold');
     res(true);
   }).catch(e=>{
-    console.error('[启动] ❌ 舞者模型加载失败（不阻塞进游戏）：', e);
+    console.error('[启动] ❌ 舞者预载失败（不阻塞进游戏）：', e);
     res(false);
   });
 });
@@ -287,7 +292,8 @@ const main={
     showStageUI(true);
     camera.position.copy(CAM_PLAY);
     Fx.camBase.copy(CAM_PLAY);
-    resetBody();               // ★ 开演前复位蛙（清上局躺地/庆祝残留）
+    setDancerMode('play');     // 演出：只留被选中的角色，走到舞台中央
+    resetBody();               // ★ 开演前复位（清上局躺地/庆祝残留）
     Game.hooks.onEnd=onShowEnd;
     Game.hooks.onEndlessEnd=onEndlessOver;
     // 拿到歌曲真实时长（很快，元数据选歌时一般已就绪）
@@ -313,11 +319,16 @@ const main={
   },
   resume(){ resumeGame(); $('pauseOv').classList.remove('on'); },
   showNotice(){ showNoticeIfNeeded(true); },   // 主页强制展示公告
+  chooseDancer(id){                            // 选择舞者页选定后调用
+    selectDancer(id);
+    setDancerMode(Dancer.mode);                // 立刻切换显示（主页背景随之换角色）
+  },
   quitShow(){
     stopGame(false);
     showStageUI(false);
     showUIRoot(true);           // ★ 退出演出必须恢复主界面（之前漏了）
     buildStage(curTheme, 'home');  // 切回主界面：无舞台模式
+    setDancerMode('home');     // 两个角色重新同台
     camera.position.copy(CAM_HOME);
     Fx.camBase.copy(CAM_HOME);
     const q=Store.data.set.quality;   // ★ 恢复主界面的渲染分辨率
@@ -418,10 +429,10 @@ addEventListener('resize',()=>{
 renderer.domElement.addEventListener('pointerdown',()=>{
   if(!Game.playing){
     sfxPokeVoice();
-    if(Dancer.body){
-      const b=Dancer.body;
+    const b=Dancer.chars[Dancer.selected]?.body;
+    if(b){
       b.scale.setScalar(1.15);
-      setTimeout(()=>{ if(b) b.scale.setScalar(1); },120);
+      setTimeout(()=>{ b.scale.setScalar(1); },120);
     }
   }
 });
