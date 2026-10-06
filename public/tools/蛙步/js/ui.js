@@ -2,10 +2,10 @@
 // ui.js —— 界面系统：存档 / 导航 / 排行 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261025';
-import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261025';
-import { Game, pauseGame } from './game.js?v=20261025';
-import { CHARACTERS } from './dancer.js?v=20261025';
+import { analyzeAudio } from './analyze.js?v=20261026';
+import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261026';
+import { Game, pauseGame } from './game.js?v=20261026';
+import { CHARACTERS } from './dancer.js?v=20261026';
 
 // ============================================================
 // 存档（localStorage）
@@ -213,7 +213,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261025');
+    const r=await fetch('charts.json?v=20261026');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -563,6 +563,7 @@ let sel={theme:'it6', diff:'normal', song:'default'};
 let playStep=1;   // 开跳分步：1=舞者 2=舞池 3=歌曲 4=难度
 let themePage=0;  // 舞池分页当前页（每页10个）
 let songOpenTier=null;  // 歌曲手风琴当前展开的星级（单开模式，重渲染后保持）
+let songSearchQ='';     // 歌曲搜索关键词（非空时进入搜索模式：平铺显示匹配歌曲，不再按星级分组）
 // 收藏：切换 + 判断（存 Store.data.favs，localStorage 持久化）
 function toggleFav(kind,id){
   const arr=Store.data.favs[kind];
@@ -688,6 +689,28 @@ export function initUI(main){
     sfxClick();
     if(playStep>1){ playStep--; renderPlay(); }
     else{ showScreen('scr-home'); renderHome(); }
+  });
+
+  // ---- ★ 歌曲搜索：输入即筛选（歌名/歌手），✕ 一键清空恢复分组视图 ----
+  const songSearchIn=document.getElementById('songSearch');
+  const songSearchClr=document.getElementById('songSearchClear');
+  if(songSearchIn){
+    // 恢复上次的搜索词（renderPlay 重渲染不影响输入框，但初始状态要对齐）
+    songSearchIn.value=songSearchQ;
+    if(songSearchClr) songSearchClr.style.display=songSearchQ?'flex':'none';
+    songSearchIn.addEventListener('input',()=>{
+      songSearchQ=songSearchIn.value;
+      if(songSearchClr) songSearchClr.style.display=songSearchQ?'flex':'none';
+      if(document.getElementById('scr-play').classList.contains('cur')) renderPlay();
+    });
+    songSearchIn.addEventListener('keydown',ev=>{ if(ev.key==='Enter') ev.preventDefault(); });
+  }
+  if(songSearchClr) songSearchClr.addEventListener('click',()=>{
+    sfxClick();
+    songSearchQ=''; songSearchIn.value='';
+    songSearchClr.style.display='none';
+    if(document.getElementById('scr-play').classList.contains('cur')) renderPlay();
+    songSearchIn.focus();
   });
 
   // ---- 暂停按钮 ----
@@ -907,6 +930,69 @@ async function renderPlay(){
       : [...TEMP_SONGS, ...SONGS];
     // 收藏夹：与星级分区并列，只显示已收藏的歌曲（同一首歌也会在对应星级里显示）
     const favSongs=allSongs.filter(s=>isFav('songs',s.id)).sort((a,b)=>songDiff(a)-songDiff(b));
+    // 歌曲卡片工厂：收藏夹 / 星级分区 / 搜索结果 三处共用同一套卡片渲染与事件
+    const makeSongCard=(s,body)=>{
+      const b=document.createElement('button');
+      b.className='theme-card'+(sel.song===s.id?' sel':'');
+      b.style.background=`linear-gradient(135deg, #7a4dffcc, #36d1ffcc)`;
+      b.innerHTML=`<div class="tname">🎵 ${s.name}</div><div class="tdesc">${s.artist} · ${s.bpm}BPM · ${'⭐'.repeat(s.stars)}<br>${songDesc(s)}</div>
+        <span class="song-preview" title="试听这首歌">试听</span>
+        ${sel.song===s.id?'<span class="tag">✓ 已选</span>':''}
+        <span class="fav-star${isFav('songs',s.id)?' on':''}" title="收藏/取消收藏">★</span>
+        ${canDelete(s)?(s.temp?'<span class="song-del" title="从本地移除这首歌">🗑</span>':'<span class="song-regen" title="用最新算法重新生成曲谱">🔄</span><span class="song-del" title="删除这首歌">🗑</span>'):''}`;
+      b.onclick=()=>{ sfxClick(); sel.song=s.id; renderPlay(); preloadSong(s); };
+      // 试听：独立小按钮，阻止冒泡 → 试听不会同时选中这首歌
+      const pv=b.querySelector('.song-preview'); pv._song=s;
+      pv.addEventListener('click', ev=>{ ev.stopPropagation(); togglePreview(s); });
+      b.querySelector('.fav-star').addEventListener('click',ev=>{
+        ev.stopPropagation(); sfxClick(); toggleFav('songs',s.id); renderPlay();
+      });
+      if(canDelete(s)){
+        b.querySelector('.song-del').addEventListener('click',async ev=>{
+          ev.stopPropagation();
+          // 临时歌：从内存 + IndexedDB + localStorage 一并移除
+          if(s.temp){
+            const yes=await askConfirm(`确定移除《${s.name}》吗？（从本地删除）`, {yesText:'移除'});
+            if(!yes) return;
+            URL.revokeObjectURL(s.file);
+            const i=TEMP_SONGS.indexOf(s); if(i>=0) TEMP_SONGS.splice(i,1);
+            saveTempMeta(TEMP_SONGS);              // 同步更新 localStorage 元数据
+            delTempBlob(s.id).catch(()=>{});       // 异步删 IndexedDB，不阻塞
+            if(sel.song===s.id) sel.song='default';
+            renderPlay();
+            return;
+          }
+          const yes=await askConfirm(`确定删除《${s.name}》吗？全班都无法再玩这首歌了`, {yesText:'删除'});
+          if(!yes) return;
+          try{
+            const r=await fetch(`/api/dance/songs/${s.dbId}`, {method:'DELETE', credentials:'same-origin'});
+            const data=await r.json().catch(()=>({}));
+            if(!r.ok) throw new Error(data.error||'删除失败');
+            toast('🗑 已删除《'+s.name+'》');
+            if(sel.song===s.id) sel.song='default';
+            await refreshUserSongs(); renderPlay();
+          }catch(e){ toast('❌ '+(e.message||'删除失败')); }
+        });
+        const regenEl=b.querySelector('.song-regen');
+        if(regenEl) regenEl.addEventListener('click',ev=>regenerateSong(ev,s));
+      }
+      body.appendChild(b);
+    };
+    // 搜索模式：输入关键词后平铺显示所有匹配的歌曲（歌名/歌手），不再按星级分组
+    const q=songSearchQ.trim().toLowerCase();
+    if(q){
+      const hits=allSongs
+        .filter(s=>(s.name||'').toLowerCase().includes(q)||(s.artist||'').toLowerCase().includes(q))
+        .sort((a,b)=>songDiff(a)-songDiff(b));
+      if(!hits.length){
+        const h=document.createElement('div');
+        h.className='song-nohit';
+        h.textContent=`没有找到「${songSearchQ.trim()}」相关的歌曲，换个关键词试试`;
+        sg.appendChild(h);
+      }else{
+        hits.forEach(s=>makeSongCard(s,sg));
+      }
+    }else{
     if(favSongs.length){
       const head=document.createElement('div');
       head.className='song-cat-head';
@@ -938,51 +1024,7 @@ async function renderPlay(){
         }
       };
       sg.appendChild(body);
-      favSongs.forEach(s=>{
-        const b=document.createElement('button');
-        b.className='theme-card'+(sel.song===s.id?' sel':'');
-        b.style.background=`linear-gradient(135deg, #7a4dffcc, #36d1ffcc)`;
-        b.innerHTML=`<div class="tname">🎵 ${s.name}</div><div class="tdesc">${s.artist} · ${s.bpm}BPM · ${'⭐'.repeat(s.stars)}<br>${songDesc(s)}</div>
-          <span class="song-preview" title="试听这首歌">试听</span>
-          ${sel.song===s.id?'<span class="tag">✓ 已选</span>':''}
-          <span class="fav-star on" title="取消收藏">★</span>
-          ${canDelete(s)?(s.temp?'<span class="song-del" title="从本地移除这首歌">🗑</span>':'<span class="song-regen" title="用最新算法重新生成曲谱">🔄</span><span class="song-del" title="删除这首歌">🗑</span>'):''}`;
-        b.onclick=()=>{ sfxClick(); sel.song=s.id; renderPlay(); preloadSong(s); };
-        const pv=b.querySelector('.song-preview'); pv._song=s;
-        pv.addEventListener('click', ev=>{ ev.stopPropagation(); togglePreview(s); });
-        b.querySelector('.fav-star').addEventListener('click',ev=>{
-          ev.stopPropagation(); sfxClick(); toggleFav('songs',s.id); renderPlay();
-        });
-        if(canDelete(s)){
-          b.querySelector('.song-del').addEventListener('click',async ev=>{
-            ev.stopPropagation();
-            if(s.temp){
-              const yes=await askConfirm(`确定移除《${s.name}》吗？（从本地删除）`, {yesText:'移除'});
-              if(!yes) return;
-              URL.revokeObjectURL(s.file);
-              const i=TEMP_SONGS.indexOf(s); if(i>=0) TEMP_SONGS.splice(i,1);
-              saveTempMeta(TEMP_SONGS);
-              delTempBlob(s.id).catch(()=>{});
-              if(sel.song===s.id) sel.song='default';
-              renderPlay();
-              return;
-            }
-            const yes=await askConfirm(`确定删除《${s.name}》吗？全班都无法再玩这首歌了`, {yesText:'删除'});
-            if(!yes) return;
-            try{
-              const r=await fetch(`/api/dance/songs/${s.dbId}`, {method:'DELETE', credentials:'same-origin'});
-              const data=await r.json().catch(()=>({}));
-              if(!r.ok) throw new Error(data.error||'删除失败');
-              toast('🗑 已删除《'+s.name+'》');
-              if(sel.song===s.id) sel.song='default';
-              await refreshUserSongs(); renderPlay();
-            }catch(e){ toast('❌ '+(e.message||'删除失败')); }
-          });
-          const regenEl=b.querySelector('.song-regen');
-          if(regenEl) regenEl.addEventListener('click',ev=>regenerateSong(ev,s));
-        }
-        body.appendChild(b);
-      });
+      favSongs.forEach(s=>{ makeSongCard(s,body); });
     }
     STAR_TIERS.forEach(tier=>{
       // 同星级内按难度系数（音符密度）从易到难排列，不再按上传时间
@@ -1021,53 +1063,7 @@ async function renderPlay(){
         }
       };
       sg.appendChild(body);
-      list.forEach(s=>{
-        const b=document.createElement('button');
-        b.className='theme-card'+(sel.song===s.id?' sel':'');
-        b.style.background=`linear-gradient(135deg, #7a4dffcc, #36d1ffcc)`;
-        b.innerHTML=`<div class="tname">🎵 ${s.name}</div><div class="tdesc">${s.artist} · ${s.bpm}BPM · ${'⭐'.repeat(s.stars)}<br>${songDesc(s)}</div>
-          <span class="song-preview" title="试听这首歌">试听</span>
-          ${sel.song===s.id?'<span class="tag">✓ 已选</span>':''}
-          <span class="fav-star${isFav('songs',s.id)?' on':''}" title="收藏/取消收藏">★</span>
-          ${canDelete(s)?(s.temp?'<span class="song-del" title="从本地移除这首歌">🗑</span>':'<span class="song-regen" title="用最新算法重新生成曲谱">🔄</span><span class="song-del" title="删除这首歌">🗑</span>'):''}`;
-        b.onclick=()=>{ sfxClick(); sel.song=s.id; renderPlay(); preloadSong(s); };
-        // 试听：独立小按钮，阻止冒泡 → 试听不会同时选中这首歌
-        const pv=b.querySelector('.song-preview'); pv._song=s;
-        pv.addEventListener('click', ev=>{ ev.stopPropagation(); togglePreview(s); });
-        b.querySelector('.fav-star').addEventListener('click',ev=>{
-          ev.stopPropagation(); sfxClick(); toggleFav('songs',s.id); renderPlay();
-        });
-        if(canDelete(s)){
-          b.querySelector('.song-del').addEventListener('click',async ev=>{
-            ev.stopPropagation();
-            // 临时歌：从内存 + IndexedDB + localStorage 一并移除
-            if(s.temp){
-              const yes=await askConfirm(`确定移除《${s.name}》吗？（从本地删除）`, {yesText:'移除'});
-              if(!yes) return;
-              URL.revokeObjectURL(s.file);
-              const i=TEMP_SONGS.indexOf(s); if(i>=0) TEMP_SONGS.splice(i,1);
-              saveTempMeta(TEMP_SONGS);              // 同步更新 localStorage 元数据
-              delTempBlob(s.id).catch(()=>{});       // 异步删 IndexedDB，不阻塞
-              if(sel.song===s.id) sel.song='default';
-              renderPlay();
-              return;
-            }
-            const yes=await askConfirm(`确定删除《${s.name}》吗？全班都无法再玩这首歌了`, {yesText:'删除'});
-            if(!yes) return;
-            try{
-              const r=await fetch(`/api/dance/songs/${s.dbId}`, {method:'DELETE', credentials:'same-origin'});
-              const data=await r.json().catch(()=>({}));
-              if(!r.ok) throw new Error(data.error||'删除失败');
-              toast('🗑 已删除《'+s.name+'》');
-              if(sel.song===s.id) sel.song='default';
-              await refreshUserSongs(); renderPlay();
-            }catch(e){ toast('❌ '+(e.message||'删除失败')); }
-          });
-          const regenEl=b.querySelector('.song-regen');
-          if(regenEl) regenEl.addEventListener('click',ev=>regenerateSong(ev,s));
-        }
-        body.appendChild(b);
-      });
+      list.forEach(s=>{ makeSongCard(s,body); });
     });
     // 还没有任何自制作品时，末尾放一个上传引导（有歌之后就不显示）
     if(!TEMP_SONGS.length && !USER_SONGS.list.length){
@@ -1078,6 +1074,7 @@ async function renderPlay(){
       h.innerHTML=`<span class="sc-tip">${tip}</span>`;
       sg.appendChild(h);
     }
+    } // ← 结束非搜索模式（搜索时只显示平铺匹配结果）
   }
   refreshPreviewIcons();   // 重渲染后恢复试听中的图标（🔊/⏸/▶）
   // 难度

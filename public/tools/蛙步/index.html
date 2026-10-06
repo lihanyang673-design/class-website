@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>蛙步 · Frog Step</title>
-<link rel="stylesheet" href="style.css?v=20261025">
+<link rel="stylesheet" href="style.css?v=20261026">
 </head>
 <body>
 
@@ -116,6 +116,10 @@
     <div class="play-step" id="stepSong" style="display:none">
       <div class="sec-title">🎵 选择歌曲 <small>SELECT SONG</small>
         <button class="btn-ghost up-entry" id="btnUploadSong">⬆️ 上传歌曲</button>
+      </div>
+      <div class="song-search-wrap">
+        <input class="song-search" id="songSearch" type="text" placeholder="🔍 搜索歌名 / 歌手…" autocomplete="off">
+        <button class="song-search-clear" id="songSearchClear" title="清空搜索" style="display:none">✕</button>
       </div>
       <div class="theme-grid" id="songGrid"></div>
     </div>
@@ -448,8 +452,8 @@
   }
 }
 </script>
-<script src="js/codec.js?v=20261025"></script>
-<script type="module" src="js/main.js?v=20261025"></script>
+<script src="js/codec.js?v=20261026"></script>
+<script type="module" src="js/main.js?v=20261026"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';

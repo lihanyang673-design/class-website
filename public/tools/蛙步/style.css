@@ -320,6 +320,26 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .song-cat-head .sc-tip{font-size:12px;opacity:.7;color:#fff}
 .song-cat-head .sc-arrow{margin-left:auto;font-size:12px;opacity:.7;color:#fff;transition:transform .2s}
 .song-cat-body{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:0 0 12px}
+/* 歌曲搜索栏（玻璃拟态输入框 + 清空按钮） */
+.song-search-wrap{position:relative;grid-column:1/-1;margin:2px 0 10px}
+.song-search{
+  width:100%;box-sizing:border-box;padding:10px 40px 10px 14px;border-radius:12px;
+  background:var(--glass);border:1px solid #ffffff2e;color:#fff;font-size:14px;outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+.song-search::placeholder{color:#ffffff66}
+.song-search:focus{border-color:var(--cyan);box-shadow:0 0 0 2px #36d1ff33}
+.song-search-clear{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  width:24px;height:24px;border-radius:50%;border:none;cursor:pointer;
+  background:#ffffff26;color:#fff;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;
+}
+.song-search-clear:hover{background:#ff5a5acc}
+/* 搜索无结果提示 */
+.song-nohit{
+  grid-column:1/-1;text-align:center;padding:22px 10px;border-radius:12px;
+  background:var(--glass);color:#ffffff99;font-size:14px;
+}
 /* ★ 通用确认弹窗（玻璃拟态，防误触） */
 .cf-mask{
   position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
