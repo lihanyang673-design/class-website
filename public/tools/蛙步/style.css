@@ -353,6 +353,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .theme-card.sel{border-color:var(--yellow);box-shadow:0 0 0 3px #f59e0b44,0 10px 30px #0006}
 .theme-card .tag{position:absolute;right:12px;top:12px;font-size:11px;background:#0007;
   padding:3px 10px;border-radius:99px}
+/* 收藏星标（卡片左上角）：未收藏空心、收藏后金黄发光 */
+.fav-star{
+  position:absolute;left:10px;top:10px;z-index:2;
+  width:28px;height:28px;line-height:28px;border-radius:50%;
+  background:#00000066;font-size:15px;text-align:center;
+  color:#ffffff55;transition:.15s;cursor:pointer;
+}
+.fav-star:hover{transform:scale(1.15);color:#ffd54a}
+.fav-star.on{color:#ffd54a;text-shadow:0 0 8px #ffd54a99;background:#00000088}
 /* 上传/临时歌曲卡片：暖黄渐变 + 发光边框 + 悬停上浮，比普通歌曲卡更醒目 */
 .song-upload-card{
   border-color:#f59e0b;

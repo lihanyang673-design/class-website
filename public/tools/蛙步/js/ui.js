@@ -2,10 +2,10 @@
 // ui.js —— 界面系统：存档 / 导航 / 排行 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261016';
-import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261016';
-import { Game, pauseGame } from './game.js?v=20261016';
-import { CHARACTERS } from './dancer.js?v=20261016';
+import { analyzeAudio } from './analyze.js?v=20261017';
+import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261017';
+import { Game, pauseGame } from './game.js?v=20261017';
+import { CHARACTERS } from './dancer.js?v=20261017';
 
 // ============================================================
 // 存档（localStorage）
@@ -16,6 +16,7 @@ const DEFAULTS={
   scores:{easy:[],casual:[],normal:[],hard:[],endless:[]},
   set:{vol:0.8,sfx:1,offset:0,bpm:104,speed:1,quality:1},
   ach:{},
+  favs:{themes:[],songs:[]},   // 收藏：舞池id / 歌曲id
   dancer:'frog',
 };
 export const Store={
@@ -28,6 +29,7 @@ export const Store={
     this.data.set={...DEFAULTS.set,...(this.data.set||{})};
     this.data.scores={...DEFAULTS.scores,...(this.data.scores||{})};
     this.data.ach={...DEFAULTS.ach,...(this.data.ach||{})};
+    this.data.favs={...structuredClone(DEFAULTS.favs),...(this.data.favs||{})};
     // 迁移：删除旧版/残缺排行记录（无相对分或无判定明细，口径不公平）
     let purged=false;
     for(const d of Object.keys(this.data.scores)){
@@ -211,7 +213,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261016');
+    const r=await fetch('charts.json?v=20261017');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -561,6 +563,14 @@ let sel={theme:'it6', diff:'normal', song:'default'};
 let playStep=1;   // 开跳分步：1=舞者 2=舞池 3=歌曲 4=难度
 let themePage=0;  // 舞池分页当前页（每页10个）
 let songOpenTier=null;  // 歌曲手风琴当前展开的星级（单开模式，重渲染后保持）
+// 收藏：切换 + 判断（存 Store.data.favs，localStorage 持久化）
+function toggleFav(kind,id){
+  const arr=Store.data.favs[kind];
+  const i=arr.indexOf(id);
+  if(i>=0) arr.splice(i,1); else arr.push(id);
+  Store.save();
+}
+function isFav(kind,id){ return Store.data.favs[kind].includes(id); }
 let mainRef=null;   // main.js 注入 { startShow, switchTheme, applyQuality }
 
 export function initUI(main){
@@ -796,13 +806,16 @@ async function renderPlay(){
   }
   upTheme.onclick=()=>{ ensureCtx(); sfxClick(); document.getElementById('btnThemeUpOpen').click(); };
   tg.appendChild(upTheme);
-  // 全部舞池：自定义的排在前面，再排内置的。
+  // 全部舞池：收藏的排在最前，再自定义，再内置。
   // 去重：内置 THEMES 里同步自服务器的背景（带 fromDb），在服务器版已有同名自定义条目，隐藏掉
   const customThemeList=serverOn?USER_THEMES.list:TEMP_THEMES;
   const builtinThemeList=serverOn
     ? THEMES.filter(t=>!t.fromDb || !USER_THEMES.list.some(u=>u.dbId===t.fromDb))
     : THEMES;
-  const allThemes=[...customThemeList, ...builtinThemeList];
+  const allThemes=[...customThemeList, ...builtinThemeList].sort((a,b)=>{
+    const af=isFav('themes',a.id)?1:0, bf=isFav('themes',b.id)?1:0;
+    return bf-af;
+  });
   const TP=10;   // 舞池每页10个
   const themePages=Math.max(1, Math.ceil(allThemes.length/TP));
   if(themePage>=themePages) themePage=themePages-1;
@@ -818,8 +831,12 @@ async function renderPlay(){
     }
     b.innerHTML=`<div class="tname">${t.custom?'🖼 ':''}${t.name}</div><div class="tdesc">${t.desc||'自定义图片背景'}</div>
       ${sel.theme===t.id?'<span class="tag">✓ 已选</span>':''}
+      <span class="fav-star${isFav('themes',t.id)?' on':''}" title="收藏/取消收藏">★</span>
       ${canDeleteTheme(t)?'<span class="song-del" title="删除这个舞池">🗑</span>':''}`;
     b.onclick=()=>{ sfxClick(); sel.theme=t.id; renderPlay(); mainRef.switchTheme(t.id); };
+    b.querySelector('.fav-star').addEventListener('click',ev=>{
+      ev.stopPropagation(); sfxClick(); toggleFav('themes',t.id); renderPlay();
+    });
     if(canDeleteTheme(t)){
       b.querySelector('.song-del').addEventListener('click',async ev=>{
         ev.stopPropagation();
@@ -888,6 +905,85 @@ async function renderPlay(){
     const allSongs=serverOn
       ? [...TEMP_SONGS, ...USER_SONGS.list, SONGS.find(s=>s.id==='default')]
       : [...TEMP_SONGS, ...SONGS];
+    // 收藏夹：与星级分区并列，只显示已收藏的歌曲（同一首歌也会在对应星级里显示）
+    const favSongs=allSongs.filter(s=>isFav('songs',s.id)).sort((a,b)=>songDiff(a)-songDiff(b));
+    if(favSongs.length){
+      const head=document.createElement('div');
+      head.className='song-cat-head';
+      head.innerHTML=`<span class="sc-name">⭐ 收藏夹</span><span class="sc-tip">${favSongs.length} 首</span><span class="sc-arrow">▶</span>`;
+      sg.appendChild(head);
+      const body=document.createElement('div');
+      body.className='song-cat-body';
+      const isOpen=songOpenTier==='fav';
+      head.dataset.open=isOpen?'1':'0';
+      body.style.display=isOpen?'grid':'none';
+      if(isOpen) head.querySelector('.sc-arrow').style.transform='rotate(90deg)';
+      head.onclick=()=>{
+        const open=head.dataset.open==='1';
+        if(open){
+          head.dataset.open='0';
+          body.style.display='none';
+          head.querySelector('.sc-arrow').style.transform='rotate(0deg)';
+          songOpenTier=null;
+        }else{
+          sg.querySelectorAll('.song-cat-head[data-open="1"]').forEach(h=>{
+            h.dataset.open='0';
+            h.querySelector('.sc-arrow').style.transform='rotate(0deg)';
+          });
+          sg.querySelectorAll('.song-cat-body').forEach(b=>b.style.display='none');
+          head.dataset.open='1';
+          body.style.display='grid';
+          head.querySelector('.sc-arrow').style.transform='rotate(90deg)';
+          songOpenTier='fav';
+        }
+      };
+      sg.appendChild(body);
+      favSongs.forEach(s=>{
+        const b=document.createElement('button');
+        b.className='theme-card'+(sel.song===s.id?' sel':'');
+        b.style.background=`linear-gradient(135deg, #7a4dffcc, #36d1ffcc)`;
+        b.innerHTML=`<div class="tname">🎵 ${s.name}</div><div class="tdesc">${s.artist} · ${s.bpm}BPM · ${'⭐'.repeat(s.stars)}<br>${songDesc(s)}</div>
+          <span class="song-preview" title="试听这首歌">试听</span>
+          ${sel.song===s.id?'<span class="tag">✓ 已选</span>':''}
+          <span class="fav-star on" title="取消收藏">★</span>
+          ${canDelete(s)?(s.temp?'<span class="song-del" title="从本地移除这首歌">🗑</span>':'<span class="song-regen" title="用最新算法重新生成曲谱">🔄</span><span class="song-del" title="删除这首歌">🗑</span>'):''}`;
+        b.onclick=()=>{ sfxClick(); sel.song=s.id; renderPlay(); preloadSong(s); };
+        const pv=b.querySelector('.song-preview'); pv._song=s;
+        pv.addEventListener('click', ev=>{ ev.stopPropagation(); togglePreview(s); });
+        b.querySelector('.fav-star').addEventListener('click',ev=>{
+          ev.stopPropagation(); sfxClick(); toggleFav('songs',s.id); renderPlay();
+        });
+        if(canDelete(s)){
+          b.querySelector('.song-del').addEventListener('click',async ev=>{
+            ev.stopPropagation();
+            if(s.temp){
+              const yes=await askConfirm(`确定移除《${s.name}》吗？（从本地删除）`, {yesText:'移除'});
+              if(!yes) return;
+              URL.revokeObjectURL(s.file);
+              const i=TEMP_SONGS.indexOf(s); if(i>=0) TEMP_SONGS.splice(i,1);
+              saveTempMeta(TEMP_SONGS);
+              delTempBlob(s.id).catch(()=>{});
+              if(sel.song===s.id) sel.song='default';
+              renderPlay();
+              return;
+            }
+            const yes=await askConfirm(`确定删除《${s.name}》吗？全班都无法再玩这首歌了`, {yesText:'删除'});
+            if(!yes) return;
+            try{
+              const r=await fetch(`/api/dance/songs/${s.dbId}`, {method:'DELETE', credentials:'same-origin'});
+              const data=await r.json().catch(()=>({}));
+              if(!r.ok) throw new Error(data.error||'删除失败');
+              toast('🗑 已删除《'+s.name+'》');
+              if(sel.song===s.id) sel.song='default';
+              await refreshUserSongs(); renderPlay();
+            }catch(e){ toast('❌ '+(e.message||'删除失败')); }
+          });
+          const regenEl=b.querySelector('.song-regen');
+          if(regenEl) regenEl.addEventListener('click',ev=>regenerateSong(ev,s));
+        }
+        body.appendChild(b);
+      });
+    }
     STAR_TIERS.forEach(tier=>{
       // 同星级内按难度系数（音符密度）从易到难排列，不再按上传时间
       const list=allSongs.filter(s=>s.stars===tier.stars).sort((a,b)=>songDiff(a)-songDiff(b));
@@ -929,14 +1025,18 @@ async function renderPlay(){
         const b=document.createElement('button');
         b.className='theme-card'+(sel.song===s.id?' sel':'');
         b.style.background=`linear-gradient(135deg, #7a4dffcc, #36d1ffcc)`;
-        b.innerHTML=`<div class="tname">🎵 ${s.name}</div><div class="tdesc">${s.artist} · ${s.bpm}BPM<br>${songDesc(s)}</div>
+        b.innerHTML=`<div class="tname">🎵 ${s.name}</div><div class="tdesc">${s.artist} · ${s.bpm}BPM · ${'⭐'.repeat(s.stars)}<br>${songDesc(s)}</div>
           <span class="song-preview" title="试听这首歌">试听</span>
           ${sel.song===s.id?'<span class="tag">✓ 已选</span>':''}
+          <span class="fav-star${isFav('songs',s.id)?' on':''}" title="收藏/取消收藏">★</span>
           ${canDelete(s)?(s.temp?'<span class="song-del" title="从本地移除这首歌">🗑</span>':'<span class="song-regen" title="用最新算法重新生成曲谱">🔄</span><span class="song-del" title="删除这首歌">🗑</span>'):''}`;
         b.onclick=()=>{ sfxClick(); sel.song=s.id; renderPlay(); preloadSong(s); };
         // 试听：独立小按钮，阻止冒泡 → 试听不会同时选中这首歌
         const pv=b.querySelector('.song-preview'); pv._song=s;
         pv.addEventListener('click', ev=>{ ev.stopPropagation(); togglePreview(s); });
+        b.querySelector('.fav-star').addEventListener('click',ev=>{
+          ev.stopPropagation(); sfxClick(); toggleFav('songs',s.id); renderPlay();
+        });
         if(canDelete(s)){
           b.querySelector('.song-del').addEventListener('click',async ev=>{
             ev.stopPropagation();
