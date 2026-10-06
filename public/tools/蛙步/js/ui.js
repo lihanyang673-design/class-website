@@ -2,10 +2,10 @@
 // ui.js —— 界面系统：存档 / 导航 / 排行 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261011';
-import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261011';
-import { Game, pauseGame } from './game.js?v=20261011';
-import { CHARACTERS } from './dancer.js?v=20261011';
+import { analyzeAudio } from './analyze.js?v=20261012';
+import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261012';
+import { Game, pauseGame } from './game.js?v=20261012';
+import { CHARACTERS } from './dancer.js?v=20261012';
 
 // ============================================================
 // 存档（localStorage）
@@ -192,7 +192,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261011');
+    const r=await fetch('charts.json?v=20261012');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
@@ -540,6 +540,7 @@ const CODEX=[
 // ============================================================
 let sel={theme:'it6', diff:'normal', song:'default'};
 let playStep=1;   // 开跳分步：1=舞者 2=舞池 3=歌曲 4=难度
+let themePage=0;  // 舞池分页当前页（每页10个）
 let mainRef=null;   // main.js 注入 { startShow, switchTheme, applyQuality }
 
 export function initUI(main){
@@ -781,7 +782,12 @@ async function renderPlay(){
   const builtinThemeList=serverOn
     ? THEMES.filter(t=>!t.fromDb || !USER_THEMES.list.some(u=>u.dbId===t.fromDb))
     : THEMES;
-  [...customThemeList, ...builtinThemeList].forEach(t=>{
+  const allThemes=[...customThemeList, ...builtinThemeList];
+  const TP=10;   // 舞池每页10个
+  const themePages=Math.max(1, Math.ceil(allThemes.length/TP));
+  if(themePage>=themePages) themePage=themePages-1;
+  const pageThemes=allThemes.slice(themePage*TP, themePage*TP+TP);
+  pageThemes.forEach(t=>{
     const b=document.createElement('button');
     b.className='theme-card'+(sel.theme===t.id?' sel':'');
     if(t.bgImage){
@@ -824,6 +830,19 @@ async function renderPlay(){
     }
     tg.appendChild(b);
   });
+  // 舞池分页按钮
+  if(themePages>1){
+    const pager=document.createElement('div');
+    pager.className='pager-bar';
+    pager.innerHTML=`
+      <button class="pager-btn" ${themePage<=0?'disabled':''}>◀ 上一页</button>
+      <span class="pager-info">${themePage+1} / ${themePages}</span>
+      <button class="pager-btn" ${themePage>=themePages-1?'disabled':''}>下一页 ▶</button>`;
+    pager.querySelectorAll('button').forEach((btn,i)=>{
+      btn.onclick=()=>{ sfxClick(); themePage+=i===0?-1:1; renderPlay(); };
+    });
+    tg.appendChild(pager);
+  }
   // 歌曲 —— 按难度星级分组（stars 离线评好写死，直接同步渲染，无需等待）
   const sg=document.getElementById('songGrid');
   if(sg){
@@ -855,9 +874,20 @@ async function renderPlay(){
       if(!list.length) return;
       const head=document.createElement('div');
       head.className='song-cat-head';
-      head.innerHTML=`<span class="sc-name">${tier.name}</span><span class="sc-tip">${tier.tip} · ${list.length} 首</span>`;
+      head.innerHTML=`<span class="sc-name">${tier.name}</span><span class="sc-tip">${tier.tip} · ${list.length} 首</span><span class="sc-arrow">▶</span>`;
+      head.dataset.open='0';
       sg.appendChild(head);
       // 该星级下的歌曲卡片
+      const body=document.createElement('div');
+      body.className='song-cat-body';
+      body.style.display='none';
+      head.onclick=()=>{
+        const open=head.dataset.open==='1';
+        head.dataset.open=open?'0':'1';
+        body.style.display=open?'none':'grid';
+        head.querySelector('.sc-arrow').style.transform=open?'rotate(0deg)':'rotate(90deg)';
+      };
+      sg.appendChild(body);
       list.forEach(s=>{
         const b=document.createElement('button');
         b.className='theme-card'+(sel.song===s.id?' sel':'');
@@ -899,7 +929,7 @@ async function renderPlay(){
           const regenEl=b.querySelector('.song-regen');
           if(regenEl) regenEl.addEventListener('click',ev=>regenerateSong(ev,s));
         }
-        sg.appendChild(b);
+        body.appendChild(b);
       });
     });
     // 还没有任何自制作品时，末尾放一个上传引导（有歌之后就不显示）

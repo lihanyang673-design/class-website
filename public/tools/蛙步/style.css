@@ -254,6 +254,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .btn-back:hover{color:#fff;background:#ffffff1c}
 .btn-back:active{transform:scale(.95)}
 .theme-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:12px 0 20px}
+.pager-bar{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:16px;margin-top:8px}
+.pager-btn{
+  background:var(--glass);border:1px solid var(--line);border-radius:10px;
+  padding:8px 16px;color:#fff;font-size:13px;cursor:pointer;transition:.15s;
+}
+.pager-btn:hover:not(:disabled){background:#ffffff1c;border-color:#ffffff40}
+.pager-btn:disabled{opacity:.35;cursor:default}
+.pager-info{font-size:13px;color:var(--sub);min-width:40px;text-align:center}
 /* ---------- 帮助页 ---------- */
 .help-grid{display:flex;flex-direction:column;gap:14px;margin:12px 0 20px}
 .help-card{
@@ -310,6 +318,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .song-cat-head .sc-name{font-size:16px;font-weight:900;color:#fff;text-shadow:0 2px 6px #0008}
 .song-cat-head .sc-tip{font-size:12px;opacity:.7;color:#fff}
+.song-cat-head .sc-arrow{margin-left:auto;font-size:12px;opacity:.7;color:#fff;transition:transform .2s}
+.song-cat-body{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:0 0 12px}
 /* ★ 通用确认弹窗（玻璃拟态，防误触） */
 .cf-mask{
   position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;
