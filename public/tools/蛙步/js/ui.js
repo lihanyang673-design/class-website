@@ -2,10 +2,10 @@
 // ui.js —— 界面系统：存档 / 导航 / 排行 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
-import { analyzeAudio } from './analyze.js?v=20261014';
-import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261014';
-import { Game, pauseGame } from './game.js?v=20261014';
-import { CHARACTERS } from './dancer.js?v=20261014';
+import { analyzeAudio } from './analyze.js?v=20261015';
+import { Music, sfxClick, sfxCoin, sfxMiss, ensureCtx, setMenuBgmVolume, setVoiceVolume } from './audio.js?v=20261015';
+import { Game, pauseGame } from './game.js?v=20261015';
+import { CHARACTERS } from './dancer.js?v=20261015';
 
 // ============================================================
 // 存档（localStorage）
@@ -174,6 +174,7 @@ export const SONGS=[
   {id:'u41', name:'夜间巡航 (钢琴版)', artist:'同学上传', file:'1791248165698_329787984.mp3', bpm:132, duration:138, cat:'builtin', staticChart:true, stars:3, diff:8.62},
   {id:'u42', name:'夜间巡航', artist:'Dark 3', file:'1791248293974_724495692.mp3', bpm:126, duration:144, cat:'builtin', staticChart:true, stars:2, diff:8.24},
   {id:'u43', name:'小心震荡', artist:'同学上传', file:'1791260735522_160796323.mp3', bpm:127, desc:'127 BPM · 约2.4分钟', cat:'builtin', staticChart:true, stars:2, diff:8.24},
+  {id:'u44', name:'小心震荡（迷核小曲）', artist:'еяхат музыка&Sixteen', file:'1791261004022_338490995.mp3', bpm:127, desc:'127 BPM · 约2.4分钟', cat:'builtin', staticChart:true, stars:2, diff:8.24},
 ];
 
 // 歌曲分类（渲染时每组带小标题；空的分组会自动跳过）
@@ -211,7 +212,7 @@ export const STATIC_CHARTS={ loaded:false, map:{} };
 export async function loadStaticCharts(){
   if(STATIC_CHARTS.loaded) return;
   try{
-    const r=await fetch('charts.json?v=20261014');
+    const r=await fetch('charts.json?v=20261015');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     STATIC_CHARTS.map=data;
