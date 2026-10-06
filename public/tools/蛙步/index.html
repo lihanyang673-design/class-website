@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>蛙步 · Frog Step</title>
-<link rel="stylesheet" href="style.css?v=20261006">
+<link rel="stylesheet" href="style.css?v=20261008">
 </head>
 <body>
 
@@ -215,8 +215,8 @@
         <div class="faq-a"><div class="fa-inner">
           <p>每局结束后，系统会把你的得分换算成<b>相对分</b>：你的得分 ÷ 这首歌的满分 × 100000。不管歌曲长短、音符多少，相对分范围永远是 0～100000，所有歌曲都能公平比较。评级只看相对分：</p>
           <ul>
-            <li><b>SSS</b>：相对分 = 100000，满分！一个不漏、全部 Perfect</li>
-            <li><b>SS</b>：相对分 ≥ 98000</li>
+            <li><b>SSS</b>：相对分 ≥ 98000（满分 100000 当然也是 SSS）</li>
+            <li><b>SS</b>：相对分 ≥ 95000</li>
             <li><b>S</b>：相对分 ≥ 90000</li>
             <li><b>A</b>：相对分 ≥ 80000</li>
             <li><b>B</b>：相对分 ≥ 70000</li>
@@ -233,8 +233,8 @@
         <div class="faq-a"><div class="fa-inner">
           <p>按键时间和音符到达判定线的时间相差越小，评价越好：</p>
           <ul>
-            <li><b>Perfect（完美）</b>：时间差在 0.07 秒（70 毫秒）以内。得分 = 1000 分 + 连击加成</li>
-            <li><b>Good（不错）</b>：时间差超过 0.07 秒、但在 0.19 秒以内按下。基础分只有 Perfect 的一半：500 分 + 连击加成；结算时一个 Good 只算半个 Perfect 的准确率</li>
+            <li><b>Perfect（完美）</b>：时间差在 0.08 秒（80 毫秒）以内。得分 = 1000 分 + 连击加成</li>
+            <li><b>Good（不错）</b>：时间差超过 0.08 秒、但在 0.19 秒以内按下。基础分只有 Perfect 的一半：500 分 + 连击加成；结算时一个 Good 只算半个 Perfect 的准确率</li>
             <li><b>Miss（错过）</b>：音符越过判定线超过 0.19 秒还没按到。不得分、连击清零；无尽模式还会扣掉一颗 ❤</li>
           </ul>
           <p>连击加成：每多 1 连击多加 10 分，最高加到 60 连击，之后不再增加（Perfect 每个 1600 分、Good 每个 1100 分封顶）。附近没有音符时按键不扣分（空按无惩罚）。</p>
@@ -433,8 +433,8 @@
   }
 }
 </script>
-<script src="js/codec.js?v=20261006"></script>
-<script type="module" src="js/main.js?v=20261006"></script>
+<script src="js/codec.js?v=20261008"></script>
+<script type="module" src="js/main.js?v=20261008"></script>
 <script>
 // GitHub 展示版：显示导航栏"⬅ 大厅"按钮（校园网运行时不显示）
 if (location.hostname.indexOf('github.io') >= 0) document.getElementById('navHallBtn').style.display = '';

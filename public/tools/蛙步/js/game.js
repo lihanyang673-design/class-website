@@ -4,12 +4,12 @@
 // 箭头用 DOM（贴判定线，清晰锐利），3D 舞台在背后同步反馈
 // ============================================================
 import * as THREE from 'three';
-import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261006';
-import { doAction, stumble } from './dancer.js?v=20261006';
-import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20261006';
+import { Music, sfxPerfect, sfxGood, sfxMiss, sfxRandomVoice } from './audio.js?v=20261008';
+import { doAction, stumble } from './dancer.js?v=20261008';
+import { laneFlash, burst, ringPulse, shake } from './fx.js?v=20261008';
 
 // ---------- 判定窗口（秒） ----------
-const WIN_GOOD = 0.15, WIN_PERFECT = 0.07, WIN_MISS = 0.19;
+const WIN_GOOD = 0.15, WIN_PERFECT = 0.08, WIN_MISS = 0.19;
 const LANE_HEX = [0xff3b6b, 0x36d1ff, 0xffe17a, 0x7a4dff];  // 四轨道主题色
 // 同轨相邻方块最小间隔（秒）：方块高 52px ÷ 下落 340px/s = 0.153s，加余量取 0.19s。
 // 只保护"同一条轨道"（不同轨道的音再近也不会重叠）；同轨太近时优先把音挪到别的空闲轨，
@@ -479,8 +479,8 @@ function finishGame(natural){
 
   // 评级按相对分（满分 100000）
   let rank='C';
-  if(rel>=100000) rank='SSS';
-  else if(rel>=98000) rank='SS';
+  if(rel>=98000) rank='SSS';
+  else if(rel>=95000) rank='SS';
   else if(rel>=90000) rank='S';
   else if(rel>=80000) rank='A';
   else if(rel>=70000) rank='B';
