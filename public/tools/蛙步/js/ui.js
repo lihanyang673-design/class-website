@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // ui.js —— 界面系统：存档 / 导航 / 排行 / 结算
 //          + 玩家上传歌曲（自动生成谱面 → 存班级数据库 → 全班可玩）
 // ============================================================
@@ -862,7 +862,7 @@ async function renderPlay(){
         const b=document.createElement('button');
         b.className='theme-card'+(sel.song===s.id?' sel':'');
         b.style.background=`linear-gradient(135deg, #7a4dffcc, #36d1ffcc)`;
-        b.innerHTML=`<div class="tname">🎵 ${s.name}</div><div class="tdesc">${s.artist} · ${s.bpm}BPM<br>${songDesc(s)}</div>`
+        b.innerHTML=`<div class="tname">🎵 ${s.name}</div><div class="tdesc">${s.artist} · ${s.bpm}BPM<br>${songDesc(s)}</div>
           <span class="song-preview" title="试听这首歌">试听</span>
           ${sel.song===s.id?'<span class="tag">✓ 已选</span>':''}
           ${canDelete(s)?(s.temp?'<span class="song-del" title="从本地移除这首歌">🗑</span>':'<span class="song-regen" title="用最新算法重新生成曲谱">🔄</span><span class="song-del" title="删除这首歌">🗑</span>'):''}`;
