@@ -560,6 +560,7 @@ const CODEX=[
 let sel={theme:'it6', diff:'normal', song:'default'};
 let playStep=1;   // 开跳分步：1=舞者 2=舞池 3=歌曲 4=难度
 let themePage=0;  // 舞池分页当前页（每页10个）
+let songOpenTier=null;  // 歌曲手风琴当前展开的星级（单开模式，重渲染后保持）
 let mainRef=null;   // main.js 注入 { startShow, switchTheme, applyQuality }
 
 export function initUI(main){
@@ -894,17 +895,34 @@ async function renderPlay(){
       const head=document.createElement('div');
       head.className='song-cat-head';
       head.innerHTML=`<span class="sc-name">${tier.name}</span><span class="sc-tip">${tier.tip} · ${list.length} 首</span><span class="sc-arrow">▶</span>`;
-      head.dataset.open='0';
       sg.appendChild(head);
       // 该星级下的歌曲卡片
       const body=document.createElement('div');
       body.className='song-cat-body';
-      body.style.display='none';
+      // 手风琴状态恢复：重渲染（如选中歌曲后）时保持之前展开的星级
+      const isOpen=songOpenTier===tier.stars;
+      head.dataset.open=isOpen?'1':'0';
+      body.style.display=isOpen?'grid':'none';
+      if(isOpen) head.querySelector('.sc-arrow').style.transform='rotate(90deg)';
       head.onclick=()=>{
         const open=head.dataset.open==='1';
-        head.dataset.open=open?'0':'1';
-        body.style.display=open?'none':'grid';
-        head.querySelector('.sc-arrow').style.transform=open?'rotate(0deg)':'rotate(90deg)';
+        if(open){
+          head.dataset.open='0';
+          body.style.display='none';
+          head.querySelector('.sc-arrow').style.transform='rotate(0deg)';
+          songOpenTier=null;
+        }else{
+          // 单开模式（和帮助页 FAQ 一致）：先收起其他已展开的星级
+          sg.querySelectorAll('.song-cat-head[data-open="1"]').forEach(h=>{
+            h.dataset.open='0';
+            h.querySelector('.sc-arrow').style.transform='rotate(0deg)';
+          });
+          sg.querySelectorAll('.song-cat-body').forEach(b=>b.style.display='none');
+          head.dataset.open='1';
+          body.style.display='grid';
+          head.querySelector('.sc-arrow').style.transform='rotate(90deg)';
+          songOpenTier=tier.stars;
+        }
       };
       sg.appendChild(body);
       list.forEach(s=>{
