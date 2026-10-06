@@ -189,6 +189,7 @@ export function sfxClick(){
 // ============================================================
 const VOICE_END = 'sounds/voice-end.mp3';
 const VOICE_FROG   = ['sounds/voice-1.mp3','sounds/voice-2.mp3','sounds/voice-3.mp3'];
+// 兔子音效：voice-4/5 已用 ffmpeg 放大音量（原版峰值 -12.5dB → 提升到约 -3.5dB）
 const VOICE_RABBIT = ['sounds/voice-4.mp3','sounds/voice-5.mp3','sounds/voice-6.mp3'];
 let voicePool = VOICE_FROG;      // 当前使用的搞怪音池
 let voiceVol = 0.9;
