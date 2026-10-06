@@ -184,12 +184,20 @@ export function sfxClick(){
 // ============================================================
 // 语音/搞怪音效（外部 MP3，与合成音效共用开关）
 //  - voice-end.mp3：每局演出结束必播
-//  - voice-1/2/3.mp3：随机搞怪池（戳奶龙 / Miss / 进主界面 随机穿插）
+//  - voice-1/2/3.mp3：奶蛙随机搞怪池（戳奶龙 / Miss / 进主界面 随机穿插）
+//  - voice-4/5/6.mp3：兔子随机搞怪池（选择「疯狂的兔子」后启用）
 // ============================================================
 const VOICE_END = 'sounds/voice-end.mp3';
-const VOICE_FUN = ['sounds/voice-1.mp3','sounds/voice-2.mp3','sounds/voice-3.mp3'];
+const VOICE_FROG   = ['sounds/voice-1.mp3','sounds/voice-2.mp3','sounds/voice-3.mp3'];
+const VOICE_RABBIT = ['sounds/voice-4.mp3','sounds/voice-5.mp3','sounds/voice-6.mp3'];
+let voicePool = VOICE_FROG;      // 当前使用的搞怪音池
 let voiceVol = 0.9;
 let lastFunAt = 0;          // 上次搞怪音时间戳（节流，防叠加刷屏）
+
+// 切换语音角色：'frog'（默认）/ 'rabbit'
+export function setVoiceCharacter(id){
+  voicePool = id==='rabbit' ? VOICE_RABBIT : VOICE_FROG;
+}
 
 export function setVoiceVolume(v){ voiceVol = Math.min(1, Math.max(0, +v || 0)); }
 
@@ -208,7 +216,7 @@ function pokeFun(prob, gap){
   if(now - lastFunAt < gap) return;
   if(Math.random() > prob) return;
   lastFunAt = now;
-  playVoiceFile(VOICE_FUN[(Math.random()*VOICE_FUN.length)|0]);
+  playVoiceFile(voicePool[(Math.random()*voicePool.length)|0]);
 }
 // 戳奶龙：基本必响（0.8s 防抖，防狂戳叠音）
 export function sfxPokeVoice(){ pokeFun(1, 800); }

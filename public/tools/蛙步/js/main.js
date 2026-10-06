@@ -1,16 +1,16 @@
-﻿// ============================================================
+// ============================================================
 // main.js —— 程序入口 / 总调度
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice } from './audio.js?v=20261021';
-import { updateOpening, Opening } from './opening.js?v=20261021';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice, setVoiceCharacter } from './audio.js?v=20261022';
+import { updateOpening, Opening } from './opening.js?v=20261022';
 import { initDancerLayer, preloadDancers, updateDancer, selectDancer, setDancerMode,
-         setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261021';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261021';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261021';
+         setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261022';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261022';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261022';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261021';
+         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261022';
 
 const $=id=>document.getElementById(id);
 
@@ -250,6 +250,7 @@ const dancerReady=new Promise((res)=>{
     // 按存档恢复上次选的舞者
     const saved=Store.data.dancer==='rabbit'?'rabbit':'frog';
     selectDancer(saved);
+    setVoiceCharacter(saved);   // 语音池同步（兔子用 voice-4/5/6）
     setDancerMode('home');      // 主页只显示存档选中的角色
     // 应用已装备涂装（仅奶蛙）
     const sk=SKINS.find(s=>s.id===Store.data.equipped)||SKINS[0];
@@ -321,6 +322,7 @@ const main={
   showNotice(){ showNoticeIfNeeded(true); },   // 主页强制展示公告
   chooseDancer(id){                            // 选择舞者页选定后调用
     selectDancer(id);
+    setVoiceCharacter(id);                     // 语音池同步切换
     setDancerMode(Dancer.mode);                // 立刻切换显示（主页背景随之换角色）
   },
   quitShow(){
