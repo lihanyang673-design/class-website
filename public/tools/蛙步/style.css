@@ -351,11 +351,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .theme-card .tname{font-size:19px;font-weight:900;text-shadow:0 2px 6px #0008}
 .theme-card .tdesc{font-size:12px;opacity:.85;margin-top:6px}
 .theme-card.sel{border-color:var(--yellow);box-shadow:0 0 0 3px #f59e0b44,0 10px 30px #0006}
-.theme-card .tag{position:absolute;right:12px;top:12px;font-size:11px;background:#0007;
+.theme-card .tag{position:absolute;left:12px;top:12px;font-size:11px;background:#0007;
   padding:3px 10px;border-radius:99px}
-/* 收藏星标（卡片左上角）：未收藏空心、收藏后金黄发光 */
+/* 收藏星标（卡片右上角）：未收藏空心、收藏后金黄发光 */
 .fav-star{
-  position:absolute;left:10px;top:10px;z-index:2;
+  position:absolute;right:10px;top:10px;z-index:2;
   width:28px;height:28px;line-height:28px;border-radius:50%;
   background:#00000066;font-size:15px;text-align:center;
   color:#ffffff55;transition:.15s;cursor:pointer;
