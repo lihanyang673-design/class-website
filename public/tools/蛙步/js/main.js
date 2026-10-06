@@ -3,14 +3,14 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice, setVoiceCharacter } from './audio.js?v=20261026';
-import { updateOpening, Opening } from './opening.js?v=20261026';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice, setVoiceCharacter } from './audio.js?v=20261027';
+import { updateOpening, Opening } from './opening.js?v=20261027';
 import { initDancerLayer, preloadDancers, updateDancer, selectDancer, setDancerMode,
-         setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261026';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261026';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261026';
+         setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261027';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261027';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261027';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261026';
+         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261027';
 
 const $=id=>document.getElementById(id);
 
