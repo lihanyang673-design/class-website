@@ -3,14 +3,14 @@
 // 渲染器（开场+主舞台共用） → 开场动画 → 主舞台 → 渲染循环
 // ============================================================
 import * as THREE from 'three';
-import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice, setVoiceCharacter } from './audio.js?v=20261027';
-import { updateOpening, Opening } from './opening.js?v=20261027';
+import { ensureCtx, Music, startMenuBgm, stopMenuBgm, setMenuBgmVolume, sfxClick, sfxBoing, sfxBoop, sfxEndVoice, sfxPokeVoice, sfxRandomVoice, setVoiceCharacter } from './audio.js?v=20261028';
+import { updateOpening, Opening } from './opening.js?v=20261028';
 import { initDancerLayer, preloadDancers, updateDancer, selectDancer, setDancerMode,
-         setSkin, celebrate, lieDown, resetBody, Dancer } from './dancer.js?v=20261027';
-import { initFx, updateFx, Fx, burst } from './fx.js?v=20261027';
-import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261027';
+         setSkin, celebrate, lieDown, resetBody, setDancerCamera, Dancer } from './dancer.js?v=20261028';
+import { initFx, updateFx, Fx, burst } from './fx.js?v=20261028';
+import { Game, startGame, stopGame, pauseGame, resumeGame, hitLane, beginPlayback } from './game.js?v=20261028';
 import { THEMES, SKINS, SONGS, DIFFS, initUI, showUIRoot, showStageUI, showScreen, showResult, showEndlessResult,
-         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261027';
+         getSelection, toast, renderHome, Store, getSongById, getThemeById, ensureChart, stopPreview } from './ui.js?v=20261028';
 
 const $=id=>document.getElementById(id);
 
@@ -61,6 +61,7 @@ const camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,100);
 const CAM_HOME=new THREE.Vector3(0,2.1,5.4);       // 主界面机位
 const CAM_PLAY=new THREE.Vector3(0,2.35,6.4);      // 演出机位（稍远稍高）
 camera.position.copy(CAM_HOME);
+setDancerCamera(camera);   // 兔子 GIF 精灵需要相机做屏幕投影定位
 const camTarget=new THREE.Vector3(0,1.05,0);
 
 // ============================================================

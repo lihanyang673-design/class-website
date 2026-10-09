@@ -116,6 +116,84 @@ export function initDancerLayer(){
   Dancer.layer=new THREE.Group();
   return Dancer.layer;
 }
+
+// ============================================================
+// 疯狂的兔子 —— GIF 精灵版（v20261028 弃用 3D 建模）
+// 直接用疯兔表情包动图：待机/四方向动作/Miss/庆祝各一张；
+// 3D 场景里只留一个空锚点（root），每帧投影到屏幕坐标摆 DOM <img>。
+// 每个 GIF 备 a/b 两个缓存变体，交替赋 src 强制从头播放。
+// ============================================================
+export function setDancerCamera(cam){ Dancer.camera=cam; }
+
+const RABBIT_H   = 1.7;   // 兔子世界身高（比奶蛙 2.0 略矮），用于投影算像素高度
+const GIF_DIR    = 'img/rabbit/';
+const RABBIT_GIFS = {
+  idle      : { url:GIF_DIR+'idle.gif' },                                        // 正面站立
+  left      : { url:GIF_DIR+'act-left.gif'  , hold:1200 },                       // ← 呐喊举手
+  down      : { url:GIF_DIR+'act-down.gif'  , hold:1200 },                       // ↓ 后仰大笑
+  up        : { url:GIF_DIR+'act-up.gif'    , hold:1200 },                       // ↑ 红头带扭动
+  right     : { url:GIF_DIR+'act-right.gif' , hold:1300 },                       // → 双兔对跳
+  celebrate : { url:GIF_DIR+'celebrate.gif', hold:2400 },                        // 三兔干饭（结算）
+  daze      : { url:GIF_DIR+'daze.gif'     , hold:1100 },                        // 发呆懵住（Miss/失败）
+};
+function initRabbitGifPool(){
+  for(const k in RABBIT_GIFS){
+    const g=RABBIT_GIFS[k];
+    g.urls=[g.url+'?a', g.url+'?b'];   // 两个变体交替 → src 变化即重播，且都走缓存
+    g._flip=0;
+    g.urls.forEach(u=>{ const im=new Image(); im.src=u; });   // 预热缓存
+  }
+}
+function showRabbitGif(ch,key,hold){
+  const g=RABBIT_GIFS[key]; if(!g||!ch.sprite)return;
+  ch._gifKey=key;
+  clearTimeout(ch._gifTimer);
+  g._flip^=1;
+  ch.sprite.src=g.urls[g._flip];
+  if(hold>0 && key!=='idle'){
+    ch._gifTimer=setTimeout(()=>{ if(Dancer.chars.rabbit===ch) showRabbitGif(ch,'idle'); },hold);
+  }
+}
+function makeRabbitGifCharacter(){
+  const ch=newCharBase('rabbit','疯狂的兔子');
+  ch.isGif=true;
+  ch.root=new THREE.Group();          // 空锚点：仅用于定位投影（光环/名牌仍挂在 layer 上）
+  ch.sprite=document.createElement('img');
+  ch.sprite.className='rabbit-sprite';
+  ch.sprite.alt=''; ch.sprite.draggable=false;
+  document.body.appendChild(ch.sprite);
+  initRabbitGifPool();
+  showRabbitGif(ch,'idle');
+  return ch;
+}
+
+// 每帧：把锚点(脚 y=0 / 头 y=RABBIT_H)投影到屏幕，按像素高摆 sprite
+const _rpA=new THREE.Vector3(), _rpB=new THREE.Vector3();
+function syncRabbitSprite(ch){
+  const sp=ch.sprite;
+  if(!Dancer.camera||!ch.root.visible){ sp.style.display='none'; return; }
+  const x=ch.root.position.x, z=ch.root.position.z;
+  _rpA.set(x,0,z).project(Dancer.camera);
+  _rpB.set(x,RABBIT_H,z).project(Dancer.camera);
+  const sx=v=>( v.x*0.5+0.5)*innerWidth;
+  const sy=v=>(-v.y*0.5+0.5)*innerHeight;
+  const footY=sy(_rpA), headY=sy(_rpB);
+  const hPx=Math.abs(footY-headY);
+  if(hPx<1){ sp.style.display='none'; return; }
+  const nw=sp.naturalWidth, nh=sp.naturalHeight;
+  const wPx=hPx*(nw&&nh?nw/nh:1);
+  sp.style.display='block';
+  sp.style.height=hPx.toFixed(1)+'px';
+  sp.style.width=wPx.toFixed(1)+'px';
+  sp.style.left=(((sx(_rpA)+sx(_rpB))/2-wPx/2)).toFixed(1)+'px';
+  sp.style.top=(footY-hPx).toFixed(1)+'px';
+}
+function updateGifChar(ch,dt){
+  // 主页待机：根位置平滑回站位（演出模式 slotX 也是 0，同样适用）
+  ch.root.position.x+=(ch.slotX-ch.root.position.x)*Math.min(1,dt*6);
+  syncRabbitSprite(ch);
+}
+
 export async function preloadDancers(){
   console.log('%c========== 蛙步 · 双舞者预载 ==========', 'color:#ffe17a');
   const t0=performance.now();
@@ -123,8 +201,8 @@ export async function preloadDancers(){
   // 奶蛙（17MB GLB）
   const frog=await loadFrogGLB();
   Dancer.chars.frog=frog; Dancer.layer.add(frog.root); Dancer.layer.add(frog.ring); Dancer.layer.add(frog.tag.sp);
-  // 兔子（同步即建）
-  const rabbit=makeRabbitCharacter();
+  // 兔子：GIF 精灵版（不用 3D 模型，直接用疯兔表情包动图）
+  const rabbit=makeRabbitGifCharacter();
   Dancer.chars.rabbit=rabbit; Dancer.layer.add(rabbit.root); Dancer.layer.add(rabbit.ring); Dancer.layer.add(rabbit.tag.sp);
 
   applyHomeSlots();
@@ -176,6 +254,7 @@ export function selectDancer(id){
   updateMarks();
   if(changed){
     const ch=Dancer.chars[id];             // 新选中：高兴地蹦一下
+    if(ch.isGif){ showRabbitGif(ch,'up',RABBIT_GIFS.up.hold); return; }
     beginGroup(ch,'sel');
     tw(ch,ch.body.position,'y',0.32,150,'outQuad');
     tw(ch,ch.body.position,'y',ch.baseY,260,'outQuad',160);
@@ -421,157 +500,20 @@ function makeFrogCharacter(gltf){
 }
 
 // ============================================================
-// 疯狂的兔子 —— 程序化真 3D
-// ============================================================
-function makeRabbitCharacter(){
-  const ch=newCharBase('rabbit','疯狂的兔子');
-
-  const fur   =new THREE.MeshStandardMaterial({color:0xf6f3ed,roughness:0.82,metalness:0});
-  const pink  =new THREE.MeshStandardMaterial({color:0xf0b2a1,roughness:0.72,metalness:0});
-  const pink2 =new THREE.MeshStandardMaterial({color:0xf3bdae,roughness:0.72,metalness:0});
-  const eyeW  =new THREE.MeshStandardMaterial({color:0xfdfcf9,roughness:0.3,metalness:0});
-  const irisM =new THREE.MeshStandardMaterial({color:0x3d9ed8,roughness:0.3,metalness:0});
-  const black =new THREE.MeshStandardMaterial({color:0x1c1015,roughness:0.5,metalness:0});
-  const tooth =new THREE.MeshStandardMaterial({color:0xfffdf4,roughness:0.4,metalness:0});
-  const red   =new THREE.MeshStandardMaterial({color:0xc83845,roughness:0.5,metalness:0});
-
-  function msh(geo,mat){const m=new THREE.Mesh(geo,mat);m.castShadow=true;return m;}
-
-  const root=new THREE.Group();
-  const body=new THREE.Group();
-  const rig=new THREE.Group();
-  root.add(body);body.add(rig);
-
-  const HIP=2.15,CHEST=3.55,NECK=3.85;
-  const pelvis=new THREE.Group();pelvis.position.set(0,HIP,0);
-  const spine=new THREE.Group();spine.position.set(0,CHEST-HIP,0);
-  const head=new THREE.Group();head.position.set(0,NECK-CHEST,0);
-  pelvis.add(spine);spine.add(head);
-
-  const lower=msh(new THREE.SphereGeometry(1,32,24),fur);
-  lower.scale.set(1.08,1.35,0.92);lower.position.set(0,-0.05,0);
-  pelvis.add(lower);
-  const belly=msh(new THREE.SphereGeometry(1,24,18),pink);
-  belly.scale.set(0.56,0.82,0.10);belly.position.set(0,0.35,0.86);
-  pelvis.add(belly);
-
-  const chest=msh(new THREE.SphereGeometry(1,28,20),fur);
-  chest.scale.set(0.95,0.85,0.82);chest.position.set(0,-0.10,0);
-  spine.add(chest);
-
-  const skull=msh(new THREE.SphereGeometry(1,36,28),fur);
-  skull.scale.set(0.92,1.18,0.86);skull.position.set(0,0.72,0);
-  head.add(skull);
-  const muzzle=msh(new THREE.SphereGeometry(1,24,18),pink);
-  muzzle.scale.set(0.52,0.42,0.34);muzzle.position.set(0,0.34,0.72);
-  head.add(muzzle);
-  const mouth=msh(new THREE.SphereGeometry(1,16,12),black);
-  mouth.scale.set(0.30,0.20,0.08);mouth.position.set(0,0.16,1.0);
-  head.add(mouth);
-  const tongue=msh(new THREE.SphereGeometry(1,10,8),red);
-  tongue.scale.set(0.12,0.07,0.05);tongue.position.set(0,0.04,1.02);
-  head.add(tongue);
-  for(const s of [-1,1]){
-    const t=msh(new THREE.BoxGeometry(0.20,0.24,0.09),tooth);
-    t.position.set(s*0.13,0.30,0.97);t.rotation.z=s*0.08;
-    head.add(t);
-  }
-
-  for(const s of [-1,1]){
-    const eye=new THREE.Group();
-    eye.position.set(s*0.80,0.82,0.18);
-    eye.add(msh(new THREE.SphereGeometry(0.32,24,18),eyeW));
-    const ir=msh(new THREE.CircleGeometry(0.17,24),irisM);
-    ir.position.set(s*0.04,0.03,0.30);ir.rotation.y=s*0.35;
-    eye.add(ir);
-    const pu=msh(new THREE.CircleGeometry(0.085,18),black);
-    pu.position.set(s*0.04,0.03,0.315);pu.rotation.y=s*0.35;
-    eye.add(pu);
-    const hl=msh(new THREE.SphereGeometry(0.045,8,6),eyeW);
-    hl.position.set(s*0.02,0.13,0.34);
-    eye.add(hl);
-    head.add(eye);
-  }
-
-  const earL=new THREE.Group();earL.position.set(-0.40,1.32,-0.04);
-  const earR=new THREE.Group();earR.position.set( 0.40,1.32,-0.04);
-  for(const s of [-1,1]){
-    const eg=s<0?earL:earR;
-    const outer=msh(new THREE.CapsuleGeometry(0.21,1.15,8,16),fur);
-    outer.position.set(0,0.82,0);outer.scale.z=0.55;
-    outer.rotation.z=s*0.16;outer.rotation.x=-0.06;
-    eg.add(outer);
-    const inner=msh(new THREE.CapsuleGeometry(0.12,0.85,8,14),pink2);
-    inner.position.set(0,0.82,0.09);inner.scale.z=0.4;
-    inner.rotation.z=s*0.16;inner.rotation.x=-0.06;
-    eg.add(inner);
-  }
-  head.add(earL);head.add(earR);
-
-  const armL=new THREE.Group();armL.position.set(-0.86,-0.02,0.04);
-  const armR=new THREE.Group();armR.position.set( 0.86,-0.02,0.04);
-  for(const s of [-1,1]){
-    const ag=s<0?armL:armR;
-    const cap=msh(new THREE.CapsuleGeometry(0.25,0.85,8,14),fur);
-    cap.position.set(0,-0.72,0);
-    ag.add(cap);
-    const hand=msh(new THREE.SphereGeometry(0.30,18,14),fur);
-    hand.scale.set(1,0.9,1);hand.position.set(0,-1.38,0.03);
-    ag.add(hand);
-    for(const f of [-1,1]){
-      const fg=msh(new THREE.SphereGeometry(0.11,10,8),fur);
-      fg.position.set(f*0.15,-1.42,0.12);
-      ag.add(fg);
-    }
-    const palm=msh(new THREE.SphereGeometry(1,10,8),pink2);
-    palm.scale.set(0.13,0.16,0.05);palm.position.set(0,-1.38,0.28);
-    ag.add(palm);
-  }
-  spine.add(armL);spine.add(armR);
-
-  const legL=new THREE.Group();legL.position.set(-0.40,0,0);
-  const legR=new THREE.Group();legR.position.set( 0.40,0,0);
-  for(const s of [-1,1]){
-    const lg=s<0?legL:legR;
-    const thigh=msh(new THREE.CapsuleGeometry(0.30,0.45,8,14),fur);
-    thigh.position.set(0,-0.62,0);
-    lg.add(thigh);
-    const foot=msh(new THREE.SphereGeometry(1,20,14),fur);
-    foot.scale.set(0.40,0.28,0.60);foot.position.set(0,-0.72,0.30);
-    lg.add(foot);
-  }
-  pelvis.add(legL);pelvis.add(legR);
-  rig.add(pelvis);
-
-  const box=new THREE.Box3().setFromObject(rig);
-  const size=box.getSize(new THREE.Vector3());
-  const cxx=(box.min.x+box.max.x)/2,czz=(box.min.z+box.max.z)/2;
-  rig.position.set(-cxx,-box.min.y,-czz);
-  root.scale.setScalar(2.0/size.y);
-
-  const defs=[['pelvis',pelvis],['spine',spine],['head',head],
-              ['armL',armL],['armR',armR],['legL',legL],['legR',legR],
-              ['earL',earL],['earR',earR]];
-  const parts={};
-  defs.forEach(([n,b])=>{parts[n]={bone:b,pose:{x:0,y:0,z:0},idle:{x:0,y:0,z:0}};});
-
-  ch.root=root;ch.body=body;ch.parts=parts;
-  ch.solidMats=[fur,pink,pink2].map(m=>({m,base:m.color.clone()}));
-  ch.baseX=0;ch.baseY=0;
-
-  console.log('%c[兔子建模] 9 个关节枢轴（含双耳）', 'color:#ffe17a');
-  return ch;
-}
-
-// ============================================================
 // 动作：四方向
 // ============================================================
 export function doAction(dir,quality='good'){
   const ch=Dancer.chars[Dancer.selected];
-  if(!ch||!ch.parts.armL)return;
+  if(!ch)return;
+  if(ch.isGif){                             // 兔子：GIF 动作（←↓↑→ 各一张）
+    const map=['left','down','up','right'];
+    const key=map[dir]||'up';
+    showRabbitGif(ch,key,RABBIT_GIFS[key].hold);
+    return;
+  }
+  if(!ch.parts.armL)return;
   const amp=quality==='perfect'?1.28:1.0;
-  if(ch.id==='rabbit')rabbitAction(ch,dir,amp);
-  else frogAction(ch,dir,amp);
+  frogAction(ch,dir,amp);
 }
 
 function frogAction(ch,dir,amp){
@@ -611,72 +553,6 @@ function frogAction(ch,dir,amp){
   }
 }
 
-function rabbitAction(ch,dir,amp){
-  const parts=ch.parts;
-  beginGroup(ch,'act');
-
-  if(dir===0){                          // ← 疯狂甩耳
-    tw(ch,parts.earL.pose,'z',-1.35,130,'outQuad',0,amp);
-    tw(ch,parts.earL.pose,'z',0,520,'outElastic',150);
-    tw(ch,parts.earL.pose,'x',-0.8,120,'outQuad',0,amp);
-    tw(ch,parts.earL.pose,'x',0,480,'outElastic',140);
-    tw(ch,parts.earR.pose,'z',0.55,120,'outQuad',20,amp);
-    tw(ch,parts.earR.pose,'z',0,460,'outElastic',150);
-    tw(ch,parts.armL.pose,'z',-2.4,130,'outQuad',0,amp);
-    tw(ch,parts.armL.pose,'z',0,500,'outElastic',140);
-    tw(ch,parts.head.pose,'z',-0.35,140,'outQuad',0,amp);
-    tw(ch,parts.head.pose,'z',0,440,'outElastic',160);
-    tw(ch,ch.body.rotation,'z',-0.14,130,'outQuad',0,amp);
-    tw(ch,ch.body.rotation,'z',0,480,'outElastic',150);
-  }
-  else if(dir===1){                     // ↓ 兔子蹬鹰
-    tw(ch,ch.body.position,'y',-0.30,150,'outQuad',0,amp);
-    tw(ch,ch.body.position,'y',0,440,'outElastic',170);
-    tw(ch,parts.spine.pose,'x',0.28,150,'outQuad',0,amp);
-    tw(ch,parts.spine.pose,'x',0,430,'outElastic',170);
-    tw(ch,parts.legL.pose,'x',-1.55,130,'outQuad',90,amp);
-    tw(ch,parts.legL.pose,'x',0,470,'outElastic',230);
-    tw(ch,parts.legR.pose,'x',-1.55,130,'outQuad',150,amp);
-    tw(ch,parts.legR.pose,'x',0,470,'outElastic',290);
-    tw(ch,parts.earL.pose,'x',-1.15,120,'outQuad',80,amp);
-    tw(ch,parts.earL.pose,'x',0,500,'outElastic',220);
-    tw(ch,parts.earR.pose,'x',-1.15,120,'outQuad',80,amp);
-    tw(ch,parts.earR.pose,'x',0,500,'outElastic',220);
-    tw(ch,parts.head.pose,'x',-0.35,140,'outQuad',80,amp);
-    tw(ch,parts.head.pose,'x',0,420,'outElastic',230);
-  }
-  else if(dir===2){                     // ↑ 兔子高蹦
-    tw(ch,ch.body.position,'y',0.85,200,'outQuad',0,amp);
-    tw(ch,ch.body.position,'y',0,300,'outQuad',220);
-    tw(ch,parts.armL.pose,'z',-2.7,180,'outBack',0,amp);
-    tw(ch,parts.armL.pose,'z',0,520,'outElastic',240);
-    tw(ch,parts.armR.pose,'z',2.7,180,'outBack',0,amp);
-    tw(ch,parts.armR.pose,'z',0,520,'outElastic',240);
-    tw(ch,parts.earL.pose,'x',-0.55,180,'outQuad',0,amp);
-    tw(ch,parts.earL.pose,'x',0.95,120,'outQuad',250,amp);
-    tw(ch,parts.earL.pose,'x',0,520,'outElastic',380);
-    tw(ch,parts.earR.pose,'x',-0.55,180,'outQuad',0,amp);
-    tw(ch,parts.earR.pose,'x',0.95,120,'outQuad',250,amp);
-    tw(ch,parts.earR.pose,'x',0,520,'outElastic',380);
-    tw(ch,parts.head.pose,'x',-0.3,200,'outQuad',0,amp);
-    tw(ch,parts.head.pose,'x',0.2,100,'outQuad',300,amp);
-    tw(ch,parts.head.pose,'x',0,480,'outElastic',410);
-  }
-  else{                                 // → 旋风兔
-    const b=ch.body;
-    tw(ch,b.rotation,'y',Math.PI*2,430,'inOutCubic',0,amp);
-    setTimeout(()=>{if(Dancer.chars[Dancer.selected].body===b&&!ch.tweens.some(w=>w.obj===b.rotation&&w.axis==='y'))b.rotation.y=0;},470);
-    tw(ch,parts.armR.pose,'z',2.5,140,'outQuad',0,amp);
-    tw(ch,parts.armR.pose,'z',0,500,'outElastic',150);
-    tw(ch,parts.legL.pose,'x',-0.7,140,'outQuad',0,amp);
-    tw(ch,parts.legL.pose,'x',0,420,'outElastic',160);
-    tw(ch,parts.earL.pose,'z',-1.25,150,'outQuad',0,amp);
-    tw(ch,parts.earL.pose,'z',0,480,'outElastic',170);
-    tw(ch,parts.earR.pose,'z',1.25,150,'outQuad',0,amp);
-    tw(ch,parts.earR.pose,'z',0,480,'outElastic',170);
-  }
-}
-
 // Miss：踉跄 + 闪红
 let _stumbleT=0;
 export function stumble(){
@@ -684,7 +560,9 @@ export function stumble(){
   if(now-_stumbleT<320)return;
   _stumbleT=now;
   const ch=Dancer.chars[Dancer.selected];
-  if(!ch||!ch.body)return;
+  if(!ch)return;
+  if(ch.isGif){ showRabbitGif(ch,'daze',RABBIT_GIFS.daze.hold); return; }   // 兔子：懵住一下
+  if(!ch.body)return;
   beginGroup(ch,'miss');
   tw(ch,ch.body.rotation,'z',0.3,90,'outQuad');
   tw(ch,ch.body.rotation,'z',-0.22,180,'inOutCubic',100);
@@ -703,6 +581,7 @@ export function stumble(){
 export function celebrate(){
   const ch=Dancer.chars[Dancer.selected];
   if(!ch)return;
+  if(ch.isGif){ showRabbitGif(ch,'celebrate',RABBIT_GIFS.celebrate.hold); return; }   // 兔子：三兔干饭庆祝
   const parts=ch.parts,b=ch.body;
   beginGroup(ch,'cel');
   for(let i=0;i<3;i++){
@@ -721,6 +600,7 @@ export function celebrate(){
 export function lieDown(){
   const ch=Dancer.chars[Dancer.selected];
   if(!ch)return;
+  if(ch.isGif){ showRabbitGif(ch,'daze',6000); return; }   // 兔子：失败懵住（保持较久）
   const parts=ch.parts;
   beginGroup(ch,'lie');
   tw(ch,ch.body.rotation,'x',-Math.PI*0.46,520,'outQuad');
@@ -737,7 +617,9 @@ export function lieDown(){
 // 开演前复位
 export function resetBody(){
   const ch=Dancer.chars[Dancer.selected];
-  if(!ch||!ch.body)return;
+  if(!ch)return;
+  if(ch.isGif){ showRabbitGif(ch,'idle'); return; }   // 兔子：复位到待机 GIF
+  if(!ch.body)return;
   ch.tweens.length=0;
   ch.body.rotation.set(0,0,0);
   ch.body.position.x=ch.baseX||0;
@@ -770,7 +652,8 @@ export function updateDancer(dt,bpm,dancing){
 
   for(const id in Dancer.chars){
     const ch=Dancer.chars[id];
-    if(!ch.root.visible)continue;
+    if(!ch.root.visible){ if(ch.isGif) ch.sprite.style.display='none'; continue; }
+    if(ch.isGif){ updateGifChar(ch,dt); continue; }
     const onStage = dancing&&Dancer.selected===id&&Dancer.mode==='play';
     updateChar(ch,dt,onStage,bpm);
   }

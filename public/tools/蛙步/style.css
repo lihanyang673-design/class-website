@@ -27,6 +27,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #app{position:fixed;inset:0}
 #app canvas{display:block;width:100%;height:100%}
 
+/* ---------- 兔子 GIF 精灵（疯兔不用 3D 模型，用表情包动图投影定位） ---------- */
+.rabbit-sprite{
+  position:fixed;z-index:40;display:none;pointer-events:none;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.38));
+  transform:translateZ(0);user-select:none;-webkit-user-drag:none;
+}
+
 /* ---------- 载入遮罩（糖果亮色，全程不黑屏） ---------- */
 #loadOverlay{
   position:fixed;inset:0;z-index:200;
