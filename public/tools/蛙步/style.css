@@ -32,6 +32,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   position:fixed;z-index:40;display:none;pointer-events:none;
   filter:drop-shadow(0 6px 14px rgba(0,0,0,.38));
   transform:translateZ(0);user-select:none;-webkit-user-drag:none;
+  transition:opacity .4s;   /* 演出半透明↔主页不透明 平滑过渡 */
 }
 
 /* ---------- 载入遮罩（糖果亮色，全程不黑屏） ---------- */

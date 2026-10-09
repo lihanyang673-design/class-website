@@ -191,6 +191,8 @@ function syncRabbitSprite(ch){
 function updateGifChar(ch,dt){
   // 主页待机：根位置平滑回站位（演出模式 slotX 也是 0，同样适用）
   ch.root.position.x+=(ch.slotX-ch.root.position.x)*Math.min(1,dt*6);
+  // 演出中半透明（0.45），不挡音符视线；主页恢复不透明
+  ch.sprite.style.opacity=(Dancer.mode==='play')?'0.45':'1';
   syncRabbitSprite(ch);
 }
 
